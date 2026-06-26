@@ -1,0 +1,10 @@
+body { line-height:20px; color:#000; font-size:12px;
+}
+.jiehun_k{ margin-left:16px; line-height:20px;}
+.jiehun_pt{color:#000; font-size:12px;}
+.jiehun_pt1{ color:#651D1D; font-weight:bold;}
+.jiehun_pt2{ color:#322726; line-height:30px;}
+.jiehun_pt3{ color:#651D1D;  padding-right:20px; line-height:25px;}
+.jiehun_an{margin-right:20px;}
+.jiehun_an a{ background:url(an01.jpg); height:15px; width:39px; display:block;text-align:center; line-height:15px; text-decoration:none; color:#990000; padding-top:2px;}
+.jiehun_an a:hover{ background:url(an01.jpg); height:15px; width:39px; display:block;text-align:center; line-height:15px; text-decoration:none; color:#FF0000; padding-top:2px;}

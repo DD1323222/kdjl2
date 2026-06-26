@@ -1,0 +1,207 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>情缘</title>
+<link href="../css/css.css" rel="stylesheet" type="text/css">
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+
+<body>
+<table width="779" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><img src="../images/qy01.jpg" width="779" height="41"></td>
+  </tr>
+</table>
+<table width="779" height="37" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="F0F4CF">
+  <tr>
+    <td width="128" align="center" valign="middle">
+      <input name="username" type="text" class="zi09" id="username" size="15" />    </td>
+    <td><img src="../images/qy02.gif" width="39" height="15" onClick="searchName()"></td>
+    <td width="146" class="zi07"><span id="searchFlag"></span></td>
+    <td width="462" height="37" align="right" background="../images/qy02.jpg"><table width="50%" height="25" border="0" cellpadding="0" cellspacing="0">
+      <tr>
+        <td class="zi06">当前魅力值为：#nowml#</td>
+        </tr>
+    </table></td>
+  </tr>
+</table>
+<table width="779" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="317" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td height="41" background="../images/qy03.jpg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="12%">&nbsp;</td>
+            <td width="51%" class="zi06">您与当前玩家的情缘值为：</td>
+            <td width="37%" class="zi06"><span id="qyz"></span></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="34"><img src="../images/qy05.jpg" width="34" height="186"></td>
+            <td valign="top" background="../images/qy07.jpg"><table width="100%" border="0" cellspacing="2" cellpadding="0">
+              <tr>
+                <td width="40" height="25" align="center" valign="middle" class="zi09">名次</td>
+                <td width="130" align="center" valign="middle" class="zi09">角色</td>
+                <td align="center" valign="middle" class="zi09">魅力</td>
+              </tr>
+              
+              #mlph#
+			  <tr>
+							<td height="18" align="center" valign="middle"></td>
+							<td align="center" valign="middle" style="color:02797F;font-size:12px;"><span id="cmlname"></span></td>
+							<td align="center" valign="middle" style="color:02797F;font-size:12px;"><span id="cmlnum"></span></td>
+				    </tr>
+            </table></td>
+            <td width="22"><img src="../images/qy06.jpg" width="22" height="186"></td>
+          </tr>
+        </table></td>
+      </tr>
+      
+      <tr>
+        <td><img src="../images/qy04.jpg" width="317" height="22"></td>
+      </tr>
+    </table></td>
+    <td width="62" valign="top"><img src="../images/qy08.jpg" width="62" height="249"></td>
+    <td width="181" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/qy09.jpg" width="181" height="45"></td>
+      </tr>
+      <tr>
+        <td height="120" background="../images/qy11.jpg"><table width="100%" border="0" cellspacing="2" cellpadding="0">
+          <tr>
+            <td width="60" height="30" class="zi09">物品名称：</td>
+            <td><input name="pname" type="text" class="zi09" id="pname" size="12"></td>
+          </tr>
+          <tr>
+            <td height="30" class="zi09">物品数量：</td>
+            <td><input name="psum" type="text" class="zi09" id="psum" size="12"></td>
+          </tr>
+          <tr>
+            <td height="30" class="zi09">受 赠 者：</td>
+            <td><input name="uname" type="text" class="zi09" id="uname" size="12"></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+	  
+        <td height="85" align="center" valign="middle" background="../images/qy10.jpg"><table width="100%" border="0" cellspacing="2" cellpadding="0">
+          <tr>
+            <td align="center" valign="top" class="zi04"><img src="../images/qy12.jpg" style="cursor:pointer" width="50" height="40" onClick="giveMl()"></td>
+          </tr>
+          <tr>
+            <td align="center"><span class="zi04" id="tips"></span></td>
+          </tr>
+        </table></td>
+      </tr>
+    </table></td>
+    <td valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="220" height="45" valign="bottom" background="../images/qy13.jpg"><table width="100%" border="0" cellspacing="4" cellpadding="0">
+          <tr>
+            <td align="center" valign="middle" class="zi09">名 称</td>
+            <td align="center" valign="middle" class="zi09">数 量</td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td height="193" align="right" valign="top" background="../images/qy15.jpg"><table width="95%" border="0" cellspacing="0" cellpadding="0" style="margin-top:5px">
+          #mybag#
+        </table></td>
+      </tr>
+      <tr>
+        <td height="12"><img src="../images/qy14.jpg" width="220" height="12"></td>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+</body>
+<script type="text/javascript">
+function searchName(){
+	var name = $('username').value;
+	if(name == ''){
+		$('searchFlag').innerHTML = '请先填写您要查询的角色名称！';
+	}else{
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var newstr = t.responseText.split('sml:');
+				 	var reg=/(.*)qy:(\d+)ml:(\d+)/;
+					var qy = t.responseText.replace(reg,"$1,$2,$3");
+					if(qy == t.responseText){
+						$('searchFlag').innerHTML = qy;
+					}else{
+						var arr = qy.split(',');
+						$('searchFlag').innerHTML = arr[0];
+						$('qyz').innerHTML = arr[1];
+						$('cmlname').innerHTML = name;
+						$('cmlnum').innerHTML = arr[2];
+					}
+					/*$('searchFlag').innerHTML = newstr[0];
+					if(newstr[1].length > 0){
+						$('qyz').innerHTML = newstr[1];
+						
+					}*/
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../api/check_user.php?nickname='+name, opt);
+	}
+}
+
+function giveprops(name,sums){
+	if(name == ''){
+		return;
+	}
+	$('pname').value = name;
+	$('psum').value = sums;
+}
+
+function giveTo(uname){
+	if(uname == ''){
+		return;
+	}
+	$('uname').value = uname;
+}
+function giveMl(){
+	var uname = $('uname').value;
+	var sums = $('psum').value;
+	var pname = $('pname').value;
+	if(uname == '' || sums == '' || pname == ''){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var s = t.responseText;
+					if(s == 'a'){
+						$('tips').innerHTML = '请填写完整！';
+					}else if(s == 'b'){
+						$('tips').innerHTML = '没有这个用户，请检查您是否书写有误！';
+					}else if(s == 'c'){
+						$('tips').innerHTML = '没有此道具或者您写的数量过多！';
+					}else if(s == 'd'){
+						$('tips').innerHTML = '您没有这么多此道具！';
+					}else if(s == 'e'){
+						$('tips').innerHTML = '不能给自己送哦！';
+					}else if(s > 0){
+						alert(uname+'感谢您给他送了'+s+'的魅力值！');
+						window.location.reload();
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_ml.php?uname='+encodeURI(uname)+'&sums='+sums+'&pname='+encodeURI(pname), opt);
+}
+</script>
+
+</html>

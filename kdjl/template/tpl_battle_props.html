@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title>无标题文档</title>
+
+<script language="javascript">
+function sel(obj)
+{
+	selid=obj;
+	if(selid!=0) selid.style.backgroundColor='#FEFAE1';
+	obj.style.backgroundColor='#DFD496';
+}
+function getP()
+{
+	var jg= parseInt($('junum').value);
+	if (jg<1 || jg>99) window.parent.Alert('错误的兑换数量！');
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var ret = t.responseText;
+					window.parent.Alert(ret);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true 
+			}
+	var ajax=new Ajax.Request('../function/ext_Battle.php?t=6&p='+pid+'&s='+jg, opt);
+}
+var equipInfos = {};
+var LastKey = "";
+if(!document.all){
+	var Event;
+	window.onmousemove = function(){
+							Event = event;
+					}
+}
+function showTip(id)
+{
+	if(!document.all){
+		var x=Event.x;
+		var y=Event.y;
+	}else{
+		var x=event.x;
+		var y=event.y;
+	}
+	var key = id+"_i_";
+	if(typeof(equipInfos[key])!='undefined'){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id, opt);
+}
+</script>
+<style type="text/css"> 
+body { width: auto; height: auto; margin: 0px auto; font-size: 12px; background:#eeeeee;}
+*{ margin: 0px; padding: 0px; }
+pre { margin: 0px; padding: 0px; float: left; }
+img { margin: 0px; padding: 0px; float: left; border: 0px; }
+ul { margin: 0px; padding: 0px; }
+li { display: inline; list-style-type: none; }
+ 
+.zcdh_box { width:788px; height:319px; float:left;}
+.box_left { width:203px; height:319px; float:left; background:url(../images/ui/zcdh.jpg)}
+.box_right { width:585px; height:319px; float:left; background:url(../images/ui/zcdh2.jpg)}
+.fhzc { width:59px; height:17px; margin:281px 0px 0px 100px;}
+.zcdh_zi1 { width:360px; height:18px; margin:20px 0px 0px 180px; line-height:18px; color:#75543c;}
+.zcdh_zi1a { width:180px; height:18px; line-height:18px; color:#75543c; float:left;}
+.zcdh_zi2 { width:360px; height:18px; margin:0px 0px 0px 180px; line-height:18px;  color:#75543c;}
+.zcdh_neirong { width:385px; height:193px; float:left; margin:8px 0px 0px 20px; -margin:8px 0px 0px 10px;color:#932911; 
+
+overflow:auto; scrollbar-face-color:#e1d395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#f3edc9;scrollbar-
+
+shadow-color:#ffffff;scrollbar-darkshadow-color:#f3edc9;scrollbar-track-color:#f3edc9;scrollbar-arrow-color:#ffffff; line-
+
+height:26px;}
+ 
+.zcdh_neirong a{ text-decoration:none; color:#932911;}
+.zcdh_neirong a:hover{ text-decoration:none; color:#932911;}
+ 
+.neirong_list { width:350px; height:27px; line-height:27px; float:left;}
+.neirong_list1 { width:200px; height:27px; line-height:27px; float:left; }
+.neirong_list2 { width:150px; height:27px; line-height:27px; float:left; text-align:center;}
+.zcdh_hqsl { width:300px; height:25px; line-height:25px; float:left; margin:0px 0px 0px 10px; color:#b06a01;}
+.kuangnei { line-height:18px;  border:#b4a449; }
+ 
+.zcdh_nzi1 { width:300px; height:28px; line-height:28px;float:left; margin:30px 0px 0px 0px; color:#932911;}
+.zcdh_nzi2 { width:350px; height:28px; line-height:28px;float:left; margin:10px 0px 0px 0px; color:#932911;}
+.zcdh_dh { width:117px; height:197px; float:left; margin:20px 0px 0px 15px; -margin:20px 0px 0px 10px;}
+.zcdh_dh li { width:117px; height:46px; float:left; }
+ 
+</style>
+</head>
+ 
+<body>
+<div class="zcdhbox">
+	<div class="box_left">
+    	<div class="fhzc"><img src="../images/ui/fhzc.gif" />
+        </div>
+    </div>
+    <div class="box_right">
+    	<div class="zcdh_zi1">
+            <div class="zcdh_zi1a">
+                 当前军工：
+            #userjg#</div>
+            <div class="zcdh_zi1a">
+                 当前军工：
+            #usertop#</div>
+        </div>
+      <div class="zcdh_zi2">
+        	上次军功：(本场军功只能在下次参加战场时才会累计到当前军功) 
+      </div>
+        <div class="zcdh_neirong">
+        	<div class="neirong_list">
+			<table border="0" cellpadding="0" cellspacing="0">
+				#plist#
+			</table>
+            </div>        
+      </div>
+      <div class="zcdh_dh">
+      	<ul>
+        	<li><img src="../images/ui/zcdh_01.jpg" />            </li>
+            <li><img src="../images/ui/zcdh_02.jpg" width="120" height="40"  
+
+onclick="window.parent.$('gw').src='./function/BattleBox_Mod.php'" style="cursor:pointer;"/>            </li>
+            <li><img src="../images/ui/zcdh_03.jpg" width="120" height="40"  
+
+onclick="window.parent.$('gw').src='./function/BattleExp_Mod.php'" style="cursor:pointer;"/> </li>
+            <!--li><img src="../images/ui/zcdh_04.jpg" width="120" height="40" /> </li-->
+            
+        </ul>
+      </div>
+      
+      <div class="zcdh_hqsl">
+      	<form action="" method="get"><table width="291" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="65">换取数量：</td>
+    <td width="88"><label>
+      <input id="junum" type="text" name="junum" size="8" maxlength="20" />
+    </label></td>
+    <td width="138" valign="middle"><img src="../images/ui/queren.gif" width="39" height="17" 
+
+ onclick="getP();"  style="cursor:pointer;" /></td>
+  </tr>
+</table>
+</form>
+      </div>
+      
+    </div>
+ 
+    
+</div>
+
+
+</body>
+ 
+</html>

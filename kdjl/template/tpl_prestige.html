@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<title></title>
+<style type="text/css">
+<!--
+body {
+	margin-left: 3px;
+	margin-top: 3px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+-->
+</style>
+<script type="text/JavaScript">
+<!--
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+/* added by Zheng.PIng */
+function hiddenContent() {
+    $('props_types').style.display = 'none';
+}
+
+function showContent() {
+    $('props_types').style.display = '';
+}
+/* addded by Zheng.Ping */
+//-->
+</script>
+</head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<script language="javascript">
+var bid=0;
+var price=0;
+var selid=0;
+var types=-1;
+var prestige=0;
+</script>
+
+<body>
+<table width="778" height="311" border="0" cellpadding="0" cellspacing="0" bgcolor="#F3EDC9">
+  <tr>
+    <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/props/dj01.gif" width="140" height="149"></td>
+      </tr>
+      <tr>
+        <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif">
+			<div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+				#word#			</div>		</td>
+      </tr>
+    </table></td>
+    <td >
+		<div id="tag1" style="position:absolute;left:250px;top:15px;z-index:1; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="right" valign="middle" background="../images/ui/shop/gm08.gif">&nbsp;</td>
+              <td width="12"><img src="../images/ui/shop/gm06.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		<div id="tag" style="position:absolute; left:356px; top:16px; z-index:1; width: 356px;"><img src="../images/ui/shop/gm12.gif" />元宝：#yb#
+		<img src="../images/ui/shop/gm11.gif" />威望：#prestige#		</div>
+		
+		<div id="tag2" style="position:absolute;left:141px;top:15px;z-index:2;color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="left" valign="middle" background="../images/ui/shop/gm08.gif" style="cursor:pointer" onclick="copyWord('道具商店');window.parent.$('gw').src='./function/Props_Mod.php?op=cmp';"><b>道具商店</b></td>
+              <td width="12"><img src="../images/ui/shop/gm06.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		
+		
+		
+		<div id="tag3" style="position:absolute;left:195px;top:15px;z-index:3;">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm03.gif" width="12" height="25" /></td>
+              <td align="center" valign="middle"  onclick="copyWord('威望商店');" background="../images/ui/shop/gm05.gif" style="color:#3F3706;"><strong>威望商店</strong></td>
+              <td width="12"><img src="../images/ui/shop/gm04.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+	  </div>
+	  
+	  
+	  
+		
+		<div style="width:635px; height:290px; background-color:#DFD496; position:absolute; top: 38px; left: 143px;">
+			<div style="width:304px; height:275px; position:absolute; left: 10px;">
+				<img src="../images/ui/shop/gm09.gif" />
+				<div id="props_types" style="width:199px; height:14px; position:absolute; left: 93px; top:7px;">
+				<font color=red><b>分类查看:
+				<select name="menu1" onchange="MM_jumpMenu('self',this,0)">
+				#options#
+                </select>
+				</b></font>
+				
+				<br />
+			  </div>
+				<div style='position:absolute; text-align:left; font-size:12px; line-height:1.5; width:300px; height:235px; color:#BF7D1A; border:1px solid #C6B764; background-color:#fff; top: 29px; left: 2px;'>
+		  <table width="100%" border="0" cellspacing="0" cellpadding="2" background="#ffffff">
+            <tr align="center" valign="middle">
+			 <td width="20%" style="border-bottom:solid #C6B764 1px;">图标</td>
+              <td width="20%" style="border-bottom:solid #C6B764 1px;">名称</td>
+              <td width="30%" style="border-bottom:solid #C6B764 1px;">需要威望</td>
+              <td width="30%" style="border-bottom:solid #C6B764 1px;">属性</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="padding-left:0px;">
+			  	<div style="width:100%;text-align:left;font-size:12px; line-height:1.5;height:205px;overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;cursor:default;color:#BF7D1A;margin-left:3px;" id="shoplist">
+				<table width="93%" border="0" cellspacing="0" cellpadding="2" background="#ffffff">
+           #preshoplist#
+			</table>
+				</div>			  </td>
+            </tr>
+          </table>
+		  </div>
+			</div>
+		
+		<!-- self -->
+		<div style="width:284px; height:275px; position:absolute; left: 325px;color:#5B5017;">
+				<div style='position:absolute; text-align:left; font-size:12px; line-height:1.5; width:300px; height:235px; color:#BF7D1A; border:1px solid #C6B764; background-color:#fff; top: 28px;'>
+		  <table width="100%" border="0" cellspacing="0" cellpadding="2" background="#ffffff">
+            <tr>
+			  <td width="20%" style="border-bottom:solid #C6B764 1px;">图标</td>
+              <td width="20%" style="border-bottom:solid #C6B764 1px;">名称</td>
+              <td width="30%" style="border-bottom:solid #C6B764 1px;">卖出金币</td>
+              <td width="30%" style="border-bottom:solid #C6B764 1px;">数量</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="padding-left:0px;">
+			  	<div style="width:100%;text-align:left;font-size:12px; line-height:1.5;height:205px;overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;cursor:default;color:#BF7D1A;margin-left:3px;" id="mybag">
+				<table width="93%" border="0" cellspacing="0" cellpadding="2" background="#ffffff">
+           #mybag#
+			</table>
+				</div>			  </td>
+            </tr>
+          </table>
+		  </div>
+		        <span style="position:absolute; left:1px; top:3px; z-index:1; background-color:#DFD496; width: 250px;"><img src="../images/ui/shop/gm10.gif" /></span>
+		        <div style="width:191px; height:30px; position:absolute;z-index:2; left: 121px; top:4px;"> <font color="red"><b>分类查看:
+                  </b></font> 
+		          <select name="menu2" onchange="MM_jumpMenu('self',this,0)">
+				  #bagoption#
+                  </select>
+		          <br />
+                </div>
+		  </div>
+		<!-- self end-->
+		
+		<!-- left option.-->
+		<div style="position:absolute;left:9px;width:419px;height:15px;top:267px;padding:2px;color:#AB833C; text-align:right" id="ltool">
+
+		数量：
+		  <input type="text" id="prenum"  style="width:50px;height:13px; border:1px solid #AB833C;" /> 
+		  <input type="button" value="购买" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;"  onclick="prebuy();"/>
+		  &nbsp;&nbsp; 背包格子数：#baglimit#		  </div>
+		<!-- left option end.-->
+		</div>	</td>
+  </tr>
+</table>
+
+<div style="position:absolute; left:20px; top: 308px; width: 44px;">
+	<input name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;"  onclick="window.parent.$('gw').src='./function/City_Mod.php';" value="离开"/>
+</div>
+
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	try
+	{
+		var pro = $(obj.id.replace("t","s")).innerHTML;
+		$('num').value= parseInt(pro);
+	}
+	catch(e)
+	{
+		$('num').value = "";
+	}
+}
+function prebuy(){
+	var nums = parseInt($('prenum').value);
+	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump = prestige*parseInt($('prenum').value);
+		if (sump==0) window.parent.Alert('数据错误！');
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 点威望！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('您的威望不够！');
+					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');window.location.reload();}//refresh bag.
+					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/PrestigeGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php', opt);
+}
+
+function sell(){
+	var nums = parseInt($('num').value);
+	if(bid == 0 ){window.parent.Alert('请先选择要卖出的物品。');return;}
+	else{
+	    if(!validInt(nums)) {window.parent.Alert('数量只能是数字！');return false;}
+		else if(nums<1 || nums>100){window.parent.Alert('卖出数量范围是1-100之间的整数！');return;}
+		
+		if (types==2 && nums!=1)
+		{
+			window.parent.Alert('不可叠加物品只能单一卖出');return;
+		}
+
+		var sump = price*parseInt(nums);
+		if(confirm('你确定卖出选中的物品吗? 总共将获得 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
+					else window.parent.Alert('卖出失败!');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/sellBag.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+	
+	
+}
+function showTip(id,bid,sign,type)
+{
+	var x=event.x;
+	var y=event.y;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+</script>

@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+<!--
+body {
+	margin-left: 3px;
+	margin-top: 3px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+-->
+</style>
+<script>
+var bball = [#bballid#];
+</script>
+</head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<body>
+<table width="778" height="311" border="0" cellpadding="0" cellspacing="0" bgcolor="F3EDC9">
+  <tr>
+    <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/sd/sd02.gif" width="140" height="149"></td>
+      </tr>
+      <tr>
+        <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif">
+			<div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#DFDABC;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#DFDABC;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#DFDABC;scrollbar-track-color:#DFDABC;scrollbar-arrow-color:#ffffff;">
+				#word#			</div>		</td>
+      </tr>
+    </table></td>
+    <td valign="top" >
+		<div id="tag1" style="position:absolute;left:250px;top:15px;z-index:3; color:#000000;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm03.gif" width="12" height="25" /></td>
+              <td align="center" valign="middle" background="../images/ui/shop/gm05.gif" onclick="copyWord('转生');">转生</td>
+              <td width="12"><img src="../images/ui/shop/gm04.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		
+		
+		
+		
+		<div id="tag2" style="position:absolute;left:141px;top:15px;z-index:1; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="left" valign="middle" background="../images/ui/shop/gm08.gif" onclick="copyWord('转生');window.parent.$('gw').src='./function/Sd_Mod.php'" style="cursor:pointer;">
+			  	进化			  </td>
+              <td width="12"><img src="../images/ui/shop/gm08.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		<div id="tag3" style="position:absolute;left:195px;top:15px;z-index:2; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="left" valign="middle" background="../images/ui/shop/gm08.gif"  style="color:#3F3706;cursor:pointer;" onclick="copyWord('转生');window.parent.$('gw').src='./function/Sd_ComposeMod.php'"><b><font color="#F1EABA">合成</font></b></td>
+              <td width="12"><img src="../images/ui/shop/gm06.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+	  </div>
+	  
+	  
+	  
+	  
+	  
+		
+		<div style="width:635px; height:288px; background-color:#DFD496; position:absolute; top: 38px; left: 143px;">
+		  <div style="width:323px; height:275px; position:absolute; left: 10px;padding-top:10px;padding-left:20px;">
+			  
+<!-- ui start -->
+<table width="85%" height="263" border="0" cellpadding="0" cellspacing="0" bgcolor="DFD495">
+  <tr>
+    <td width="134" height="230" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="134" height="107" background="../images/ui/compose/hc01.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td height="71" background="../images/ui/compose/hc03.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/compose/hc04.gif" width="134" height="35"></td>
+      </tr>
+      <tr>
+        <td align="center"><select name="zsapets" style="margin-top:3px;" onchange="zsmoneysum();">
+          <option value=''>请选择主宠物</option>
+          
+			#apetslist#
+		
+        </select></td>
+      </tr>
+    </table></td>
+    <td width="134" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="134" height="107" background="../images/ui/compose/hc02.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td height="71" background="../images/ui/compose/hc03.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/compose/hc05.gif" width="134" height="35"></td>
+      </tr>
+      <tr>
+        <td align="center"><select name="zsbpets" style="margin-top:3px;" onchange="zsmoneysum();">
+          <option value=''>请选择副宠物</option>
+          
+			#bpetslist#
+		
+        </select></td>
+      </tr>
+    </table></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="middle" style="padding-left:5px;">选择涅磐兽：
+      <select name="select" id="zs">
+	   <option value=''>请选择涅磐兽</option>
+	  #zsoptions#
+      </select>
+      </td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+</table>
+<!-- ui end -->
+
+			  <div style="position:absolute;left:49px;top:29px;width:65px;height:100px;" id="zsp1"> 
+			  #zsone#</div>
+			  
+			  <div style="position:absolute;left:182px;top:29px;width:65px;height:100px;" id="zsp2"> 
+			  #zstwo#</div>
+	      </div>
+			<div style="width:270px; height:285px; position:absolute; left: 359px;color:#5B5017;">
+			<div id="a" style="width:270px; height:52px; position:absolute; left: 1px; color:#5B5017; top: 208px;margin-top:15px;padding-top:10px;">
+			  <input name="button" type="button" id="snb" 
+				style="cursor:pointer;width:102px;height:47px;background-image:url(../images/ui/compose/hc06.gif);font-weight:bold;" onclick="zsPcompose();" 
+				value="神宠涅磐" />
+			  <span style="padding-left:5px;"><strong>每次涅磐消耗金币</strong></span><strong>：50W</strong></div>
+			<div id="b" style="width:270px; height:187px; position:absolute; left: 2px; color:#5B5017; top: 7px;margin-top:5px;padding-top:5px;
+			line-height:1.7"><b>涅磐限制：</b>主副宠,涅磐兽均需为神宠，60级以上<br />
+			  <b>涅磐失败惩罚：</b>涅磐兽消失<b><br />说明：</b><br />
+			  1）添加的道具可以通过神秘商店、副本等获得<br />
+			  2）合成时请先取下宠物装备，否则宠物消失时装备也会一起消失。<br />
+			  3）合成冷却为60秒，需等待冷却后才能继续合成。<br />
+			添加材料一： 
+			<select name="zswp1" id="zswp1" onchange="zsmoneysum();">
+				<option value=''>选择材料一</option>
+				#zswupinone#
+			</select>
+			<br /><br />
+			添加材料二：
+			<select name="wp2" onchange="zsmoneysum();" disabled="disabled">
+				<option value=''>暂未开放</option>
+			</select>
+			</div>
+		</div>
+		</div>	</td>
+  </tr>
+</table>
+
+
+
+<div style="position:absolute; left: 6px; top: 308px; width: 44px;"></div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+// Display id.
+function Display(id)
+{
+	//window.status=id;
+}
+
+// Jinhua function.
+function zsPcompose(n,id)
+{
+	if (!confirm("注意：宠物消失包括宠物身上的装备，您真的确定要进行合成吗？！\n"))
+	{
+		return false;
+	}
+	var ap = $('zsapets').options[$('zsapets').selectedIndex].value;
+	var bp = $('zs').options[$('zs').selectedIndex].value;
+	var zs = $('zs').options[$('zs').selectedIndex].value;
+	var p1 = $('zswp1').options[$('zswp1').selectedIndex].value;
+
+    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	$('snb').disabled=true;
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+					var v = t.responseText;alert(v);
+					switch(v)
+					{
+						case 0: window.parent.Alert('转生失败！！');break;
+						case 1: window.parent.Alert('您没有相应的宠物！');break;
+						case 2: window.parent.Alert('这两个宠物好像不能转生噢!');break;
+						case 3: window.parent.Alert('您的金币不足，不能转生!');break;
+						case 7: window.parent.Alert('请选择涅磐兽!');break;
+						case 6: playF(0);break;
+						case 5: playF(1);break;
+						case 10:window.parent.Alert('数据读取失败!');break;
+						case 11:window.parent.Alert('冷却时间未到！');break;
+						default:window.parent.Alert('转生失败！！!');					
+					}
+					$('snb').disabled=false;
+					//window.location.reload();
+					//window.status=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	alert('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs);return;
+	var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs, opt);
+}
+
+function zsmoneysum()
+{
+	var ap = $('zsapets').options[$('zsapets').selectedIndex].text.split('-')[1];
+	var bp = $('zs').options[$('zs').selectedIndex].text.split('-')[1];
+    var apid = $('zsapets').options[$('zsapets').selectedIndex].value;
+	var bpid = $('zs').options[$('zs').selectedIndex].value;
+
+    if(typeof apid != 'undefined' || apid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == apid)
+			{
+				$('cp1').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp1').style.display='';
+			}
+		}
+	}
+	if(typeof bpid != 'undefined' || bpid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == bpid)
+			{
+				$('cp2').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp2').style.display='';
+			}
+		}
+	}
+    
+	var p1 = $('zswp1').options[$('zswp1').selectedIndex].text.split('-')[1];
+	var p2 = $('wp2').options[$('wp2').selectedIndex].text.split('-')[1];
+	if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	var money=parseInt(parseInt(ap)+parseInt(bp))*1000+parseInt(p1)+parseInt(p2);
+}
+
+function playF(tf)
+{
+	var oPopup = window.createPopup();
+	var fname = '';
+	if (tf==1) fname='hcdh'; //ok
+	else fname='hcdh0';
+	with (oPopup.document.body) 
+	{
+		style.backgroundColor="#dfd495";
+		//style.border="solid black 1px";
+		innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" '
+				   +'codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,19,0" width="305" height="185"> '
+				   +'<param name="movie" value="../images/ui/compose/'+fname+'.swf" />'
+				   +'<param name="quality" value="high" />'
+				   +'<param name="wmode" value="transparent" />'
+				   +'<embed src=""+IMAGE_SRC_URL+"/ui/compose/'+fname+'.swf" quality="high" ' +'pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="305" height="185"></embed></object>';
+	}
+	oPopup.show(370, 270, 305, 185);
+	window.setTimeout(function(){oPopup.hide();window.location.reload();},5000);
+}
+</script>

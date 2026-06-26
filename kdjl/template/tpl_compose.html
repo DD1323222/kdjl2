@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<style type="text/css">
+body {
+	margin-left: 3px;
+	margin-top: 3px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+
+</style>
+<script>
+var bball = [#bballid#];
+</script>
+</head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<body>
+<table width="778" height="311" border="0" cellpadding="0" cellspacing="0" bgcolor="#F3EDC9">
+  <tr>
+    <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/sd/sd02.gif" width="140" height="149"></td>
+      </tr>
+      <tr>
+        <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif">
+			<div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+				#word#
+			</div>
+		</td>
+      </tr>
+    </table></td>
+    <td valign="top" >
+		<div id="tag1" style="position:absolute;left:250px;top:15px;z-index:2; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="right" valign="middle" background="../images/ui/shop/gm08.gif" onclick="copyWord('转生');window.parent.$('gw').src='./function/zs_Mod.php'" style="cursor:pointer;">转生</td>
+              <td width="12"><img src="../images/ui/shop/gm06.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		<div id="tag2" style="position:absolute;left:141px;top:15px;z-index:1; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="left" valign="middle" background="../images/ui/shop/gm08.gif" onclick="copyWord('进化');window.parent.$('gw').src='./function/Sd_Mod.php'" style="cursor:pointer;">
+			  	进化
+			  </td>
+              <td width="12"><img src="../images/ui/shop/gm08.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		<div id="tag3" style="position:absolute;left:195px;top:15px;z-index:3; color:#000000;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm03.gif" width="12" height="25" /></td>
+              <td align="center" valign="middle" background="../images/ui/shop/gm05.gif"  style="color:#3F3706;cursor:pointer;" onclick="copyWord('合成');"><b>合成</b></td>
+              <td width="12"><img src="../images/ui/shop/gm04.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+	  </div>
+		
+		<div style="width:635px; height:288px; background-color:#DFD496; position:absolute; top: 38px; left: 143px;">
+		  <div style="width:323px; height:275px; position:absolute; left: 10px;padding-top:10px;padding-left:20px;">
+			  
+<!-- ui start -->
+<table width="85%" height="263" border="0" cellpadding="0" cellspacing="0" bgcolor="DFD495">
+  <tr>
+    <td width="134" height="230" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="134" height="107" background="../images/ui/compose/hc01.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td height="71" background="../images/ui/compose/hc03.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/compose/hc04.gif" width="134" height="35"></td>
+      </tr>
+      <tr>
+        <td align="center">
+		<select name="comapets" id="comapets"  style="margin-top:3px;" onchange="moneysum();">
+			<option value=''>请选择主宠物</option>
+			#apetslist#
+		</select>
+		</td>
+      </tr>
+    </table></td>
+    <td width="134" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="134" height="107" background="../images/ui/compose/hc02.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td height="71" background="../images/ui/compose/hc03.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/compose/hc05.gif" width="134" height="35"></td>
+      </tr>
+      <tr>
+        <td align="center">
+			<select name="combpets" id="combpets"  style="margin-top:3px;" onchange="moneysum();">
+			<option value=''>请选择副宠物</option>
+			#bpetslist#
+		</select>
+		</td>
+      </tr>
+    </table></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="middle" style="padding-left:5px;">合成宠物需要金币：<span id="smoney"></span></td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+</table>
+<!-- ui end -->
+
+			  <div style="position:absolute;left:49px;top:29px;width:65px;height:100px;" id="comp1"> 
+			  #comone#</div>
+			  
+			  <div style="position:absolute;left:182px;top:29px;width:65px;height:100px;" id="comp2"> 
+			  #comtwo#</div>
+			  
+	      </div>
+			<div style="width:270px; height:285px; position:absolute; left: 359px;color:#5B5017;">
+			<div id="a" style="width:270px; height:52px; position:absolute; left: 1px; color:#5B5017; top: 208px;margin-top:15px;padding-top:10px;">
+				<span style="float:left"><input type="button" 
+				style="cursor:pointer;width:102px;height:47px;background-image:url(../images/ui/compose/hc06.gif);font-size:18px; color:#475827;font-weight:bold;" id="snb" onclick="Pcompose();" 
+				value="开始合成" ></span><span style="display:block;margin-left:110px;margin-top:15px;">合成幸运星:#xingyunxin#<br />
+				<input name="button" type="button" style="background-image:url(../images/ui/shop/gm15.gif);border:0px;width:94px;height:19px;color:#2F291D;cursor:pointer;"  onclick="javascript:$('help').style.display='';"/>
+</span></span>
+			</div>
+			<div id="b" style="width:270px; height:187px; position:absolute; left: 2px; color:#5B5017; top: 7px;margin-top:5px;padding-top:5px;
+			line-height:1.7; font-size:12px"><b>合成等级限制：</b>主副宠物均需要40级<br /><b>合成失败惩罚：</b>副宠消失<b><br />说明：</b><br />
+			  1）添加的道具可以通过神秘商店、副本等获得<br />
+			  2）合成时请先取下宠物装备，否则宠物消失时装备也会一起消失。<br />
+			  3）合成冷却为60秒，需等待冷却后才能继续合成。<br />
+			添加守护材料： 
+			<select name="wp1" id="wp1"  onchange="moneysum();">
+				<option value=''>选择材料一</option>
+				#wupinone#
+			</select>
+			<br /><br />
+			添加加成材料：
+			<select name="wp2" id="wp2"  onchange="moneysum();">
+				<option value=''>选择材料二</option>
+				#wupintwo#
+			</select>
+			</div>
+		</div>
+		
+		
+		</div>
+
+	</td>
+  </tr>
+</table>
+
+<div id="help" style="position:absolute; left:493px; top:30px; width:282px; height:150px; z-index:10;padding-top:3px;display:none">
+<table width="286" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="14"><img src="../images/help/bbz01.gif" width="14" height="29"></td>
+        <td background="../images/help/bbz02.gif"><b><font color="green" style="font-size:12px;">合成幸运星：</font></b></td>
+        <td width="31"><img src="../images/help/bbz03.gif" width="31" height="29"></td>
+      </tr>
+    </table></td>
+  </tr>
+  <tr>
+    <td height="100" valign="top" align="left" background="../images/help/bbz04.gif" style="font-size:12px;padding:10px;padding-top:0px;line-height:1.7;">
+	<span style="margin-left:230px;color:#1c4ec1"><a href="javascript:$('help').style.display='none';void(0);">关闭</a></span>
+	<span id='helptarget' style="color:#333333;"><br/>
+		1.每合成失败一次，合成幸运星+1。<br/>
+		2.合成幸运星越多，合成成功率就越高。<br/>
+		3.当幸运星达到10颗时，合成率为100%。<br/>
+		4.每合成成功一次，合成幸运星数量归0。<br/>
+		5.合成成功率比以往已经大幅度提升。<br/>
+	</span>
+	</td>
+  </tr>
+  <tr>
+    <td height="12"><img src="../images/help/bbz05.gif" width="286" height="12"></td>
+  </tr>
+</table>
+</div>
+
+
+
+
+<div style="position:absolute; left: 6px; top: 308px; width: 44px;"></div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+// Display id.
+function Display(id)
+{
+	//window.status=id;
+}
+
+// Jinhua function.
+function Pcompose(n,id)
+{
+	if (!confirm("注意：宠物消失包括宠物身上的装备，您真的确定要进行合成吗？！\n"))
+	{
+		return false;
+	}
+	var ap = $('comapets').options[$('comapets').selectedIndex].value;
+	var bp = $('combpets').options[$('combpets').selectedIndex].value;
+	var p1 = $('wp1').options[$('wp1').selectedIndex].value;
+	var p2 = $('wp2').options[$('wp2').selectedIndex].value;
+
+    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	$('snb').disabled=true;
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+				var v = parseInt(t.responseText);
+					switch(v)
+					{
+						case 0: window.parent.Alert('合成失败！！');break;
+						case 1: window.parent.Alert('您没有相应的宠物！');break;
+						case 2: window.parent.Alert('这两个宠物好像不能合成噢!');break;
+						case 3: window.parent.Alert('您的金币不足，不能合成!');break;
+						case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+						case 6: playF(0);break;
+						case 5: playF(1);break;
+						case 10:window.parent.Alert('数据读取失败!');break;
+						case 11:window.parent.Alert('冷却时间未到！');break;
+						case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+						default:window.parent.Alert('合成失败！！!');					
+					}
+					$('snb').disabled=false;
+					//window.location.reload();
+					//window.status=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	//alert('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2);return;
+	var ajax=new Ajax.Request('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2, opt);
+}
+
+function moneysum()
+{
+	var ap = $('comapets').options[$('comapets').selectedIndex].text.split('-')[1];
+	var bp = $('combpets').options[$('combpets').selectedIndex].text.split('-')[1];
+    var apid = $('comapets').options[$('comapets').selectedIndex].value;
+	var bpid = $('combpets').options[$('combpets').selectedIndex].value;
+
+    if(typeof apid != 'undefined' || apid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == apid)
+			{
+				$('cp1').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp1').style.display='';
+			}
+		}
+	}
+	if(typeof bpid != 'undefined' || bpid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == bpid)
+			{
+				$('cp2').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp2').style.display='';
+			}
+		}
+	}
+    
+	var p1 = $('wp1').options[$('wp1').selectedIndex].text.split('-')[1];
+	var p2 = $('wp2').options[$('wp2').selectedIndex].text.split('-')[1];
+	if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	var money=parseInt(parseInt(ap)+parseInt(bp))*1000+parseInt(p1)+parseInt(p2);
+	$('smoney').innerHTML= 50000+'金币！';
+}
+
+function playF(tf)
+{
+	var oPopup = window.createPopup();
+	var fname = '';
+	if (tf==1) fname='hcdh'; //ok
+	else fname='hcdh0';
+	with (oPopup.document.body) 
+	{
+		style.backgroundColor="#dfd495";
+		//style.border="solid black 1px";
+		innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" '
+				   +'codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,19,0" width="305" height="185"> '
+				   +'<param name="movie" value="../images/ui/compose/'+fname+'.swf" />'
+				   +'<param name="quality" value="high" />'
+				   +'<param name="wmode" value="transparent" />'
+				   +'<embed src=""+IMAGE_SRC_URL+"/ui/compose/'+fname+'.swf" quality="high" ' +'pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="305" height="185"></embed></object>';
+	}
+	oPopup.show(370, 270, 305, 185);
+	window.setTimeout(function(){oPopup.hide();window.location.reload();},5000);
+}
+</script>

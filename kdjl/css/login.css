@@ -1,0 +1,12 @@
+#login_1{ margin:0px auto; width:505px; height:auto; background-color:#4393c6; overflow:hidden; margin-top:90px;}
+#login_1_2{ margin:0px auto; width:483px; height:auto; margin-top:6px; background-color:#FFFFFF; text-align:center;}
+#login_2{ margin:0px auto; width:505px; height:auto; margin-bottom:90px;}
+.login_lv14{ font-size:14px; color:#0f6297;}
+.logbox {border-right: #d7e9fc 1px solid; padding-right: 15px; border-top: #d7e9fc 1px solid; padding-left: 15px; background: #f0f7fe; padding-bottom: 15px; border-left: #d7e9fc 1px solid; width: 936px; padding-top: 15px; border-bottom: #d7e9fc 1px solid; margin:0 auto; height:313px; color:#404040; font-size:12px;}
+.logbox_1 {padding-right: 153px; padding-left: 123px; background: #fff; padding-bottom: 60px; width: 305px; padding-top: 43px; height: 208px; text-align: left;}
+.logbox_1 .logtitle {background: url(/images/trade/bnt_log1.gif) no-repeat 0px 0px; height: 43px;}
+.log_submit {background: url(/images/trade/bnt_log.gif) no-repeat;  width: 114px; border-top-style: none; border-right-style: none; border-left-style: none; height: 41px; border-bottom-style: none;}
+.logtxt {padding-right: 0px; padding-left: 90px; background: url(/images/trade/bnt_bg1.gif) no-repeat 0px 50%; float: right; padding-bottom: 0px; width: 265px; line-height: 23px; padding-top: 48px; height: 267px; text-align: left;}
+.logtxt img {margin-top: 12px;}
+.inputbg {border-right: #b3b3b3 1px solid; border-top: #b3b3b3 1px solid; border-left: #b3b3b3 1px solid; border-bottom: #b3b3b3 1px solid; height: 18px;}
+.f_l {float: left;}

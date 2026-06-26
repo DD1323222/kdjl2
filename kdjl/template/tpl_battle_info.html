@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+body {
+	margin-left: 3px;
+	margin-top: 3px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+.a1 {
+	background-image: url(../images/ui/aoyun/ay02.jpg);
+	background-repeat: no-repeat;
+	background-position: center;
+	line-height:1.7;padding:5px;font-size:12px;
+}
+</style></head>
+
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<body topmargin="">
+
+
+<table width="788px" height="312" border="0" cellpadding="0" cellspacing="0" >
+  <tr>
+    <td width="202" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/battle/sszc13.jpg" width="202" height="56"></td>
+      </tr>
+      <tr>
+        <td height="180" background="../images/ui/battle/sszc14.jpg" valign="top" align="right">
+			<div id="zrtop" style="font-size:12px;color:#00212D;text-align:left;width:65%;padding:5px;margin-right:5px; line-height:1.4">
+				<table border="0" width="100%" cellpadding="0" cellspacing="0">
+					#zrlist#
+					
+				</table>
+			</div>
+		</td>
+      </tr>
+      <tr>
+        <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="26" valign="top"><img src="../images/ui/battle/sszc16.jpg" width="26" height="34"></td>
+            <td background="../images/ui/battle/sszc17.jpg">
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td height="13"></td>
+              </tr>
+              <tr>
+                <td height="13" align="left"><img src="../images/ui/battle/sszc18.jpg" width="2" height="13"  id="zrhp" style="width:#initwa#px"></td>
+              </tr>
+              <tr>
+                <td height="8"></td>
+              </tr>
+            </table></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/battle/sszc15.jpg" width="202" height="39"></td>
+      </tr>
+    </table></td>
+    <td valign="top" bgcolor="CCF5F2"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/battle/sszc24.jpg" width="372" height="30"></td>
+      </tr>
+      <tr>
+        <td height="26" align="center" valign="middle" background="../images/ui/battle/sszc25.jpg" id="userjg" style="color:#D5431C;font-weight:bold;">
+			您当前的军功：#userjgvalue#
+		</td>
+      </tr>
+      <tr>
+        <td bgcolor="CCF5F2"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="125"><img src="../images/ui/battle/sszc26.jpg" width="125" height="27" border="0" onclick="usedPropsBattle(1)" style="cursor:pointer;"></td>
+            <td width="141"><img src="../images/ui/battle/sszc27.jpg" width="141" height="27" border="0" onclick="usedPropsBattle(2)" style="cursor:pointer;"></td>
+            <td bgcolor="#CBF5F3"><img src="../images/ui/battle/sszc28.jpg" width="97" height="27" border="0" onclick="usedPropsBattle(3)" style="cursor:pointer;"></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td height="157" align="left" valign="top" bgcolor="#CBF5F3" style="line-height:1.5;font-size:12px;color:#15656A;padding:5px;">
+		<font color=red><b>诅咒对方女神：</b></font>消耗1个诅咒宝石，减少对方女神100点生命，增加自身军功50点；冷却60秒，且对方女神HP低于1000时无法使用。
+		<font color=red><b><br />恢复我方女神生命：</b></font>消耗1个天地树果实，恢复我方女神生命1000点，增加自身军功500点；冷却600秒。<br/>
+		<font color=red><b>女神赐福：</b></font>消耗1个女神圣水，本场活动内斩杀敌将获的军功翻倍，活动结束后失效；每次活动只能使用一次。<br/>
+		<b>战场选择：(只能选择与自己符合的成长战场进入)</b><br/>
+		#battlelist#
+		</td>
+      </tr>
+      <tr>
+        <td height="51" bgcolor="#CCF5F1"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="125" height="51" valign="bottom"><img src="../images/ui/battle/sszc29.jpg" width="125" height="51" /></td>
+            <td width="141"><img src="../images/ui/battle/sszc30.jpg" width="141" height="51" onclick="BattleGo();" style='cursor:pointer;' /></td>
+            <td valign="bottom" bgcolor="#CBF5F3"><img src="../images/ui/battle/sszc31.jpg" width="97" height="51"></td>
+          </tr>
+        </table></td>
+      </tr>
+    </table></td>
+    <td width="214" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/battle/sszc19.jpg" width="214" height="56"></td>
+      </tr>
+      <tr>
+        <td height="180" background="../images/ui/battle/sszc20.jpg" valign="top" align="left">
+
+			<div id="zrtop" style="font-size:12px;color:#00212D;text-align:left;width:65%;padding:5px;margin-right:5px; line-height:1.4;padding-left:17px;">
+				<table border="0" width="98%" cellpadding="0" cellspacing="0">
+					#aylist#
+			  </table>
+			</div>
+		</td>
+      </tr>
+      <tr>
+        <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td background="../images/ui/battle/sszc23.jpg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td height="13"></td>
+              </tr>
+              <tr>
+                <td height="13" align="right"><img src="../images/ui/battle/sszc18.jpg" width="2" height="13"  id="ayhp" style="width:#initwb#px"></td>
+              </tr>
+              <tr>
+                <td height="8"></td>
+              </tr>
+            </table></td>
+            <td width="27" valign="top"><img src="../images/ui/battle/sszc22.jpg" width="27" height="34"></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/battle/sszc21.jpg" width="214" height="39"></td>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+
+<!-- 日然女神 HP-->
+<div id="zrhpview" style="font-size:14px; color:#C5DB6E; width:100px; height:20px; font-weight:bold; position:absolute; top: 286px; left: 50px;">#zrhp#</div>
+
+<!-- 暗夜女神 HP-->
+<div id="ayhpview" style="font-size:14px; color:#C5DB6E; width:100px; height:20px; font-weight:bold; position:absolute; top: 289px; left: 578px;">#ayhp#</div>
+</body>
+</html>
+<script language="javascript">
+var bcode = 0;
+function BattleStart(obj)
+{
+	bcode = obj.value;
+}
+
+function BattleGo()
+{
+	if (bcode=='')
+	{	window.parent.Alert('请选择一个适合您等级的战场!');
+		return false;
+	}
+	window.parent.$('gw').src='../function/BattleFight_Mod.php?bcode='+bcode;
+}
+function usedPropsBattle(n)
+{
+	var opt = {
+		method: 'get',
+		 onSuccess: function(t) {
+			var ret = t.responseText;
+			if (ret !='')
+			{
+				window.parent.Alert(ret);
+				if (ret.indexOf('成功')!=-1)
+				window.location.reload();
+			}
+		},
+		on404: function(t) {
+		},
+		onFailure: function(t) {
+		},
+		asynchronous:true 
+	}
+	var ajax=new Ajax.Request('../function/ext_Battle.php?t='+n, opt);
+}
+</script>

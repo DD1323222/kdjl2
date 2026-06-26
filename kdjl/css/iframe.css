@@ -1,0 +1,5 @@
+iframe 
+{
+	wg:expression(this.src='about:blank',this.outerHTML='');
+}
+.wgframe{wg:expression() !important}

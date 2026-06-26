@@ -1,0 +1,504 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>公告牌</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em,img {padding:0; margin:0; outline:none} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/ggp_01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+.table_info{ position:absolute; left:0px; width:280px; top:24px; height:208px; overflow:auto;}
+.gg{ position:relative; top:10px; left:10px; width:100px;}
+.cmd_content{ position:relative; top:10px; left:10px;}
+.bming{ position:relative; top:0px; width:280px; text-align:center; height:230px;}
+#userdeal img{ cursor:pointer}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:89px;display:block;}
+#con_tab_6 li{float:left;height:26px; margin-right:21px;}
+#con_tab_6 li a{width:80px;display:block;}
+
+#con_tab_6 li{float:left;height:26px; margin-right:21px;}
+#con_tab_6 li a{width:80px;display:block;}
+
+#con_tab6_1 li,#con_tab6_2 li,#con_tab6_3 li  {float:left;height:25px; margin:0px;}
+
+.head1_01{background:url(../new_images/ui/table_head1.jpg) no-repeat;height:25px;}
+.head1_02{background:url(../new_images/ui/table_head1.jpg) no-repeat -46px 0;height:25px;}
+.head1_03{background:url(../new_images/ui/table_head1.jpg) no-repeat -183px 0;height:25px;}
+
+#con_tab6_1 li.on .head1_01,#con_tab6_2 li.on .head1_01,#con_tab6_3 li.on .head1_01{background:url(../new_images/ui/table_head1.jpg) no-repeat 0 -25px;height:25px;}
+#con_tab6_1 li.on .head1_02,#con_tab6_2 li.on .head1_02,#con_tab6_3 li.on .head1_02{background:url(../new_images/ui/table_head1.jpg) no-repeat -46px -25px;height:25px;}
+#con_tab6_1 li.on .head1_03,#con_tab6_2 li.on .head1_03,#con_tab6_3 li.on .head1_03{background:url(../new_images/ui/table_head1.jpg) no-repeat -183px -25px;height:25px;}
+
+.head_01{background:url(../new_images/ui/table_head.jpg) no-repeat;height:25px;}
+.head_02{background:url(../new_images/ui/table_head.jpg) no-repeat -46px 0;height:25px;}
+.head_03{background:url(../new_images/ui/table_head.jpg) no-repeat -146px 0;height:25px;}
+.head_04{background:url(../new_images/ui/table_head.jpg) no-repeat -183px 0;height:25px;}
+.head_05{background:url(../new_images/ui/table_head.jpg) no-repeat -229px 0;height:25px;}
+
+#con_tab6_1 li.on .head_01,#con_tab6_2 li.on .head_01,#con_tab6_3 li.on .head_01{background:url(../new_images/ui/table_head.jpg) no-repeat 0 -25px;height:25px;}
+#con_tab6_1 li.on .head_02,#con_tab6_2 li.on .head_02,#con_tab6_3 li.on .head_02{background:url(../new_images/ui/table_head.jpg) no-repeat -46px -25px;height:25px;}
+#con_tab6_1 li.on .head_03,#con_tab6_2 li.on .head_03,#con_tab6_3 li.on .head_03{background:url(../new_images/ui/table_head.jpg) no-repeat -146px -25px;height:25px;}
+#con_tab6_1 li.on .head_04,#con_tab6_2 li.on .head_04,#con_tab6_3 li.on .head_04{background:url(../new_images/ui/table_head.jpg) no-repeat -183px -25px;height:25px;}
+#con_tab6_1 li.on .head_05,#con_tab6_2 li.on .head_05,#con_tab6_3 li.on .head_05{background:url(../new_images/ui/table_head.jpg) no-repeat -229px -25px;height:25px;}
+
+.a6_01{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat 0 -26px;height:26px;}
+#con_tab_6 li.on .a6_01{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat;height:26px;}
+.a6_02{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat -80px -26px;height:26px;}
+#con_tab_6 li.on .a6_02{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat -80px 0;height:26px;}
+.a6_03{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat -160px -26px;height:26px;}
+#con_tab_6 li.on .a6_03{background:url(../new_images/ui/ggp_04_01.jpg) no-repeat -160px 0;height:26px;}
+
+.a01{background:url(../new_images/ui/ggp_04.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/ggp_04.jpg) no-repeat 0 -29px;height:29px;}
+
+.a02{background:url(../new_images/ui/ggp_04.jpg) no-repeat -89px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/ggp_04.jpg) no-repeat -89px -29px;height:29px;}
+
+.a03{background:url(../new_images/ui/ggp_04.jpg) no-repeat -178px 0;height:29px;}
+.task_nav li.on .a03{background:url(../new_images/ui/ggp_04.jpg) no-repeat -178px -29px;height:29px;}
+
+.a04{background:url(../new_images/ui/ggp_04.jpg) no-repeat -267px 0;height:29px;}
+.task_nav li.on .a04{background:url(../new_images/ui/ggp_04.jpg) no-repeat -267px -29px;height:29px;}
+
+.a05{background:url(../new_images/ui/ggp_04.jpg) no-repeat -356px 0;height:29px;}
+.task_nav li.on .a05{background:url(../new_images/ui/ggp_04.jpg) no-repeat -356px -29px;height:29px;}
+
+.a06{background:url(../new_images/ui/ggp_04.jpg) no-repeat -445px 0;height:29px;}
+.task_nav li.on .a06{background:url(../new_images/ui/ggp_04.jpg) no-repeat -445px -29px;height:29px;}
+
+.box01{width:292px; float:left; padding-left:14px;}
+.box02{width:292px; float:left; height:28px;}
+.box03{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+.box04{width:292px; float:left; height:20px; color:#B06A01; padding-top:4px;}
+.bb01{ height:24px; float:left; padding-top:3px;}
+.bb02{ height:20px; float:left; padding-top:8px;}
+
+.dt_list{overflow-x:hidden;overflow-y:auto;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+
+.dt_task{width:640px;height:265px; float:left;}
+
+.dt_list2{height:235px;width:290px; margin:28px 0 0 0; border:#D9BD7A 1px solid;}
+.dt_list2 p{line-height:20px;color:#BF7D1A;font-size:12px;}
+.dt_list2 p b{font-weight:normal;color:#060}
+.part_con {text-indent:2em;color:#bf7d1a;font-size:12px;line-height:20px}
+.plus{clear:both;height:24px;line-height:24px;text-align:right}
+.plus a{color:#f00}
+.con{display:none;}
+.intxt{border:#b4a449 1px solid;padding:2px;margin:0 10px 0 200px;}
+.stu{background:url(../new_images/ui/i_bnt.gif) no-repeat 0 -34px;width:39px;height:17px;cursor:pointer;border:0 none;margin:1px 0}
+.tit01{ border-collapse:collapse;width:100%; font-size:12px}
+.tit01 td{ text-align:center;padding:1px;line-height:20px;color:#bf7d1a}
+#textarea{background:#fffceb;width:615px;height:235px;border:#c6b764 1px  solid;color:#bf7d1a;font-size:12px;margin:10px 0 0 10px;padding:5px;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;}
+
+.menu{ position:absolute; top:40px; left:138px; width:280px; height:230px; border:1px #996600 solid; background:#f9f0d6; z-index:1}
+#cmd{ position:absolute; width:257px; height:162px; background:url(../new_images/ui/ggp_04_gg.jpg); top:58px; left:450px;}
+#help{ position:absolute; width:45px; height:18px; top:35px; left:700px;}
+#userdeal{ position:absolute; width:280px; height:auto; top:240px; left:440px;}
+#bg{ position:absolute;  height:220px; width:65px; left:700px; top:80px;}
+#bg img{ padding:0px; border:0px; margin:0px;display:block}
+.sq{ position:absolute; width:auto; top:271px; z-index:2}
+.gangyin{ position:absolute; top:50px; left:390px; width:70px; height:70px; z-index:2}
+.useyao{ display:block; float:left; margin-left:10px; position:relative; top:10px; bottom:10px;}
+#zt{ cursor:pointer; color:blue; display:block; position:relative;bottom:10px; top:10px;display:block;float:left;}
+#sx{ cursor:pointer; color:blue; display:block; position:relative;bottom:10px; top:10px;display:block;float:left; left:10px;}
+#helpbox
+{
+	width:620px;
+	height:120px;
+	z-index:5;
+	top:100px;
+	position:absolute;
+	background:url(../new_images/ui/tsbg.gif)
+	
+}
+</style>
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+	function setTab6(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+	function setTabH(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  menu.className=i==cursel?"on":"";
+	}
+	}
+</script>
+</head>
+
+<body>
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php'">
+	  <label></label>
+  </div>
+<div class="task">
+  <div class="task_left"></div>
+	
+	<div class="task_right">
+		<ul class="task_nav">
+    <li id="tab1" onclick="setTab('tab',1,5);" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+    <li id="tab2" onclick="setTab('tab',2,5);void(0)"><a class="a02" href="javascript:void(0)"></a></li>
+    <li id="tab3" onclick="setTab('tab',3,5);void(0)"><a class="a03" href="javascript:void(0)"></a></li>
+    <li id="tab4" onclick="setTab('tab',4,5);void(0)" ><a class="a04" href="javascript:void(0)"></a></li>
+	<li id="tab5" onclick="setTab('tab',5,5);void(0)" ><a class="a05" href="javascript:void(0)"></a></li>
+    </ul>
+
+    <div class="dt_task con" id="con_tab_1">
+      <div class="box01">        
+ 	       <div class="box02">
+					<div class="bb01"><img src="../new_images/ui/ggp_02.jpg" width="82" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+  <tr>
+    <td style="width:40px; text-align:left">排名</td>
+    <td style="width:80px;text-align:left">宝贝名</td>
+    <td style="width:80px;text-align:left">等级</td>
+    <td style="text-align:left">主人</td>
+  </tr>
+</table>
+				  <div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #publiclist#
+			      </table>
+				</div>  
+		  </div>
+	  </div>
+      <div class="box01">
+            <div class="dt_list2" id="dt_list2" onclick="display(this)">      
+            </div>
+      </div>
+    </div>
+	
+	
+	
+	
+	
+	
+	<div class="dt_task" id="con_tab_4">
+      <div class="box01">        
+ 	       <div class="box02">
+					<div class="bb01"><img src="../new_images/ui/ggp_02.jpg" width="82" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+  <tr>
+    <td style="width:40px; text-align:left">排名</td>
+    <td style="text-align:left">玩家名字</td>
+  </tr>
+</table>
+				  <div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #ybtop#
+			      </table>
+				</div>  
+		  </div>
+	  </div>
+      <div class="box01">
+	  <div class="box02">
+					<br />获奖名单
+		  </div>
+           <div class="box03">
+				  <table class="tit01">
+  <tr>
+    <td style="width:40px; text-align:left">排名</td>
+    <td style="text-align:left">玩家名字</td>
+  </tr>
+</table>
+				  <div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #ybprize#
+			      </table>
+				</div>  
+		  </div>
+      </div>
+    </div>
+	<div class="dt_task con" id="con_tab_2">
+        
+        <div class="box01">        
+ 	       <div class="box02">
+					<div class="bb02">注：成长排行(神圣)只显示神圣宠物的成长率和主人。</div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+  <tr>
+    <td style="width:40px; text-align:left">排名</td>
+    <td style="width:80px; text-align:left">宝贝名</td>
+	<td style="width:80px;text-align:left">成长</td>
+    <td style="text-align:left">主人</td>
+    </tr>
+</table>
+				  <div class="dt_list clearfix">
+				  <table class="tit01" id="ss_czl">
+ #sspubliclist#
+</table>
+				</div>  
+		  </div>
+	  </div>
+      <div class="box01">
+           <div class="dt_list2" id="ssp_czl" onclick="display(this)"></div>
+      </div>
+      </div>
+    <div class="dt_task con" id="con_tab_3">
+    <div class="box01">        
+ 	       <div class="box02">
+					<div class="bb02">注：成长排行榜只显示非神圣宠物的成长率和主人。</div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+  <tr>
+    <td style="width:40px;text-align:left">排名</td>
+    <td style="width:80px;text-align:left">宝贝名</td>
+    <td style="width:80px;text-align:left">成长</td>
+    <td style="text-align:left">主人</td>
+  </tr>
+</table>
+				  <div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist_czl">
+				    #czlpubliclist#
+			      </table>
+				</div>  
+		  </div>
+	  </div>
+      <div class="box01">
+            <div class="dt_list2" id="dt_list_czp" onclick="display(this)"></div>
+      </div>
+      </div>
+		
+    <div class="dt_task con" id="con_tab_5">
+    	<div id="textarea">
+		#message#
+    	</div> 
+    </div>
+	<div class="dt_task con" id="con_tab_6">
+		<div id="helpbox" style="display:none">
+			<div style="float:right; cursor:pointer" onclick="this.parentNode.style.display = 'none'"><img src="../images/img/sl14.gif" /></div>
+			
+		</div>
+		<div class="gangyin">
+			#gangyin#
+		</div>
+		<div class="sq">
+		<ul>
+			<li id="tab61" onclick="setTab6('tab6',1,3);" class="on"><a class="a6_01" href="javascript:void(0)"></a></li>
+   			<li id="tab62" onclick="setTab6('tab6',2,3);void(0)"><a class="a6_02" href="javascript:void(0)"></a></li>
+    		<li id="tab63" onclick="setTab6('tab6',3,3);void(0)"><a class="a6_03" href="javascript:void(0)"></a></li>
+		</ul>
+		</div>
+		<div id="bg">
+			<img src="../new_images/ui/drgon1.jpg" />
+			<img src="../new_images/ui/drgon2.jpg" />
+		</div>
+		<div id="con_tab6_1" class="menu">
+		#group1#
+		</div>
+		<div id="con_tab6_2" class="menu con">
+		#group2#
+		</div>
+		<div id="con_tab6_3" class="menu con">
+		#group3#
+		</div>
+		<div id="cmd">
+		#cmd#	
+		</div>
+		<div id="userdeal">
+			<img style="float:left" src="../new_images/ui/bm.jpg" onclick="user(1)" />
+			<img style="float:right" src="../new_images/ui/lj.jpg" onclick="user(2)" />
+		</div>
+	</div>
+	
+	</div>
+</div>
+</body>
+</html>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript">
+var type = "#type#";
+if(type == 'active'){
+	setTab('tab',5,6);
+}else
+setTab('tab',1,6);
+function seethepet(para)
+{
+	var bbidinfo = para.parentNode.id;
+	if( bbidinfo.indexOf("czl") > -1 )
+	{
+		document.getElementById('dt_list_czp').style.display = "block";
+		var dom_tr = document.getElementById('shoplist_czl').getElementsByTagName('td');
+	}
+	else if( bbidinfo.indexOf("pai") > -1 )
+	{
+		document.getElementById('dt_list2').style.display = "block";
+		var dom_tr = document.getElementById('shoplist').getElementsByTagName('td');
+	}
+	else
+	{
+		document.getElementById('ssp_czl').style.display = "block";
+		var dom_tr = document.getElementById('ss_czl').getElementsByTagName('td');
+	}
+	for(var i=0;i<para.parentNode.parentNode.getElementsByTagName('td').length;i++)
+	{
+		if(dom_tr[i].style.background != '')
+		{
+			for(var j=0;j<dom_tr[i].parentNode.getElementsByTagName('td').length;j++)
+			{
+				dom_tr[i].parentNode.getElementsByTagName('td')[j].style.background = '';
+			}
+		}
+	}
+	bbid = bbidinfo.slice(3);
+	var dom_arr = para.parentNode.getElementsByTagName('td');
+	for(var i=0;i<dom_arr.length;i++)
+	{
+		dom_arr[i].style.background = "#0099FF";
+	}
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t){
+						var n=t.responseText;
+						if( bbidinfo.indexOf("czl") > -1 )
+						{
+							document.getElementById('dt_list_czp').innerHTML = n;
+						}
+						else if( bbidinfo.indexOf("pai") > -1 )
+						{
+							document.getElementById('dt_list2').innerHTML = n;
+						}
+						else
+						{
+							document.getElementById('ssp_czl').innerHTML = n;
+						}
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('../function/bbshow.php?bbid='+bbid,opt);
+}
+function display(para)
+{
+	para.style.display = "none";
+}
+function user(para)
+{
+	url = para==1?'../function/kffight_bm.php':'../function/kffight_get.php';
+	opt = {
+	method: 'get',
+	onSuccess: function(t)
+	{
+		var n=t.responseText;
+		parent.Alert(n);
+	},
+	on404: function(t)
+	{},
+	onFailure: function(t)
+	{},
+	asynchronous:true        
+	}
+	ajax=new Ajax.Request(url,opt);
+}
+function sx()
+{
+	if(confirm('刷新需要消耗一瓶幸运油,是否继续?'))
+	{
+		opt = {
+		method: 'get',
+		onSuccess: function(t)
+		{
+			var n=t.responseText;
+			switch(n)
+			{
+				case '1' :
+				{
+					document.getElementById('zt').title = '得分倍数:1.1';
+					document.getElementById('zt').innerHTML = '[亢奋]';
+					document.getElementById('sx').innerHTML = '';
+					parent.Alert("幸运油使用成功");
+					break;
+				}
+				case '2' :
+				{
+					document.getElementById('zt').title = '得分倍数:1.0';
+					document.getElementById('zt').innerHTML = '[正常]';
+					parent.Alert("幸运油使用成功");
+					break;
+				}
+				case '3':
+				{
+					document.getElementById('zt').title = '得分倍数:0.9';
+					document.getElementById('zt').innerHTML = '[虚弱]';
+					parent.Alert("幸运油使用成功");
+					break;
+				}
+				case '4':
+				{
+					document.getElementById('zt').title = '得分倍数:0.95';
+					document.getElementById('zt').innerHTML = '[中毒]';
+					parent.Alert("幸运油使用成功");
+					break;
+				}
+				case '5':
+				{
+					document.getElementById('zt').title = '得分倍数:1.05';
+					document.getElementById('zt').innerHTML = '[神佑]';
+					parent.Alert("幸运油使用成功");
+					break;
+				}
+				default :
+				{
+					parent.Alert(n);
+				}
+			}
+		},
+		on404: function(t)
+		{},
+		onFailure: function(t)
+		{},
+		asynchronous:true        
+		}
+		ajax=new Ajax.Request("../function/kffight_sx.php",opt);
+	}	
+}
+</script>
+

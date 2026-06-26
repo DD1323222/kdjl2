@@ -1,0 +1,837 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>交易所</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/pms01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: ".";  display: block;  height: 0;  clear: both;  visibility: hidden;}
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:90px;display:block;}
+
+.a02{background:url(../new_images/ui/pms02.png) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/pms02.png) no-repeat -90px -29px;height:29px;}
+
+.a01{background:url(../new_images/ui/jbjy_tab.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/jbjy_tab.jpg) no-repeat 0 -29px;height:29px;}
+
+.a03{background:url(../new_images/ui/pms02.png) no-repeat -179px 0;height:29px;}
+.task_nav li.on .a03{background:url(../new_images/ui/pms02.png) no-repeat -179px -29px;height:29px;}
+
+.a04{background:url(../new_images/ui/pms02.png) no-repeat;height:29px;}
+.task_nav li.on .a04{background:url(../new_images/ui/pms02.png) no-repeat 0 -29px;height:29px;}
+
+.task_dh02{width:300px; height:20px; float:left;}
+.cion{height:18px; float:left; padding:3px 0 0 10px; }
+.cion01{height:16px; float:left; padding:5px 0 0 5px; color:#333;}
+.box{width:650px; height:290px; float:left;}
+.box01{width:292px; float:left; padding-left:14px;}
+.box02{width:292px; float:left; height:28px;}
+.box03{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+.box04{width:292px; float:left; height:20px; color:#B06A01; padding-top:4px;}
+.bb01{ height:24px; float:left; padding-top:2px;}
+.bb02{ height:24px; float:right;padding-top:4px;}
+.bb03{ height:20px; float:none;padding-top:8px;}
+.txt01{color:#FF0000; font-weight:bold; font-size:12px;}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.tit01 {border-collapse:collapse;width:100%;font-size:12px; color:#BF7D1A;}
+.con{display:none;}
+#apDiv1 {
+	position:absolute;
+	width:305px;
+	height:20px;
+	z-index:2;
+	left: 490px;
+	top: 8px;
+}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+</style>
+
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  if(i==cursel){
+		menu.className= "on";
+	  }else{
+		menu.className= "";
+	  }
+	  
+	  //menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	
+	}
+</script>
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/JavaScript">
+
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+function hiddenContent() {
+    $('props_types').style.display = 'none';
+}
+
+function showContent() {
+    $('props_types').style.display = '';
+}
+var bid=0;// bag物品ID。
+var selid=0;
+var types=-1;
+</script>
+<body >
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php'">
+        <label></label>
+      </div>
+<div class="task">
+	<div class="task_left"></div>
+          
+    <div class="task_right">
+    
+   	  <ul class="task_nav">
+	  <li id="tab1" onclick="setTab('tab',1,4);" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+	  <li id="tab2" onclick="setTab('tab',2,4);"><a class="a02" href="javascript:void(0)"></a></li>
+	  <li id="tab3" onclick="setTab('tab',3,4);"><a class="a03" href="javascript:void(0)"></a></li>
+	  <li id="tab4" onclick="setTab('tab',4,4);" ><a class="a04" href="javascript:void(0)"></a></li>
+	  
+	  
+    </ul>    
+<div class="dt_task " id="con_tab_1">
+
+		<div class="box01">
+  <div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon07.jpg" width="65" height="25" /></div>
+                    <div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #baseoption#
+				      </select></div>
+		  </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>	
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">拍卖价格</td>
+                      <!--td style="text-align:left">拍卖玩家</td-->
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #shoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="num" size="5"  /><input type="button" class="conbtn" onclick="buy();" value="购买" /><input type="button" class="conbtn" value="拍卖" onclick="psell();" />
+				<div class="add">
+				
+				
+				<span id="prsp" style="display:none;position:absolute;left:292px;top:242px;border:1px solid #C6B764;width:150px;color:#AB833C; background-color:#DFD496">
+				 <span onclick="prspstyle()" style="color:red;cursor:pointer;"><u>关</u></span> 拍卖单价：
+				 <input type="text" id="pr" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/><br/>
+			购买人(选填)：<input type="text" id="bp" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/>
+			</span>
+			
+			
+				</div>
+				</div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #bagoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+                
+    </div>
+    
+    <div class="dt_task con" id="con_tab_4">
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon07.jpg" width="65" height="25" /></div>
+                    <div class="bb03">拍卖得水晶：#paisj# 元宝:#paiyb#</div>
+		  </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+						<td style="width:35px; text-align:left" height="24"></td>
+						<td style="width:100px; text-align:left">名称</td>
+						<td style="width:60px; text-align:left">拍卖价格</td>
+						<td style=" text-align:left">到期时间</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #myshoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus">拍卖所资金:#paimoney# 
+				<input type="button" value="取物" class="conbtn" onclick="get();"  />
+				<input type="button" value="续拍" class="conbtn" onclick="sale();" />
+				<input type="button" class="conbtn" value="取钱" onclick="money();" /></div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02">
+						<span class="txt01">分类查看</span>
+						<select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+							#baseoption#
+						</select>
+					</div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+    </div>      
+  <div class="dt_task con" id="con_tab_2">
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon07.jpg" width="65" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+				  <tr>
+					<td height="24" style="width:35px; text-align:left">&nbsp;</td>
+					<td style="width:100px; text-align:left">名称</td>
+					<td style="width:60px; text-align:left">水晶价格</td>
+					<!--td style=" text-align:left">拍卖玩家</td-->
+					</tr>
+				</table>
+				<div class="dt_list clearfix">
+				  <table class="tit01">
+					  #sjwp#
+					</table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="sjnum" size="5"  /><input type="button" class="conbtn" onclick="sjbuy();" value="购买" /><input type="button" class="conbtn" value="拍卖" onclick="sjpsell();" />
+				
+				<div class="add">
+				
+				
+				<span id="sjprsp" style="display:none;position:absolute;left:292px;top:242px;border:1px solid #C6B764;width:150px;color:#AB833C; background-color:#DFD496">
+				 <span onclick="sjprspstyle()" style="color:red;cursor:pointer;"><u>关</u></span> 拍卖单价：
+				 <input type="text" id="sjpr" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/><br/>
+			购买人(选填)：<input type="text" id="sjbp" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/>			</span>
+				</div>
+				</div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #baseoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+
+    </div>
+	
+	  <div class="dt_task con" id="con_tab_3">
+       
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon07.jpg" width="65" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table class="tit01">
+				  <tr>
+					<td height="24" style="width:35px; text-align:left">&nbsp;</td>
+					<td style="width:100px; text-align:left">名称</td>
+					<td style="width:60px; text-align:left">元宝价格</td>
+					</tr>
+				</table>
+				<div class="dt_list clearfix">
+				  <table class="tit01">
+					  #ybwp#
+					</table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="ybnum" size="5"  /><input type="button" class="conbtn" onclick="ybbuy();" value="购买" /><input type="button" class="conbtn" value="拍卖" onclick="ybpsell();" />
+				
+				<div class="add">
+				
+				
+				<span id="ybprsp" style="display:none;position:absolute;left:292px;top:242px;border:1px solid #C6B764;width:150px;color:#AB833C; background-color:#DFD496">
+				 <span onclick="ybprspstyle()" style="color:red;cursor:pointer;"><u>关</u></span> 拍卖单价：
+				 <input type="text" id="ybpr" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/><br/>
+			购买人(选填)：<input type="text" id="ybbp" style="width:55px;height:12px;border:0px;padding:3px; background-color:#ffffff; color:#AB833C"/>
+			</span>
+			
+			
+				</div>
+				
+				
+				</div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #baseoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+
+    </div>
+	
+  </div>
+  
+  
+
+  
+<div id="apDiv1">
+    	<div class="task_dh02">
+			<div class="cion"><img src="../new_images/ui/icon01.jpg" width="20" height="18" /></div><div class="cion01">金币:#money#</div>
+            <div class="cion"><img src="../new_images/ui/icon06.jpg" width="20" height="18" /></div><div class="cion01">水晶:#sj#</div>
+			<div class="cion"><img src="../new_images/ui/icon01.jpg" width="20" height="18" /></div><div class="cion01">元宝:#yb#</div>
+		</div>
+  </div>
+</div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+var atype = "#atype#";
+if(atype == 3){
+	setTab('tab',3,3);
+}else if(atype == 2){
+	setTab('tab',2,3);
+}
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	try
+	{
+		var pro = $(obj.id.replace("t","s")).innerHTML;
+		//$('num').value= parseInt(pro);
+		$('num').value = 1;
+	}
+	catch(e)
+	{
+		$('num').value = "";
+	}
+}
+
+function buy(){
+	var nums = parseInt($('num').value);
+	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(nums<1 || nums>9999){window.parent.Alert('购买数量范围是1-9999之间的整数！');return;}
+	else{
+		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
+		var sump = price*parseInt(nums);
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('您的金币不够！');
+					else if(n==0) {window.location.reload();}	
+					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
+					else if(n==5) {window.parent.Alert('您操作太快！');}
+					else if(n==4) {window.parent.Alert('包裹空间不足！');}
+					else if(n==7) {window.parent.Alert('该物品不是卖给你的哦！');}
+					else if(n==8) {window.parent.Alert('您太慢了，东西卖完了！');}
+					else {
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/paibuyGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+// pai mai.
+
+function psell(){
+	var pr = parseInt($('pr').value);
+	var num = parseInt($('num').value);
+	
+	var num1 = $('num').value;
+	
+	var bp = $('bp').value;
+	if($('prsp').style.display=='none')
+	{$('prsp').style.display='';return;}
+	if(pr == 0 || pr == '') {window.parent.Alert('请填写拍卖价格！');return;}
+	else if(
+			!validInt(num) || 
+		    !validInt(pr) || 
+			pr<1 ||
+			pr>9999999||
+			num<1
+		   ){window.parent.Alert('请正确填写拍卖的物品和数量！');return;}
+	else
+	{	
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {window.location.reload();}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以拍卖！');
+					else if(n==4) window.parent.Alert('您的拍卖物品个数已达上限,请取出已过期的物品！');
+					else if(n==11) window.parent.Alert('此物品已经在拍卖所，请取回后再继续拍卖！');
+					else if(n==12) window.parent.Alert('您操作太快，请稍候再试！');
+					else if(n == 5)
+					{
+						window.parent.Alert('该物品不可交易');
+					}
+					else window.parent.Alert('您没相关的拍卖物品！');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/paisellGate.php?bid='+bid+'&n='+num+'&p='+pr+'&bp='+bp+'&num1='+num1, opt);
+	}
+}
+
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php', opt);
+}
+
+var equipInfos = {};
+var LastKey = "";
+if(!document.all){
+	var Event;
+	window.onmousemove = function(){
+							Event = window.parent.event;
+					}
+}
+
+function showTip(id,bid,sign,type)
+{
+	var x = 500;
+	var y = 100;
+	equipInfos = window.parent.equipInfos;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined'){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+
+function get(){
+	if(bid == 0){window.parent.Alert('请先选择要取回的物品。');return;}
+	else{
+		if(confirm('你确定取回选中的物品吗?'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) window.parent.Alert('信息有误！');
+					else if(n==1) {window.parent.Alert('包裹空间不足！');}
+					else if(n==2) {window.parent.Alert('包裹已卖出！');}
+					else if(n==4) {window.parent.Alert('拍卖物品5分钟内不能取回！');}
+					else if(n==100) {window.parent.Alert('您操作太快，请稍侯再试！');}
+					else if(n==3) {window.parent.Alert('取回包裹成功！');window.parent.$('gw').src='./function/Pai_Mod.php?atype=2';}
+					else {
+					window.parent.Alert('信息有误！');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			//window.status = bid;
+			var ajax=new Ajax.Request('../function/paiPropsGate.php?bid='+bid,opt);
+		}
+		else return;
+	}
+}
+
+function sale(){
+	if(bid == 0){window.parent.Alert('请先选择要继续拍卖的物品。');return;}
+	else{
+		if(confirm('你确定继续拍卖选中的物品吗?'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) window.parent.Alert('正在拍卖中！');
+					else if(n==1) {window.parent.Alert('操作有误！');}
+					else if(n==100) {window.parent.Alert('您操作太快，请稍侯再试！');}
+					else if(n==5) {window.parent.Alert('继续拍卖成功！');window.parent.$('gw').src='./function/Pai_Mod.php?atype=2';}
+					else {
+					window.parent.Alert('信息有误！');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/paiPropsGate.php?action=sale&bid='+pid,opt);
+		}
+		else return;
+	}
+}
+
+function money()
+{
+	if(confirm('你确定取回拍卖所的钱，水晶，元宝吗?\n金币的最大数目是十亿。'))
+	{
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 var n=parseInt(t.responseText);
+				 if(n == 1)
+				 {
+				 	window.parent.Alert("取钱成功!");
+					window.parent.$('gw').src='./function/Pai_Mod.php?atype=2';
+				 }
+				 else if(n==100) {window.parent.Alert('您操作太快，请稍侯再试！');}
+				 else
+				 {
+				 	window.parent.Alert('您的拍卖所的钱为0！');
+				 }
+			 }
+		 }
+		 var ajax=new Ajax.Request('../function/paiPropsGate.php?action=money',opt);
+	}
+}
+function prspstyle(){
+	var a = $('prsp').style.display;
+	if(a == 'none'){
+		$('prsp').style.display = 'block';
+	}else{
+		$('prsp').style.display = 'none';
+	}
+}
+
+function sjprspstyle(){
+	var a = $('sjprsp').style.display;
+	if(a == 'none'){
+		$('sjprsp').style.display = 'block';
+	}else{
+		$('sjprsp').style.display = 'none';
+	}
+}
+
+function ybprspstyle(){
+	var a = $('ybprsp').style.display;
+	if(a == 'none'){
+		$('ybprsp').style.display = 'block';
+	}else{
+		$('ybprsp').style.display = 'none';
+	}
+}
+
+function sjpsell(){
+	var pr = parseInt($('sjpr').value);
+	var num = parseInt($('sjnum').value);
+	
+	var num1 = $('sjnum').value;
+	
+	var bp = $('sjbp').value;
+	if($('sjprsp').style.display=='none')
+	{$('sjprsp').style.display='';return;}
+	if(pr == 0 || pr == '') {window.parent.Alert('请填写拍卖价格！');return;}
+	else if(pr < 10){
+		window.parent.Alert('起拍价格最低为10，请重新定价！');return;
+	}
+	else if(
+			!validInt(num) || 
+		    !validInt(pr) || 
+			pr<1 ||
+			pr>9999999||
+			num<1
+		   ){window.parent.Alert('请正确填写拍卖的物品和数量！');return;}
+	else
+	{	
+		if(!confirm('水晶拍卖将收取一定的水晶作为手续费，\r\n这部分费用将在你获得的水晶中扣除，收取费用为拍卖水晶价格的8%。\r\n是否上架该物品？')){
+			return;
+		}
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=3';}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以拍卖！');
+					else if(n==4) window.parent.Alert('您的拍卖物品个数已达上限,请取出已过期的物品！');
+					else if(n==11) window.parent.Alert('此物品已经在拍卖所，请取回后再继续拍卖！');
+					else if(n==12) window.parent.Alert('您操作太快，请稍候再试！');
+					else if(n==20) window.parent.Alert('起拍价格最低为10，请重新定价！');
+					else if(n == 5)
+					{
+						window.parent.Alert('该物品不可交易');
+					}
+					else window.parent.Alert('您没相关的拍卖物品！');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/sjpaisellGate.php?bid='+bid+'&n='+num+'&p='+pr+'&bp='+bp+'&num1='+num1, opt);
+	}
+}
+//元宝出售
+function ybpsell(){
+
+	var pr = parseInt($('ybpr').value);
+	var num = parseInt($('ybnum').value);
+	
+	var num1 = $('ybnum').value;
+	
+	var bp = $('ybbp').value;
+	
+	if($('ybprsp').style.display=='none')
+	{$('ybprsp').style.display='';return;}
+	if(pr == 0 || pr == '') {window.parent.Alert('请填写拍卖价格！');return;}
+	else if(pr < 10){
+		window.parent.Alert('起拍价格最低为10，请重新定价！');return;
+	}
+	else if(
+			!validInt(num) || 
+		    !validInt(pr) || 
+			pr<1 ||
+			pr>9999999||
+			num<1
+		   ){window.parent.Alert('请正确填写拍卖的物品和数量！');return;}
+	else
+	{	
+		if(!confirm('元宝拍卖将收取一定的元宝作为手续费，\r\n这部分费用将在你获得的元宝中扣除，收取费用为拍卖元宝价格的5%。\r\n是否上架该物品？')){
+			return;
+		}
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=3';}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以拍卖！');
+					else if(n==4) window.parent.Alert('您的拍卖物品个数已达上限,请取出已过期的物品！');
+					else if(n==11) window.parent.Alert('此物品已经在拍卖所，请取回后再继续拍卖！');
+					else if(n==12) window.parent.Alert('您操作太快，请稍候再试！');
+					else if(n==20) window.parent.Alert('起拍价格最低为10，请重新定价！');
+					else if(n == 5)
+					{
+						window.parent.Alert('该物品不可交易');
+					}
+					else window.parent.Alert('您没相关的拍卖物品！');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/ybsellGate.php?bid='+bid+'&n='+num+'&p='+pr+'&bp='+bp+'&num1='+num1, opt);
+	}
+}
+
+function sjbuy(){
+	var nums = parseInt($('sjnum').value);
+	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(nums<1 || nums>1000){window.parent.Alert('购买数量范围是1-1000之间的整数！');return;}
+	else{
+		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
+		var sump = price*parseInt(nums);
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 水晶！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('你的水晶不够，可在神秘商店购买水晶卡增加水晶数量！');
+					else if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=3';}	
+					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
+					else if(n==5) {window.parent.Alert('您操作太快！');}
+					else if(n==4) {window.parent.Alert('包裹空间不足！');}
+					else if(n==7) {window.parent.Alert('该物品不是卖给你的哦！');}
+					else if(n==8) {window.parent.Alert('您太慢了，东西卖完了！');}
+					else {
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/sjpaibuyGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+//元宝购买
+function ybbuy(){
+	var nums = parseInt($('ybnum').value);
+	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(nums<1 || nums>1000){window.parent.Alert('购买数量范围是1-1000之间的整数！');return;}
+	else{
+		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
+		var sump = price*parseInt(nums);
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 元宝！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('你的元宝不够aaa！');
+					else if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=4';}	
+					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
+					else if(n==5) {window.parent.Alert('您操作太快！');}
+					else if(n==4) {window.parent.Alert('包裹空间不足！');}
+					else if(n==7) {window.parent.Alert('该物品不是卖给你的哦！');}
+					else if(n==8) {window.parent.Alert('您太慢了，东西卖完了！');}
+					else {
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/ybbuyGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+</script>

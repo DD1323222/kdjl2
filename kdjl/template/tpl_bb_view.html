@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>欢迎页</title>
+<style>
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none} 
+fieldset,img {border:0} 
+address,caption,cite,code,dfn,em,strong,th,var {font-weight:normal; font-style:normal} 
+strong {font-weight:bold}
+ol,ul {list-style:none} 
+h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%} 
+input {font-size:12px; color:#333}
+.l {float:left}
+.r {float:right}
+.left {float:left}
+.right {float:right}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+.clear {clear:both; height:0; overflow:hidden}
+body {font:12px/normal "宋体"; color:#007e9f; overflow-x:hidden;}
+a,a:visited {color:#513a11; text-decoration:none}
+a {blr:expression(this.onFocus=this.blur());outline:none;}
+area{blr:expression(this.onFocus=this.blur());outline:none;}
+a:hover {text-decoration:underline}
+.box {width:776px; height:320px; margin:5px auto 0 auto; overflow:hidden}
+.box .l {position:relative; width:276px; height:320px; background:url(../images/pet_bg.jpg)}
+.box .l .pet_info {position:absolute; left:25px; top:12px; width:120px; line-height:19px; color:#007e9f}
+.box .l .pet_pic {position:absolute; left:140px; top:10px; width:130px; height:180px; text-align:center}
+.my_pet {position:absolute; left:8px; top:185px; width:260px; height:104px; padding:21px 0 0 8px; text-align:center; overflow:hidden;}
+.my_pet p {position:relative; float:left; width:65px; height:104px; margin:0 8px; display:inline; cursor:pointer; overflow:hidden}
+.my_pet p em {position:absolute; left:0; top:0; display:block; width:65px; height:104px; text-align:left; color:#000; background:url(../images/pet_border.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/pet_border.png')}   
+.my_pet p em a,.my_pet p em a:visited {position:relative; display:block; width:55px; height:92px; padding:12px 0 0 10px; color:#000; background:url(../images/transparent.gif);}
+
+.my_pet p img {display:block; width:65px; height:104px}
+.box .r {width:496px; height:320px; background:url(../images/i_r.jpg) left 27px no-repeat}
+.box .r .tab {height:27px; overflow:hidden}
+.box .r .tab li {float:left}
+.box .r .tab li a {float:left; width:100px; height:27px; margin-right:3px; text-indent:-9999px; overflow:hidden; background:url(../images/pet_nav.gif) 0 0 no-repeat; cursor:pointer}
+.box .r .on .i1 {background-position:0 -27px}
+.box .r .tab .i2 {background-position:-103px 0}
+.box .r .on .i2 {background-position:-103px -27px}
+.box .r .tab .i3 {background-position:-206px 0}
+.box .r .on .i3 {background-position:-206px -27px}
+.box .r .con {display:none; padding:16px 0 0 12px}
+.mypet .left {width:357px}
+.mypet .left ul {height:242px; overflow:hidden}
+.mypet .eq {float:left; width:47px}
+.mypet .eq li {width:47px; height:47px; margin-bottom:18px}
+.mypet .eq li p,.mypet .pic li p {width:47px; height:47px; margin:0 auto; overflow:hidden; line-height:47px; color:#fff; text-align:center; background:url(../images/pro_bg.gif)}
+.mypet .eq li p img {width:39px; height:39px; padding:4px}
+.mypet .pic {float:left; width:263px}
+.mypet .pic li {width:263px; height:47px}
+.mypet .pic li.img {height:148px; line-height:148px; overflow:hidden; position:relative; text-align:center; vertical-align:middle}
+.mypet .pic li.img h2 {position:static; +position:absolute; top:50%; vertical-align:middle}
+.mypet .pic li.img h2 img {position:static; +position:relative; top:-50%; left:-50%; vertical-align:middle}
+.mypet .left h3 {clear:both; padding-top:10px}
+.mypet .right {width:86px; padding:0 15px; line-height:22px; background:url(../images/pet_r.gif) left center no-repeat}
+.pet_pro .pet_image {width:357px; height:170px; line-height:170px; overflow:hidden; position:relative; display:table-cell; text-align:center; vertical-align:middle}
+.pet_image h2 {position:static; +position:absolute; top:50%; vertical-align:middle}
+.pet_image h2 img {position:static; +position:relative; top:-50%; left:-50%; vertical-align:middle}
+.pet_pro .pet_lev {padding-left:22px}
+.pet_pro .left p {width:112px; float:left; line-height:22px}
+.pet_pro .right {width:86px; padding:0 15px; line-height:20px; background:url(../images/pet_r.gif) left center no-repeat}
+.skill .pet_image {width:258px; height:215px; line-height:215px; overflow:hidden; position:relative; display:table-cell; text-align:center; vertical-align:middle}
+.skill .pet_stu {padding-left:30px}
+.skill .pet_stu input {float:left}
+.skill .pet_stu .inp {width:158px; height:16px; padding:3px 0 0 4px; background:#fff; color:#007e9f; border:1px solid #73d2f0; margin-right:10px}
+.skill .pet_stu .but {width:39px; height:17px; margin-top:2px; background:url(../images/i_bnt.gif) left -34px; border:none; cursor:pointer}
+.skill .right {width:186px; height:260px; padding:0 15px; background:url(../images/pet_r.gif) left center no-repeat}
+.skill .right ul {padding-top:25px; width:186px;}
+.skill .right li {float:left; width:186px; height:22px; overflow:hidden; line-height:19px}
+.skill .right li span {float:left; width:100px; margin-right:10px;}
+.skill .right li input {float:left; width:39px; height:17px; background:url(../images/i_bnt.gif) left -51px; border:0; cursor:pointer}
+.skill .pet_stu select {float:left; width:162px; height:21px; background:#fff; color:#007e9f; margin-right:10px}
+</style>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script language="javascript" src="../javascript/bb.js"></script>
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+</script>
+</head>
+<body>
+
+<div class="box clearfix">
+<div class="l">
+	<div class="pet_info">
+        #nickname#<br />
+        宝贝：#pets#<br />
+        种族：#vary#<br />
+        性别：#sex#<br />
+        胜率：#success#
+        <br />
+        魔塔出战宠物数：1<br />
+        到期：永久
+    </div>
+    <div class="pet_pic">
+    	<img src="../images/head/#headimg#.gif" />
+    </div>
+	<div class="my_pet">
+    	<p>#one1##one#</p>
+    </div>
+</div>
+
+<div id="Tab" class="r">
+	<ul class="tab">
+        <li id="tab1" onclick="setTab('tab',1,3)" class="on"><a class="i1">带领的宠物</a></li>
+        <li id="tab2" onclick="setTab('tab',2,3)"><a class="i2">属性</a></li>
+        <li id="tab3" onclick="setTab('tab',3,3)"><a class="i3">技能</a></li>
+    </ul>
+    <div id="con_tab_1" class="con mypet clearfix" style="display:block">
+    	<div class="left">
+            <ul class="eq">
+                <li><p>#2#</p></li>
+                <li><p>#4#</p></li>
+                <li><p>#3#</p></li>
+                <li><p>#7#</p></li>
+            </ul>
+            <ul class="pic">
+                <li><p>#1#</p></li>
+                <li class="img"><h2><img src="../images/bb/#bigimg#" /></h2></li>
+                <li><p>#9#</p></li>
+            </ul>
+			
+			
+			  
+            <ul class="eq">
+                <li><p>#5#</p></li>
+                <li><p>#8#</p></li>
+                <li><p>#6#</p></li>
+                <li><p>#10#</p></li>
+            </ul>
+        </div>
+		
+        <div class="right">
+           等级：#level#<br />
+            五行：#wx#<br />
+            生命: #hp#<br />
+            魔法: #mp#<br />
+            攻击：#ac#<br />
+            防御：#mc#<br />
+            命中：#hits#<br />
+            闪避：#miss#<br />
+            速度：#speed#<br />
+            成长：#czl#
+        </div>
+    </div>
+	
+    <div id="con_tab_2" class="con pet_pro clearfix">
+    	<div class="left">
+			<div class="pet_image"><h2><img src="../images/bb/#bigimg#" /></h2></div>
+            <div class="pet_lev">
+                <p>等级：#level#<br />
+                当前经验：#nowexp#<br />
+                升级经验：#lexp#<br />
+                五行：#wx#
+                </p>       
+               <p>生命: #hp#<br />
+                魔法: #mp#<br />
+                攻击：#ac#<br />
+                防御：#mc#
+                </p>
+                <p>命中：#hits#<br />
+                闪避：#miss#<br />
+                速度：#speed#<br />
+                成长：#czl#
+                </p>
+            </div>
+        </div>
+        <div class="right">
+			金抗：#jk#<br/>
+			木抗：#mk#<br/>
+			水抗：#sk#<br/>
+			火抗：#hk#<br/>
+			土抗：#tk#<br/>
+			减晕率：#subyl#%<br/>
+			减睡率：#subsl#%<br/>
+			减毒率：#subdl#%<br/>
+			减虚率：#subxl#%<br/>
+			减缓率：#subhl#%<br/>
+			减防率：#subfl#%<br/>
+			减抗率：#subkl#%<br/>
+			进化次数：#remaketimes#
+        </div>
+    </div>
+    <div id="con_tab_3" class="con skill clearfix">
+    	<div class="left">
+			<div class="pet_image"><h2><img src="../images/bb/#bigimg#" /></h2></div>
+            <div class="pet_stu">
+
+            </div>
+        </div>
+        <div class="right">
+			<ul>
+				#jnlist#
+            </ul>
+        </div>
+    </div>
+</div>
+
+</div>
+</body>
+</html>
+<script language="javascript">
+var pid=#pid#;
+var mbid=#mbid#;
+var equipInfos = {};
+var LastKey = "";
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function showTip(id,bid,sign,type,pos)
+{
+	if(pos == 7 || pos == 3 || pos == 4 || pos == 2)
+	{
+		var x = 320;
+		var y = 0;
+	}
+	else if(pos == 1 || pos == 9 )
+	{
+		var x = 460;
+		var y = 0;
+	}
+	else if(pos == 11)
+	{
+		var x = 400;
+		var y = 0;
+	}
+	else if(pos == 5 || pos == 6 || pos == 8 || pos == 10 )
+	{
+		var x = 600;
+		var y = 0;
+	}
+	else
+	{
+		var x = 530;
+		var y = 0;
+	}
+	equipInfos = window.parent.equipInfos;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined' && equipInfos[key] != "no")
+	{
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+</script>

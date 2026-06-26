@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript" src="../javascript/objectswap.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" type="text/css" href="/css/reset.css">
+<style type="text/css">
+@keyframes maparrow {
+	0%{
+		transform: translateX(0px);
+	}
+	100%{
+		transform: translateX(10px);
+	}
+}
+.map_c_right{
+	animation: maparrow 0.2s infinite alternate;
+	cursor: pointer;
+}
+.map_c_left{
+	animation: maparrow 0.2s infinite alternate;
+	cursor: pointer;
+}
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+.map_link{
+	position:absolute;
+	z-index:2653591247;
+	
+}
+.map_link a{
+	color: red !important;
+	font-weight: 900;
+    font-size: 16px;
+}
+
+.div_bg_link{
+	background-image: url('/images/city/map.png');
+	height: 40px;
+}
+.div_bg_link.jiaoyisuo{
+	background-position: -101px -197px;
+	width: 52px;
+}
+.div_bg_link.smsd{
+	background-position: -280px -70px;
+	width: 70px;
+}
+.div_bg_link.mc{
+	background-position: -90px -25px;
+	width: 38px;
+}
+.div_bg_link.ggp{
+	background-position: -467px -156px;
+	width: 52px;
+}
+.div_bg_link.ck{
+	background-position: -438px -22px;
+	width: 38px;
+}
+.div_bg_link.djsd{
+	background-position: -540px -64px;
+	width: 70px;
+}
+.div_bg_link.tjp{
+	background-position: -688px -47px;
+	width: 52px;
+}
+.div_bg_link.hg{
+	background-position: -634px -164px;
+	width: 38px;
+}
+</style></head>
+<body>
+<div id="city" style="width:790px;height:330px;z-index:1; position:absolute; top:-5px; left:0px;">
+<canvas id="city_map" width="790px" height="330px;"></canvas>
+<div class="map_link page2 map_c_left" style="display: none;left: 0px;top: 70px;" onclick="openMap(0)"><img src="/images/city/left.png" alt="????"></div>
+<div class="map_link page2" style="display: none;left: 10px;top: 150px;"><a href="/function/Sd_Mod.php"><img src="/images/city/cwsdian.png" alt="???????">  </a></div>
+<div class="map_link page2" style="display: none;left: 430px;top: 145px;"><a href="/function/Family_Mod.php"><img src="/images/city/jzsdian.png" alt="???????">  </a></div>
+<div class="map_link page1" style="display: block;left: 180px;top: 100px;"><a href="/function/zhanbuwu.php"><img src="/images/city/mfwu.png" alt="?????">  </a></div>
+<div class="map_link page2" style="display: none;left: 630px;top: 215px;"><a href="/function/card_Mod.php"><img src="/images/city/mkzhi.png" alt="????">  </a></div>
+<div class="map_link page2" style="display: none;left: 600px;top: 40px;"><a href="/function/Merge_Mod.php"><img src="/images/city/qrdao.png" alt="?????">  </a></div>
+<div class="map_link page1" style="display: block;left: 560px;top: 260px;" onclick="window.parent.create_sl_mod()"><img src="/images/city/slei.png" alt="???"> </div>
+
+<div class="map_link page1" style="display: block;left: 50px;top: 180px;"><a href="/function/Pai_Mod.php"> <div class="div_bg_link jiaoyisuo"></div> </a></div>
+<div class="map_link page1" style="display: block;left: 260px;top: 70px;"><a href="/function/Shopsm_Mod.php"><div class="div_bg_link smsd"></div>  </a></div>
+<div class="map_link page1" style="display: block;left: 40px;top: 55px;"><a href="/function/Muchang_Mod.php"><div class="div_bg_link mc"></div>  </a></div>
+<div class="map_link page1" style="display: block;left: 460px;top: 160px;"><a href="/function/Public_Mod.php"><div class="div_bg_link ggp"></div>  </a></div>
+<div class="map_link page1" style="display: block;left: 430px;top: 30px;"><a href="/function/Base_Mod.php"><div class="div_bg_link ck"></div>  </a></div>
+<div class="map_link page1" style="display: block;left: 530px;top: 50px;"><a href="/function/Props_Mod.php"><div class="div_bg_link djsd"></div> </a></div>
+<div class="map_link page1" style="display: block;left: 690px;top: 60px;"><a href="/function/Zb_Mod.php"><div class="div_bg_link tjp"></div>  </a></div>
+<div class="map_link page1" style="display: block;left: 640px;top: 160px;"><a href="/function/King_Mod.php"><div class="div_bg_link hg"></div></a></div>
+<div class="map_link page1 map_c_right" style="display: block;left: 730px;top: 140px;" onclick="openMap(1)"><img style="transform: rotateY(180deg);" src="/images/city/left.png" alt="????"></div>
+
+
+</div>
+<div id="tishi"><div onclick="distorydiv(this)" style="z-index:200;width:140px;height:120px;position:absolute;left:500px;top:200px;cursor:pointer;opacity:0;filter:alpha(opacity=0);background:#000000"></div></div>
+
+
+<script language="javascript">
+let map1=new Image(790,330);
+map1.src="/images/city/bitmap1.png"
+let map2=new Image(790,330);
+map2.src="/images/city/bitmap2_1.png"
+const canvas = document.getElementById('city_map');
+const ctx = canvas.getContext('2d');
+// ctx.lineTo(200*window.devicePixelRatio,200*window.devicePixelRatio);
+// ctx.lineWidth=ctx.lineWidth*window.devicePixelRatio;
+map1.onload=()=>{
+	ctx.drawImage(map1,0,0,790,330);
+}
+function openMap(p){
+	let page0=Array.from(document.getElementsByClassName("page1"));
+	let page1=Array.from(document.getElementsByClassName("page2"));
+	if(p){
+		page0.forEach(e=>e.style.display="none")
+		page1.forEach(e=>e.style.display="block")
+		ctx.drawImage(map2,0,0,790,330);
+	}else{
+		page1.forEach(e=>e.style.display="none")
+		page0.forEach(e=>e.style.display="block")
+		ctx.drawImage(map1,0,0,790,330);
+
+	}
+}
+
+var boss=document.getElementById('city');
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function create_zp_div()
+{
+	div = window.parent.document.createElement("div");
+	lock_div  = window.parent.document.createElement("div");
+	lock_div.className = 'lock_zp_div';
+	lock_div.id = 'lock_zp_div';
+	div.style.width = "1010px";
+	div.style.height = "516px";
+	div.style.position = "absolute";
+	div.style.top = "0px";
+	div.style.left = "0px";
+	div.style.textAlign = "center";
+	div.id = "zpdiv";
+	div.background = '#F3E4B2';
+	
+	embed = window.parent.document.createElement("embed");
+	embed.width = "450";
+	embed.height = "450";
+	embed.setAttribute("wmode","transparent");
+	embed.src = "zpmod/roulette.swf";
+	div.appendChild(embed);
+	window.parent.document.getElementById('frienlist').parentNode.appendChild(lock_div);
+	window.parent.document.getElementById('frienlist').parentNode.appendChild(div);
+}
+function distorydiv(ob)
+{
+	ob.parentNode.removeChild(ob);
+	parent.Alert("当日首次扫雷请将65以上成长宠设为主宠,以免损失一次免费扫雷机会");
+}
+</script></body></html>

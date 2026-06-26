@@ -1,0 +1,37 @@
+#overlay{ 
+    background-image: url(lightbox/overlay.png);
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 90;
+    width: 100%;
+    height: 100%;
+}
+
+* html #overlay{
+    background-color: #333;
+    background-color: transparent;
+    background-image: url(lightbox/blank.gif);
+    filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(
+        src="lightbox/overlay.png", sizingMethod="scale");
+}
+
+#box{
+    background:#FFFFFF;
+	margin: 0;
+	padding: 0;
+    border:2px solid #000000;
+	overflow: auto;
+}
+
+#box #close{
+    position:absolute;
+    top:0px;
+    right:0px;
+    cursor:pointer;
+}
+
+#box #boxContents {
+	margin-top:12px;
+	padding:10px;
+}

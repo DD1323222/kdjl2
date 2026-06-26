@@ -1,0 +1,411 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>道具商店</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/shop01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.leaft{margin:3px 0 0 5px;background:url(..//../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:89px;display:block;}
+.a01{background:url(../new_images/ui/shop02.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/shop02.jpg) no-repeat 0 -29px;height:29px;}
+.a02{background:url(../new_images/ui/shop02.jpg) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/shop02.jpg) no-repeat -90px -29px;height:29px;}
+
+.task_dh02{width:300px; height:20px; float:left;}
+.cion{height:18px; float:left; padding:3px 0 0 10px; }
+.cion01{height:16px; float:left; padding:5px 0 0 5px; color:#333;}
+.box{width:650px; height:290px; float:left;}
+.box01{width:292px; float:left; padding-left:14px;}
+.box02{width:292px; float:left; height:28px;}
+.box03{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+.box04{width:292px; float:left; height:20px; color:#B06A01; padding-top:4px;}
+.bb01{ height:24px; float:left; padding-top:3px;}
+.bb02{ height:24px; float:right;padding-top:5px;}
+.txt01{color:#FF0000; font-weight:bold; font-size:12px;}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.tit01 {border-collapse:collapse;width:100%;font-size:12px; color:#BF7D1A;}
+.con{display:none;}
+#apDiv1 {position:absolute;	width:305px;height:20px;z-index:2;left: 361px;top: 4px;}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+</style>
+
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+</script>
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/JavaScript">
+<!--
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+/* added by Zheng.PIng */
+function hiddenContent() {
+    $('props_types').style.display = 'none';
+}
+
+function showContent() {
+    $('props_types').style.display = '';
+}
+/* addded by Zheng.Ping */
+
+//-->
+var bid=0;
+var price=0;
+var selid=0;
+var types=-1;
+</script>
+<body>
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php'">
+        <label></label>
+      </div>
+<div class="task">
+	<div class="task_left"></div>
+          
+    <div class="task_right">
+    
+   	  <ul class="task_nav">
+    <li id="tab1" onclick="setTab('tab',1,2)" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+    <li id="tab2" onclick="setTab('tab',2,2)"><a class="a02" href="javascript:void(0)"></a></li>
+    </ul>    
+<div class="dt_task" id="con_tab_1">
+
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+          </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">价格</td>
+                      <td style="text-align:left">属性</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #shoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="num" size="5"  /><input type="button" class="conbtn" onclick="buy();" value="购买" /><input type="button" class="conbtn" value="卖出"  onclick="sell();"/></div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #bagoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出金币</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+</h3>
+        <div class="dt_list clearfix" id="mybag1">
+        
+ #mybag#
+
+
+        </div>
+				 	
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+			<div id="apDiv1">
+    	<div class="task_dh02">
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">金币：#money#</div>
+			
+		</div>
+    </div>
+    </div>
+    
+    <div class="dt_task con" id="con_tab_2">
+       
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">价格</td>
+                      <td style="text-align:left">属性</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #preshoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="prenum" size="5"  /><input type="button" class="conbtn" onclick="prebuy();" value="购买" /></div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #bagoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出金币</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	<div class="dt_list clearfix" id="mybag1">
+        
+ #mybag#
+
+
+        </div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+			<div id="apDiv1">
+    	<div class="task_dh02">
+
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">威望：#prestige#</div>
+		</div>
+    </div>
+    </div>        
+</div>
+</div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	try
+	{
+		var pro = $(obj.id.replace("t","s")).innerHTML;
+		$('num').value= parseInt(pro);
+	}
+	catch(e)
+	{
+		$('num').value = "";
+	}
+}
+function buy(){
+	var nums = parseInt($('num').value);
+	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump = price*parseInt($('num').value)
+		if (sump==0) window.parent.Alert('数据错误！');
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('您的金币不够！');
+					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
+					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/PropsGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+function prebuy(){
+	var nums = parseInt($('prenum').value);
+	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump = prestige*parseInt($('prenum').value);
+		if (sump==0) window.parent.Alert('数据错误！');
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 点威望！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('您的威望不够！');
+					else if(n==0) {ajaxfun2();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}//refresh bag.
+					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/PrestigeGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag1').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
+}
+function ajaxfun2()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag2').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
+}
+
+function sell(){
+	var nums = parseInt($('num').value); 
+	if(bid == 0 ){window.parent.Alert('请先选择要卖出的物品。');return;}
+	else{
+	    if(!validInt(nums)) {window.parent.Alert('数量只能是数字！');return false;}
+		else if(nums<1 || nums>9999){window.parent.Alert('卖出数量范围是1-9999之间的整数！');return;}
+		
+		if (types==2 && nums!=1)
+		{
+			window.parent.Alert('不可叠加物品只能单一卖出');return;
+		}
+
+		var sump = price*parseInt(nums);
+		if(confirm('你确定卖出选中的物品吗? 总共将获得 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
+					else window.parent.Alert('卖出失败!');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/sellBag.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+	
+	
+}
+var equipInfos = {};
+var LastKey = "";
+if(!document.all){
+	var Event;
+	window.onmousemove = function(){
+							Event = window.parent.event;
+					}
+}
+
+function showTip(id,bid,sign,type)
+{
+	var x = 500;
+	var y = 100;
+	equipInfos = window.parent.equipInfos;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined'){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+</script>

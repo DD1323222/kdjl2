@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+<!--
+body {
+	margin-left: 15px;
+	margin-top: 15px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size:12px;
+}
+#Layer1 {
+	position:absolute;
+	left:413px;
+	top:75px;
+	width:27px;
+	height:26px;
+	z-index:1;
+}
+-->
+</style>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+</head>
+<!--background-image:url(../images/ui/map/map1.gif)-->
+<body style="margin:0px;" oncontextmenu="event.returnValue=false" onkeydown="KeyDown()">
+
+<div style="width:786px;height:321px;margin-left:5px;margin-top:5px; background-image:url(../images/ui/map/map3.jpg)" oncontextmenu="event.returnValue=false"></div>
+
+
+<div style="position:absolute; left:199px;top:32px; border:0px; cursor:pointer; width: 78px;" title="绘画小屋" onclick="copyWord('绘画小屋');window.parent.$('gw').src='./function/qy_Mod.php';">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+
+<div style="position:absolute; left:363px; top:161px; border:0px; cursor:pointer; width: 79px;" title="圣兽云殿" onclick="copyWord('圣兽云殿');window.parent.$('gw').src='./function/Team_Mod.php?n=20';">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div style="position:absolute;left:509px;top:184px;border:0px;cursor:pointer;" title="危之路(8)" onclick="copyWord('危之路');goMap(#121#,121);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map121#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map121#.png'));
+"></div></div>
+
+	
+<div style="position:absolute;left:263px;top:226px;border:0px;cursor:pointer;" title="五指石印(4)" onclick="copyWord('五指石印');goMap(#109#,109);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map109#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map109#.png'));
+"></div></div>
+
+	
+<div style="position:absolute;left:465px;top:17px;border:0px;cursor:pointer;" title="天之路(7)" onclick="copyWord('天之路');goMap(#118#,118);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map118#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map118#.png'));
+"></div></div>
+
+<div style="position:absolute;left:419px;top:82px;border:0px;cursor:pointer;" title="天空之城(6)" onclick="copyWord('天空之城');goMap(#115#,115);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map115#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map115#.png'));
+"></div></div>
+
+<div style="position:absolute; left:45px; top:59px; border:0px; cursor:pointer; width: 34px; height: 33px;" title="绿荫林(3)" onclick="copyWord('绿荫林');goMap(#106#,106);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map106#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map106#.png'));
+"></div></div>
+
+
+<div style="position:absolute;left:130px;top:124px;border:0px;cursor:pointer;" title="石阵(1)" onclick="copyWord('石阵钥匙 ');goMap(#100#,100);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map100#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map100#.png'));
+"></div></div>
+
+	
+<div style="position:absolute;left:208px;top:157px;border:0px;cursor:pointer;" title="平原(2)" onclick="copyWord('平原钥匙');goMap(#103#,103);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map103#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map103#.png'));
+"></div></div>
+		
+
+<div style="position:absolute;left:98px;top:211px;border:0px;cursor:pointer;" title="鬼屋(5)" onclick="copyWord('鬼屋');goMap(#112#,112);">
+<div style="width:75px; height:24px;background:url(../images/ui/map1/#map112#.png); _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ui/map1/#map112#.png'));
+"></div></div>
+
+<div id="sy" style="position:absolute;cursor:pointer;left:170px;top:280px;border:1;" width=20 height=20 title="厄非斯深渊" onclick="copyWord('厄非斯深渊');fbMap(50)";>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div id="ml" style="position:absolute;cursor:pointer;left:441px;top:249px;border:1;" width=20 height=20 title="阿尔提密林" onclick="copyWord('阿尔提密林');fbMap(124)";>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+<div id="fl" style="position:absolute; cursor:pointer; left:239px; top:99px; border:1; width: 88px;" width=20 height=20 title="菲拉苛地域" onclick="copyWord('菲拉苛地域');fbMap(127)";>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+
+	
+<div style="position:absolute;left:20px;top:150px; border:0px; cursor:pointer; width: 36px; height:19px" align="center" title="切换地图" onclick="window.parent.$('gw').src='./function/Expore_Mod.php?op=cmp'" >
+<img src="../images/ui/map/left.gif" alt='切换地图'/></div>
+
+
+
+
+<div style="position:absolute; left:390px; top:291px; border:0px; cursor:pointer; width: 76px;" title="琥珀屋" onclick="copyWord('琥珀屋');window.parent.$('gw').src='./function/Team_Mod.php?n=125';">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+
+<div style="position:absolute;left:641px;top:80px;border:0px;cursor:pointer; width:27px; height:77px" title="通天塔" onclick="copyWord('通天塔');window.parent.$('gw').src='./function/Team_Mod.php?n=126';"></div>
+
+
+</body>
+</html>
+<script language="javascript" type="text/javascript">
+
+		// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+
+	function goMap(n,t)
+	{
+		//if(n==0) 
+		//{
+			//if(confirm('您还没有打开该地图，要使用钥匙打开吗？')==true)
+			//{
+				//openMap(t);
+			//}
+			//else return;
+		//}
+		//else
+		//{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(e) {
+					//window.parent.Alert(t.responseText);
+					var v = e.responseText;
+					if(isNaN(v))
+					{
+						if(!confirm(v))
+						{
+							return false;
+						}
+						var opt = {
+						method: 'get',
+						onSuccess: function(f) {
+						//window.parent.Alert(t.responseText);
+							var v = parseInt(f.responseText);
+							if(v == 11)
+							{
+								window.parent.Alert("开启地图成功！");
+							czl(t);
+							//window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
+							}
+						},
+							on404: function(f) {
+							},
+							onFailure: function(f) {
+							},
+							asynchronous:true        
+						}
+						//window.status = '../function/mapGate.php?type=1&n='+n;return false;
+						var ajax=new Ajax.Request('../function/mapGate.php?type=2&n='+t, opt);
+					}
+					else if(v == 10)
+					{
+						czl(t);
+						//window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
+					}
+					else if(v == 1)
+					{
+						window.parent.Alert("地图数据错误！");
+					}
+					else if(v == 2)
+					{
+						window.parent.Alert("您的当前威望不够！");
+					}
+					else if(v == 3)
+					{
+						window.parent.Alert("您没有这个物品！");
+					}
+					else if(v == 12)
+					{
+						if(n==0) 
+						{
+							if(confirm('您还没有打开该地图，要使用钥匙打开吗？')==true)
+							{
+								openMap(t);
+							}
+							else return;
+						}
+						else
+						{
+							window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
+						}
+					}
+    		 	},
+    		 	on404: function(e) {
+    		 	},
+    		 	onFailure: function(e) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			//window.status = '../function/mapGate.php?type=1&n='+t;return false;
+			var ajax=new Ajax.Request('../function/mapGate.php?type=1&n='+t, opt);
+			/*if(!confirm(""))
+			{
+				return false;
+			}
+			window.parent.$('gw').src='./function/Team_Mod.php?n='+n;*/
+		//}
+	}
+	
+	//副本地图判断
+	function fbMap(id)
+	{
+		if(id != "")
+		{
+			window.parent.$('gw').src = './function/fb_Mod.php?mapid='+id;
+		}
+	}
+</script> 

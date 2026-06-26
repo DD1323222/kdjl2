@@ -1,0 +1,91 @@
+body {color:#693600; background:none}
+.box {width:788px; height:319px; overflow:hidden}
+/* pet */
+.pet_l {position:relative; width:291px; height:319px; background:url(../new_images/index/pet_bg_l.jpg)}
+.upet {position:absolute; left:25px; top:13px; width:120px; line-height:20px}
+.ipet {position:absolute; left:149px; top:9px; width:112px; height:180px; text-align:center}
+.ipet img {max-height:180px; _height:expression(this.width>180?180:true)}
+.tpet {position:absolute; left:30px; top:224px; width:240px}
+.tpet p {position:relative; float:left; width:67px; height:84px; margin-right:13px; background:url(../new_images/index/nopet.jpg); cursor:pointer}
+.tpet p em {position:absolute; padding:8px; line-height:14px; color:#fff}
+.pet_r {position:relative; width:497px; height:319px; background:url(../new_images/index/pet_bg_r.jpg)}
+.pettab {margin:2px 0 0 28px; height:27px;}
+.pettab li {float:left; width:87px; height:27px; margin-right:1px; cursor:pointer}
+.pettab li p {width:87px; height:27px; text-indent:-9999px; overflow:hidden; background:url(../new_images/index/pet_tab_bg.jpg)}
+.pettab li.on p {background-position:0 -27px}
+.pettab li p.p2 {background-position:-88px 0}
+.pettab li.on p.p2 {background-position:-88px -27px}
+.pettab li p.p3 {background-position:-176px 0}
+.pettab li.on p.p3 {background-position:-176px -27px}
+.pet_cont {margin-top:9px; display:none}
+.pet_c1_l {width:336px; margin-left:27px; display:inline}
+.pet_info {position:relative; width:324px; height:238px; background:url(../new_images/index/pet_1_bg.jpg)}
+.pet_info li {
+	position:absolute;
+	width:36px;
+	height:35px;
+	line-height:35px;
+	text-align:center;
+	left: 73px;
+	top: 6px;
+}
+.pet_info li img {width:36px; height:35px}
+.pet_info li.i1 {left:4px; top:5px}
+.pet_info li.i2 {left:144px; top:5px}
+.pet_info li.i3 {left:282px; top:5px}
+.pet_info li.i4 {left:4px; top:69px}
+.pet_info li.i5 {left:282px; top:69px}
+.pet_info li.i6 {left:4px; top:132px}
+.pet_info li.i7 {left:282px; top:132px}
+.pet_info li.i8 {left:4px; top:196px}
+.pet_info li.i9 {left:144px; top:196px}
+.pet_info li.i10 {left:282px; top:196px}
+.pet_info li.i11 {left:200px; top:5px}
+.pet_info h2 {position:absolute; left:46px; top:47px; width:232px; height:144px}
+.pet_c1_l h2 {margin-top:10px}
+.pet_c1_l h2 input,.pet_c3_l h3 input.btn,.pet_c3_r input {width:39px; height:17px; margin:0 10px; border:none; background:url(../new_images/index/pet_c1_l_btn.gif); cursor:pointer}
+.pet_c1_r,.pet_c2_r,.pet_c3_r {width:124px; line-height:24px; padding:5px 0 5px 10px; background:url(../new_images/index/pet_c1_r.jpg) left center no-repeat}
+.pet_c2_r {line-height:20px}
+.pet_c2_l,.pet_c3_l {width:363px; background:url(../new_images/index/pet_2_bg.jpg) center top no-repeat}
+.pet_c2_l h2,.pet_c3_l h2 {height:179px}
+.pet_c2_l ul {margin:0 0 0 30px}
+.pet_c2_l li {float:left; width:100px; padding-left:10px; line-height:22px}
+.pet_c3_r {width:174px; height:245px}
+.pet_c3_l {width:313px}
+.pet_c3_l h2 {height:189px}
+.pet_c3_l h3 {width:210px; margin:15px auto}
+.pet_c3_l h3 input.inp {float:left; margin-right:7px; width:157px; height:17px; padding:2px 0 0 5px; background:#fff; border:1px solid #c48c35}
+.pet_c3_l h3 input.btn {float:left; margin:2px 0 0 0}
+.pet_c3_r ul {width:145px; padding-left:10px; overflow:hidden}
+.pet_c3_r li {height:22px; line-height:22px}
+.pet_c3_r input {float:right; margin:2px 0 0 0}
+/* self */
+.self_l {position:relative; width:290px; height:319px; background:url(../new_images/index/myinfobgleft.jpg)}
+.self_name{ padding:23px 0 0 32px;}
+.self_role{padding:8px 25px 0 0; text-align:center; height:280px;}
+.self_role img {max-heght:246px; _height:expression(this.width>246?246:true)}
+.self_r {position:relative; width:498px; height:319px; background:url(../new_images/index/myinfobgright.jpg)}
+.ms_box{ background:url(../new_images/index/ms_task_box.jpg) no-repeat; width:225px; height:258px; padding:1px; margin:5px 0 0 15px; float:left;}
+.ms_box h2{ line-height:30px; padding:3px 0 0 10px; font-weight:bold;}
+.ms_box_cont{line-height:26px; height:222px; width:212px;}
+.ms_box_cont,.mf_box_cont{ padding:1px 0 0 10px; color:#666666; overflow-x:hidden; overflow-y:auto; scrollbar-arrow-color:#ffffff; scrollbar-face-color:#e1d395; scrollbar-darkshadow-color:#e1d395; scrollbar-base-color:#f3edc9; scrollbar-highlight-color:#f3edc9; scrollbar-shadow-color:#f3edc9; scrollbar-track-color:#f3edc9; scrollbar-3dlight-color:#e1d395;}
+.mf_box_cont{ line-height:22px; height:173px; width:212px;}
+.mf_box{ background:url(../new_images/index/ms_firend_box.jpg) no-repeat; width:225px; height:258px; padding:1px; margin:5px 0 0 15px; float:left;}
+.mf_box h2{ line-height:26px; padding:1px 0 0 6px;}
+.mf_box_inp{width:225px; padding-top:10px; text-align:center; line-height:26px;}
+.mf_box_inp input.inp{ width:156px; height:17px; border:1px solid #dfb876; padding-top:3px;}
+.mf_box_inp input.btn{ background:url(../new_images/index/ms_f_btn.jpg) no-repeat; width:39px; height:17px; border:0; cursor:pointer; color:#772200}
+.mi_box{ width:450px; height:260px;padding-left:20px;}
+.mi_box ul.top li{ line-height:22px; color:#693600; width:225px; float:left;}
+.mi_box ul.bot {padding-top:10px}
+.mi_box ul.bot li{ line-height:22px; color:#693600; width:470px;}
+.mi_box ul.bot li.v{color:#ff3c00;}
+.self_cont {margin-top:9px; display:none}
+.selftab {margin:0 0 0 27px; height:27px;}
+.selftab li {float:left; width:89px; height:30px; cursor:pointer}
+.selftab li p {width:89px; height:30px; text-indent:-9999px; overflow:hidden; background:url(../new_images/index/ms_menu_bar.jpg)}
+.selftab li.on p {background-position:0 -30px}
+.selftab li p.p2 {background-position:-89px 0}
+.selftab li.on p.p2 {background-position:-89px -30px}
+.selftab li p.p3 {background-position:-178px 0}
+.selftab li.on p.p3 {background-position:-178px -30px}

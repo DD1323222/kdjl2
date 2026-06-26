@@ -1,0 +1,553 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+<!--
+body {
+	margin-left: 8px;
+	margin-top: 8px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+-->
+</style></head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<script language="javascript">
+var bid=#bid#;
+var num = #num#;
+var mapid = #mapid#;
+window.parent.autoack = false;
+</script>
+<body>
+<table width="778" border="0" cellpadding="0" cellspacing="0" bgcolor="#E8FFC0">
+  <tr>
+    <td width="292" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/team/zdy01.jpg" width="292" height="69" onclick="window.parent.$('gw').src='./function/Expore_Mod.php';" style="cursor:pointer;"></td>
+      </tr>
+      <tr>
+        <td height="80" background="../images/ui/team/zdy02.jpg" valign="top">
+		<table width="100%" height="77" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="32">&nbsp;</td>
+            <td style="line-height:1.5;font-size:12px;" align="left" valign="top">				
+                探险 — 通天塔 <br/>
+				怪物的等级：白、黄、蓝、紫、红等<br/>
+				通关奖励:普品涅成丹、普品涅攻丹、一品涅成丹、一品涅攻丹、上品捏成丹、至尊、极品道具装备—通天等稀有道具。</td>
+            <td width="30">&nbsp;</td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td><img src="../images/ui/team/zdy03.jpg" width="292" height="20"></td>
+      </tr>
+    </table>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td height="29"><img src="../images/ui/team/zdy04.jpg" width="146" height="29"></td>
+        </tr>
+        <tr>
+          <td height="113" background="../images/ui/team/zdy05.jpg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="25">&nbsp;</td>
+              <td>#one#</td>
+              <td>#two#</td>
+              <td>#three#</td>
+              <td width="20">&nbsp;</td>
+            </tr>
+          </table></td>
+        </tr>
+      </table></td>
+    <td width="2" valign="top"><table width="2" height="311" border="0" cellpadding="0" cellspacing="0">
+      <tr>
+        <td height="6" background="../images/ui/team/zdy06.jpg"></td>
+      </tr>
+      <tr>
+        <td width="2" background="../images/ui/team/zdy06.jpg"></td>
+      </tr>
+    </table></td>
+    <td width="241" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0" style="color:#066B00;">
+      <tr>
+        <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="86"><img src="../images/ui/team/zdy07.jpg" width="86" height="56"></td>
+            <td background="../images/ui/team/zdy08.jpg">&nbsp;</td>
+            <td width="20"><img src="../images/ui/team/zdy09.jpg" width="20" height="56"></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td height="217"  id='tmember' style="line-height:20px; font-size:12px">
+          <p>&nbsp;&nbsp;通关式地图：每个关卡遇到的怪物不同，打败关卡中所有怪物后才能获得通关奖励，通关数越多，获得的奖励更好！10的倍数关，将会获得特别奖励。 </p>
+&nbsp;&nbsp;玩家每天有一次进入通天塔的机会，每日凌晨刷新，刷新后当前关卡为0。挑战失败后需要消耗水晶才能再次进入。选择继续冒险可累积当前挑战关卡数。选择战斗将从第一关卡重新开始。</td>
+      </tr>
+      <tr>
+        <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="94"  align="right">
+			<img src="../images/ui/team/ann06.gif" width="64" height="28" style="padding-right:5px;cursor:pointer;" onclick="pk()"></td>
+            <td width="40">&nbsp;</td>
+            <td><img src="../images/ui/team/ann02.gif" width="64" height="28" onclick="goOut();" style='cursor:pointer;'></td>
+            <td width="12">&nbsp;</td>
+          </tr>
+        </table></td>
+      </tr>
+    </table></td>
+    <td width="2" valign="top"><table width="2" height="311" border="0" cellpadding="0" cellspacing="0">
+      <tr>
+        <td height="6" background="../images/ui/team/zdy06.jpg"></td>
+      </tr>
+      <tr>
+        <td width="2" background="../images/ui/team/zdy06.jpg"></td>
+      </tr>
+    </table></td>
+    <td valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="89"><img src="../images/ui/team/zdy10.jpg" width="89" height="56"></td>
+        <td background="../images/ui/team/zdy08.jpg">&nbsp;</td>
+        <td width="20"><img src="../images/ui/team/zdy09.jpg" width="20" height="56"></td>
+      </tr>
+    </table>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td height="223" valign="top">
+		  <div id='chatDiv' style='position:absolute;left:542px;top:61px;text-align:left;font-size:12px; line-height:1.5;width:234px;height:219px;overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;cursor:default;margin:5px;color:#BF7D1A; '>
+		 <!-- <table width="200" border="0" cellspacing="0" cellpadding="0" style="font-size:12px">
+             
+			<tr>
+              <td width="20" height="23">&nbsp;</td>
+              <td width="40">名次</td>
+              <td width="90">玩家姓名</td>
+              <td>通关数</td>
+            </tr>-->
+			#otherlist#
+         <!--</table>-->
+		  <!--<table width="85%" border="0" cellspacing="0" cellpadding="0" align="center">
+            <tr>
+              <td height="25">当前关卡：#tgt#</td>
+            </tr>
+            <tr>
+              <td style="height:25px; font-size:14px;color:#FF0000" align="right"><span style="font:bold; cursor:pointer" onclick="cfight()">继续冒险</span></td>
+            </tr>
+          </table>-->
+		  </div>
+		  </td>
+        </tr>
+        <tr>
+          <td height="32" background="../images/ui/team/zdy11.jpg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12">&nbsp;</td>
+              <td width="46">&nbsp;</td>
+              <!--<td width="46"><img src="../images/ui/team/ann04.gif" width="40" height="16" style="cursor:pointer;" onclick="player_team();"></td>-->
+              <td>&nbsp;</td>
+            </tr>
+          </table></td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+</body>
+</html>
+<script language="javascript">
+var cUser='';
+var _self='#_self#';
+var tLock=false;
+function player_team()
+{
+	if (cUser!='')
+	{
+		if(tLock==false)
+		{
+			tLock=true;MasterTeam(cUser);
+		}
+	}
+	//window.parent.Alert('组队功能正式版开放!');
+}
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+//邀请组队.参数：被邀请的玩家。
+function MasterTeam(user)
+{
+	if(user=='') return false;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==1)
+					{
+						tstr= '邀请'+user+'组队成功！';
+						// 加入显示玩家到当前页面中。addPlayer();
+						window.parent.addPlayer();
+					}
+					tLock=false;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+		var ajax=new Ajax.Request('../function/Team_createMod.php?op=1&u='+user, opt);
+}
+
+function goOut()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==10)
+					{
+						tstr= '成功离开队伍！';
+						window.parent.addPlayer();
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/Team_createMod.php?op=2', opt);
+}
+// 侦查玩家信息
+function detect()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					var arrIrisStyles = ['DIAMOND','CIRCLE','CROSS','PLUS','SQUARE','STAR'];
+					var index=parseInt(Math.random()*5+1);
+					// ui view start
+						var oPopup = window.createPopup();
+						//oPopup.document.body.onmouseout = function(){oPopup.hide();} 
+						with (oPopup.document.body) 
+						{
+							style.border='#033e00 1px solid';
+							style.fontSize='12px';
+							style.padding='2px';
+							style.backgroundColor='#000000';
+							style.filter="progid:DXImageTransform.Microsoft.Iris(duration=3);";
+							innerHTML=tstr;
+						}
+						oPopup.show(600, 448, 405, 255);
+						oPopup.document.body.filters[0].irisstyle=arrIrisStyles[index];
+						oPopup.document.body.filters[0].Apply();
+						oPopup.document.body.style.backgroundColor="#CCEFEF";
+						oPopup.document.body.filters[0].Play();
+						oPopup.document.body.pause();
+					// ui view end.
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPlayerinfo.php?op=g&u='+cUser, opt);
+}
+function detectview()
+{
+  window.location.href='../function/Pets_Mod.php?uid='+cUser;
+}
+
+
+function TeamChoose(user)
+{
+	cUser=user;
+}
+
+function msgTips(msg)
+{
+	var oPopup = window.createPopup();
+	with (oPopup.document.body) 
+	{
+		style.border='#033e00 1px solid';
+		style.fontSize='12px';
+		style.padding='5px';
+		style.backgroundColor="#9bc650";
+		innerHTML=msg;
+	}
+	oPopup.show(370, 270, 305, 185);
+}
+
+//--
+function player_look()
+{
+	window.parent.Alert('侦察功能正式版开放!');
+}
+// 玩家调整。
+function cfight(){//继续冒险
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if(tstr == 'a'){
+						window.parent.Alert('非法操作！');
+						return false;
+					}else if(tstr == 'b'){
+						window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';//直接进
+					}else{
+						if(!confirm('继续冒险需要收取您'+tstr+'水晶，您确定是否进入？')){
+							return false;
+						}
+						var opt1 = {
+									method: 'get',
+									 onSuccess: function(n) {
+										var re = n.responseText;
+										if(re == 'c'){
+											window.parent.Alert('您没有足够的水晶！');
+											return false;
+										}else if(re == 'd'){
+											//进入地图
+											window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';
+										}
+									},
+									on404: function(n) {
+									},
+									onFailure: function(n) {
+									},
+									asynchronous:true        
+								}
+						var ajax=new Ajax.Request('../function/ttGate.php?op=cfight&action=do', opt1);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ttGate.php?op=cfight', opt);
+}
+function player_fight()
+{
+	if (cUser=='')
+	{
+		window.parent.Alert('请选择一个你要挑战的玩家!');return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = parseInt(t.responseText);
+					
+					if (tstr==0) // 
+					{
+						window.parent.Alert('您不能挑战 '+cUser+' 的宠物!!');
+					}
+					else if(tstr==1)
+					{
+						window.parent.Alert(cUser+'处于新手保护状态,无法挑战');
+					}
+					else // 开始挑战。
+					{
+						window.parent.$('gw').src='./function/Challenge_Mod.php?p='+bid+'&cp='+tstr;
+					}
+					//msgTips(tstr);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Challenge.php?u='+cUser, opt);
+}
+function pk()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if(tstr == 'a'){
+						window.parent.Alert('非法操作！');
+						return false;
+					}else if(tstr == 'b'){
+						window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';//直接进
+					}else if(tstr == '1000'){
+						if(!confirm('战斗需要收取您'+tstr+'水晶，您确定是否进入？')){
+							return false;
+						}
+							var opt1 = {
+										method: 'get',
+										 onSuccess: function(n) {
+											var re = n.responseText;
+											if(re == 'c'){
+												window.parent.Alert('您没有足够的水晶！');
+												return false;
+											}else if(re == 'd'){
+												//进入地图
+												window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';
+											}
+										},
+										on404: function(n) {
+										},
+										onFailure: function(n) {
+										},
+										asynchronous:true        
+									}
+							var ajax=new Ajax.Request('../function/ttGate.php?op=tgfight&action=do', opt1);
+						}
+					}
+    		 	,
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ttGate.php?op=tgfight', opt);
+}
+
+//成长限制
+
+function czl(mapids)
+	{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==1)
+					{
+						window.parent.Alert("数据有误！");
+					}
+					else if(tstr==2)
+					{
+						window.parent.Alert("成长不够进入此地图!");
+					}
+					else if(tstr==3)
+					{
+						window.parent.Alert("成长不够，且没有相应的道进入该地图。");
+					}
+					else if(tstr==100)
+					{
+						window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';
+					}
+					//msgTips(tstr);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/mapGate.php?type=5&n='+mapids, opt);
+}
+
+//一图多怪
+function pk1(id)
+{
+	if (bid<1)  {window.parent.Alert('请选择一只要战斗的宠物!');return false;}
+		var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						var tstr = parseInt(t.responseText);
+						if(tstr%3 == 1)
+						{
+							$('sign').innerHTML='普通';
+						}
+						else if(tstr%3 == 2)
+						{
+							$('sign').innerHTML='困难';
+						}
+						else if(tstr%3 == 0)
+						{
+							$('sign').innerHTML='冒险';
+						}
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('/function/manymapgate.php?p='+bid+'&type='+id+'&mapid='+mapid, opt);
+		//window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=2';
+}
+function startFatting(bbid,level,lid,obj){
+	// In here, update bb fatting tag.
+	obj = obj.style;
+	sel(obj);
+	if(level<lid)
+	{window.parent.Alert('听说那里的妖怪太厉害了，偶当前的实力还不够啊！');}
+	
+	bid = bbid;
+}
+
+function Setbbs(bbid,level,lid,obj)	// Get pets.
+{
+	var mbid;
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						mbid = parseInt(t.responseText);
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+			}
+	var ajax=new Ajax.Request('/function/mapGate.php?type=6', opt);
+	if(bbid == mbid)
+	{
+		return;
+	}
+	var opt = {
+	method: 'get',
+	onSuccess: function(t) {
+					var tt = t.responseText;
+					if(tt == 10){
+						if(!confirm("您当前接有不可切换主宠的任务，如果您要切换主宠任务将消失，您确定要切换吗？")){
+							return false;
+						}
+						var opt = {
+							method: 'get',
+							onSuccess: function(n) {
+										if(n.responseText!='') {window.parent.Alert(n.responseText);}
+										startFatting(bbid,level,lid,obj);
+										//window.location.reload();
+									},
+							asynchronous:true        
+						}
+						var ajax=new Ajax.Request('../function/mcGate.php?op=change&id='+bbid, opt);
+					}else if(tt != "" && tt != 10){
+						window.parent.Alert(tt);
+						startFatting(bbid,level,lid,obj);
+						//window.location.reload();
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/mcGate.php?op=z&id='+bbid, opt);
+}
+
+function sel(obj)
+{
+	for(var i=1;i<4;i++)
+	{	
+		try{
+			$('i'+i).style.filter="alpha(opacity=50)";
+		}catch(e){continue;}
+	}
+	obj.filter="alpha(opacity=100)";
+}
+
+</script>

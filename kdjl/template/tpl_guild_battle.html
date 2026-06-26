@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>家族战场</title>
+<script type="text/javascript" src="/javascript/prototype.js"></script>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;color:#B06A01; font-size:12px;}
+.task_left{width:310px; height:319px; float:left; background-image:url(../new_images/ui/zc_03.jpg);}
+.task_center{width:164px; height:319px; float:left; }
+.task_right{width:314px; height:319px;float:left; background-image:url(../new_images/ui/zc_05.jpg);}
+#apDiv1 {
+	position:absolute;
+	width:132px;
+	height:29px;
+	z-index:1;
+	left: 101px;
+	top: 273px;
+}
+#apDiv2 {
+	position:absolute;
+	width:130px;
+	height:30px;
+	z-index:2;
+	left: 559px;
+	top: 273px;
+}
+</style>
+</head>
+
+<body>
+<div class="task">
+	<div class="task_left">
+	<div style=" top:50px; position:absolute; width:280px; height:230px; left:20px;pxbackground-color:#FFF;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+	  <table width="256px" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
+	    #zrlist#
+      </table>
+	  </div>
+	</div>
+	<div class="task_center"><img src="../new_images/ui/zc_04.jpg" width="164" height="319" border="0" usemap="#Map" />
+    <map name="Map" id="Map">
+    <area shape="rect" coords="51,294,114,315" href="#" onclick="$('activity_dis_2').style.display='block'";/>
+    </map>
+</div>
+    <div class="task_right">
+	<div style=" top:50px; position:absolute; width:280px; height:230px; left:500px;pxbackground-color:#FFF;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
+        <tr>
+        <td height="230" align="center" valign="top">
+			<div id="aysum" style="padding:8px;width:75%; text-align:left; line-height:1.5; font-size:12px;color:#4A3B00">
+				<table border="0" width="100%" cellspacing="0" cellpadding="0"><!--
+					<tr><td>01.</td><td>好得很</td><td>1000</td></tr>-->
+					#aylist#					
+				</table>
+				
+			</div><table border="0" width="100%" cellspacing="0" cellpadding="0" style="margin-top:50px"><!--
+					<tr><td>01.</td><td>好得很</td><td>1000</td></tr>-->
+					<tr>
+					  <td height="25" align="center" colspan="2"><strong>家族战书</strong></td>
+					</tr>
+					<tr>
+					  <td height="25" width="70%">挑战方</td><td height="25">状态</td>
+					</tr>
+					#challenge#					
+				</table>
+		</td>
+      </tr>
+      </table>
+	  </div>
+    </div>
+    
+</div><div id="apDiv2"><img src="../new_images/ui/icon14.png" width="128" height="28" style="cursor:pointer" onclick="window.location='/function/Challenge_Mod.php?guild_fight=1'" /></div>
+
+<div id='activity_dis_2'  style=" border-style: inherit; border-color: #FFCCCC;width:470px; height:275px; position:absolute; left:160px; top:40px; display:none;background-color: #FFF0F8;line-height:17px;overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;z-index:10000001;">
+<span style="cursor:pointer;position:absolute; left:410px; top:0px;" onclick="$('activity_dis_2').style.display='none';">关闭×</span>
+<br />
+#activity_dis_2# 
+
+</div>
+
+
+</body>
+</html>
+<script language="javascript">
+
+//下战书
+function down_the_gauntlet(id){
+	if(id == ""){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var ret = t.responseText;
+					if(ret == 1){
+						window.parent.Alert('已经开始不能再下战书');
+					}else if(ret == 2){
+						window.parent.Alert('您没有权限操作');
+					}else if(ret == 3){
+						window.parent.Alert('您的家族当前已经发出3份战书，不能再发了！');
+					}else if(ret == 4){
+						window.parent.Alert('该家族已经收到三份战书，不能再下了，试试别的吧');
+					}else if(ret == 5){
+						window.parent.Alert('您只能对等级相差为5的家族下战书');
+					}else if(ret == 6){
+						window.parent.Alert('您的家族已经对此家族下了战书');
+					}else if(ret == 10){
+						window.parent.Alert('操作成功');
+					}else window.parent.Alert(ret);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true 
+			}
+	var ajax=new Ajax.Request('../function/guild.php?op=battle&id='+id, opt);
+}
+//接受战书
+function accept(id){
+	if(id == ""){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var ret = t.responseText;
+					if(ret == 1){
+						window.parent.Alert('已经开始不能再接受战书');
+					}else if(ret == 2){
+						window.parent.Alert('您不是族长或长老，没有权限操作');
+					}else if(ret == 3){
+						window.parent.Alert('您的家族或者对方家族已经接受战书，不能再接受了此战书了！');
+					}else if(ret == 5){
+						window.parent.Alert('您只能接受等级相差为5的战书');
+					}else if(ret == 10){
+						window.parent.Alert('操作成功');
+						window.location.reload();
+					}else window.parent.Alert(ret);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true 
+			}
+	var ajax=new Ajax.Request('../function/guild.php?op=accept&id='+id, opt);
+}
+</script>

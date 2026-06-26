@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+ <!--PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>铁匠铺</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/zb01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:90px;display:block;}
+.a01{background:url(../new_images/ui/zb02.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/zb02.jpg) no-repeat 0 -29px;height:29px;}
+.a02{background:url(../new_images/ui/zb02.jpg) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/zb02.jpg) no-repeat -90px -29px;height:29px;}
+.a03{background:url(../new_images/ui/zb02.jpg) no-repeat -179px 0;height:29px;}
+.task_nav li.on .a03{background:url(../new_images/ui/zb02.jpg) no-repeat -179px -29px;height:29px;}
+.a04{background:url(../new_images/ui/zb02.jpg) no-repeat -269px 0;height:29px;}
+.task_nav li.on .a04{background:url(../new_images/ui/zb02.jpg) no-repeat -269px -29px;height:29px;}
+.a05{background:url(../new_images/ui/zb02.jpg) no-repeat -359px 0;height:29px;}
+.task_nav li.on .a05{background:url(../new_images/ui/zb02.jpg) no-repeat -359px -29px;height:29px;}
+
+.task_dh02{width:300px; height:20px; float:left;}
+.cion{height:18px; float:left; padding:3px 0 0 10px; }
+.cion01{height:16px; float:left; padding:5px 0 0 5px; color:#333;}
+.box{width:650px; height:290px; float:left;}
+.box01{width:292px; float:left; padding-left:14px;}
+.box02{width:292px; float:left; height:28px;}
+.box03{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+.box04{width:292px; float:left; height:20px; color:#B06A01; padding-top:4px;}
+.box05{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-image:url(../new_images/ui/zb03.jpg);}
+.box06{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-image:url(../new_images/ui/zbfj_bg.jpg);}
+.box07{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-image:url(../new_images/ui/xqhc_bg.jpg);}
+.bb01{ height:24px; float:left; padding-top:2px;}
+.bb02{ height:24px; float:right;padding-top:4px;}
+.bb03{ height:20px; float:right;padding-top:8px;}
+.txt01{color:#FF0000; font-weight:bold; font-size:12px;}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.tit01 {border-collapse:collapse;width:100%;font-size:12px; color:#BF7D1A;}
+.con{display:none;}
+#apDiv1 {
+	position:absolute;
+	width:25px;
+	height:20px;
+	z-index:2;
+	left: 580px;
+	top: 5px;
+}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn1{background:url(../images/bnt.gif) no-repeat;background-size:cover;width:60px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+#apDiv2 {
+	position:absolute;
+	width:44px;
+	height:39px;
+	z-index:3;
+	left: 164px;
+	top: 400px;
+}
+.eqbox{width:52px;height:54px;background:url(../new_images/ui/zb04.jpg) no-repeat;margin-bottom:10px}
+.addbtn img{margin:0 5px;}
+.div{height:40px;width:40px;position:absolute; text-align:center;}
+.item_box_div{ #96C2F1;background:url(../new_images/ui/zb04.jpg) no-repeat;left:267px;top:133px; height:48px; width:48px; float:inherit; padding-top:3px;}
+.xqhc_box_div{ #96C2F1;background:url(../new_images/ui/zb04.jpg) no-repeat;height:48px; width:48px; float:inherit; padding-top:3px;top:130px;}
+.xqhc_bao_div{ #96C2F1;background:url(../new_images/ui/zbbao.jpg) no-repeat;height:48px; width:48px; float:inherit; padding-top:3px;top:130px;}
+.xqhc_one_div
+{
+	left:220px;
+}
+.xqhc_two_div
+{
+	left:320px;
+}
+#item_look_div{ left:400px; top:80px;}
+.xqhc_look_div{ z-index:3;}
+.focus{}
+#fb_button
+{
+	position:absolute;
+	top:210px;
+	left:257px;
+}
+#info,#xqkcinfo
+{
+	position:absolute;
+	top:250px;
+	left:170px;
+	width:260px;
+}
+#send_server
+{
+	position:relative;
+	top:140px;
+	left:105px;
+	width:70px;
+}
+
+</style>
+<script type="text/javascript" src="../js/js.js"></script>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script language="javascript">
+(function(window,undefined){
+window.Sys = function (ua){
+    var b = {
+        ie: /msie/.test(ua) && !/opera/.test(ua),
+        opera: /opera/.test(ua),
+        safari: /webkit/.test(ua) && !/chrome/.test(ua),
+        firefox: /firefox/.test(ua),
+        chrome: /chrome/.test(ua)
+    },vMark = "";
+    for (var i in b) {
+        if (b[i]) { vMark = "safari" == i ? "version" : i; break; }
+    }
+    b.version = vMark && RegExp("(?:" + vMark + ")[\\/: ]([\\d.]+)").test(ua) ? RegExp.$1 : "0";
+    b.ie6 = b.ie && parseInt(b.version, 10) == 6;
+    b.ie7 = b.ie && parseInt(b.version, 10) == 7;
+    b.ie8 = b.ie && parseInt(b.version, 10) == 8;   
+    return b;
+}(window.navigator.userAgent.toLowerCase());
+
+window.Sys.ie6&&document.execCommand("BackgroundImageCache", false, true);
+
+window.$ = function(Id){
+    return document.getElementById(Id);
+};
+window.addListener = function(element,e,fn){
+    !element.events&&(element.events = {});
+    element.events[e]&&(element.events[e][addListener.guid++]=fn)||(element.events[e] = {'0':fn});
+    element.addEventListener?element.addEventListener(e,fn,false):element.attachEvent("on" + e,fn);
+};
+window.addListener.guid = 1;
+window.removeListener = function(element,e,fn){
+    var handlers = element.events[e],type;
+    if(fn){
+        for(type in handlers)
+            if(handlers[type]===fn){
+                element.removeEventListener?element.removeEventListener(e,fn,false):element.detachEvent("on" + e,fn);
+                delete handlers[type];
+            }
+    }else{
+        for(type in handlers){
+            element.removeEventListener?element.removeEventListener(e,handlers[type],false):element.detachEvent("on" + e,handlers[type]);
+            delete handlers[type];
+        }
+    }        
+};
+window.setStyle = function(e,o){
+    if(typeof o=="string")
+        e.style.cssText=o;
+    else    
+        for(var i in o)
+            e.style[i] = o[i];
+};
+
+var slice = Array.prototype.slice; 
+window.Bind = function(object, fun) {
+    var args = slice.call(arguments).slice(2);
+    return function() {
+            return fun.apply(object, args);
+    };
+};
+window.BindAsEventListener = function(object, fun,args) {
+    var args = slice.call(arguments).slice(2);
+    return function(event) {
+        return fun.apply(object, [event || window.event].concat(args));
+    }
+};
+//copy from jQ
+window.extend = function(){
+    var target = arguments[0] || {}, i = 1, length = arguments.length, deep = true, options;
+    if ( typeof target === "boolean" ) {
+        deep = target;
+        target = arguments[1] || {};
+        i = 2;
+    }
+    if ( typeof target !== "object" && Object.prototype.toString.call(target)!="[object Function]")
+        target = {};
+    for(;i<length;i++){
+        if ( (options = arguments[ i ]) != null )
+            for(var name in options){
+                var src = target[ name ], copy = options[ name ];
+                if ( target === copy )
+                    continue;
+                if ( deep && copy && typeof copy === "object" && !copy.nodeType ){
+                    target[ name ] = arguments.callee( deep, src || ( copy.length != null ? [ ] : { } ), copy );
+                }    
+                else if(copy !== undefined)
+                    target[ name ] = copy;                        
+            }
+    }
+    return target;            
+};
+//copy from jQ
+each =  function ( object, callback, args ) {   
+    var name, i = 0, length = object.length;   
+    if ( args ) {
+		args = Array.prototype.slice.call(arguments).slice(2);
+        if ( length === undefined ) {   
+            for ( name in object )   
+                if ( callback.apply( object[ name ],[name,object[ name ]].concat(args) ) === false )   
+                    break;   
+        } else  
+            for ( ; i < length; i++)   
+                if ( callback.apply( object[ i ],[i,object[ i ]].concat(args)) === false )   //
+                    break;   
+    } else {      
+        if ( length === undefined ) {   
+            for ( name in object )   
+                if ( callback.call( object[ name ], name, object[ name ] ) === false )   
+                    break;   
+        } else  
+            for ( var value = object[0];   
+                i < length && callback.call( value, i, value ) !== false; value = object[++i] ){}   
+    }   
+    return object;   
+};   
+window.currentStyle = function(element){
+    return element.currentStyle || document.defaultView.getComputedStyle(element, null);
+};
+window.objPos = function(elem){
+    var left = 0, top = 0, right = 0, bottom = 0,doc = elem ? elem.ownerDocument : document;
+    if ( !elem.getBoundingClientRect || window.Sys.ie8 ) {
+        var n = elem;
+        while (n) { left += n.offsetLeft, top += n.offsetTop; n = n.offsetParent; };
+        right = left + elem.offsetWidth; bottom = top + elem.offsetHeight;
+    } else {
+        var rect = elem.getBoundingClientRect();
+        left = right = doc.documentElement.scrollLeft || doc.body.scrollLeft;
+        top = bottom = doc.documentElement.scrollLeft || doc.body.scrollLeft;
+        left += rect.left; right += rect.right;
+        top += rect.top; bottom += rect.bottom;
+    }
+    return { "left": left, "top": top, "right": right, "bottom": bottom };        
+};
+window.hasClass = function(element, className){
+    return element.className.match(new RegExp('(\\s|^)'+className+'(\\s|$)'));
+};
+window.addClass = function(element, className){
+    !window.hasClass(element, className)&&(element.className += " "+className);
+};
+window.removeClass = function(element, className){
+    window.hasClass(element, className)&&(element.className = element.className.replace(new RegExp('(\\s|^)'+className+'(\\s|$)'),' '));
+}
+})(window);
+
+var Drag = {
+    elem    : null,
+    zindex  : 0,
+    options : {},
+    init    : function(){        
+		each(arguments,function(i,elem,oThis){
+			 addListener(elem,'mousedown',BindAsEventListener(oThis,oThis.start,elem));
+		},this);
+    },
+    start : function(e,elem){
+        var elem=this.elem = elem;
+        elem.style.zIndex=++this.zindex;
+        this.x = e.clientX - elem.offsetLeft ;
+        this.y = e.clientY - elem.offsetTop;
+        this.marginLeft = parseInt(currentStyle(elem).marginLeft)||0;
+        this.marginTop  = parseInt(currentStyle(elem).marginTop)||0;
+        Sys.ie?elem.setCapture():e.preventDefault();
+        addListener(document,"mousemove",BindAsEventListener(this,this.move));
+        addListener(document,"mouseup",Bind(this,this.up));  
+		this.options.callbackmove&&this.options.callbackmove(this.elem);
+    },
+    move  : function(e){
+        window.getSelection ? window.getSelection().removeAllRanges() : document.selection.empty();
+        var iLeft = e.clientX - this.x,iTop = e.clientY - this.y;obj = this.elem;
+        obj.style.left = iLeft - this.marginLeft + "px";
+        obj.style.top  = iTop - this.marginTop + "px";
+        this.options.callbackmove&&this.options.callbackmove(this.elem);
+    },
+    up   : function(){
+        removeListener(document,'mousemove');
+        removeListener(document,'mouseup');
+        Sys.ie&&this.elem.releaseCapture();
+        this.options.callbackup&&this.options.callbackup(this.elem);
+    }
+};
+
+var overlap = {
+    hostel :{},                //所有需要计算重合的元素
+    overlapList :{},           //已经重合的元素
+    init : function(elems){
+        each(elems,function(i,elem,oThis){
+            elem.setAttribute('overlap',i);
+			if(i==0)
+			{
+            	var ret = objPos(elem),l=223,t=134,b=176,r=265;
+			}
+			if(i==1)
+			{
+				var ret = objPos(elem),l=323,t=133,b=175,r=365;
+			}
+			if(i == 2)
+			{
+				var ret = objPos(elem),l=ret.left,t=ret.top,b=ret.bottom,r=ret.right;
+			}
+			if(i==3)
+			{
+				var ret = objPos(elem),l=335,t=195,b=235,r=375;
+			}
+            oThis.hostel[i]={elem:elem,leftTopDot:{x:l,y:t},leftBottomDot:{x:l,y:b},rightTopDot:{x:r,y:t},rightBottomDot:{x:r,y:b}};
+        },this);
+    },
+    setElem:function(elem){
+        if(!elem)return;
+        var ret = objPos(elem),l=ret.left,t=ret.top,b=ret.bottom,r=ret.right;
+		this.hostel[elem.getAttribute('overlap')] ={elem:elem,leftTopDot:{x:l,y:t},leftBottomDot:{x:l,y:b},rightTopDot:{x:r,y:t},rightBottomDot:{x:r,y:b}};
+    },
+	//判断是否重合     
+    isOverlap : function(my){
+        var obj= {}, my = this.hostel[my.getAttribute('overlap')];
+        
+        each(this.hostel,function(key,config,oThis){
+            // 是元素本身 则返回
+            if(config.elem === my.elem)return ;
+			
+            //判断2个div是否重合 如果不重合 则返回
+            if(my.leftBottomDot.y<=config.leftTopDot.y||my.leftTopDot.y>=config.leftBottomDot.y||my.rightTopDot.x<=config.leftTopDot.x||my.leftTopDot.x>=config.rightTopDot.x)
+                return;
+            obj[config.elem.getAttribute('overlap')] =[config.elem,oThis.howOverlap(my,config)];
+        },this);
+        return obj;
+    },
+	//判断重合面积
+    howOverlap : function(my,other){
+        var l=other.leftBottomDot.x,r=other.rightTopDot.x,t=other.leftTopDot.y,b=other.leftBottomDot.y,arr=[],
+        lt = this.include(my.leftTopDot,l,r,t,b,'leftTopDot-rightBottomDot'),
+        lb = this.include(my.leftBottomDot,l,r,t,b,'leftBottomDot-rightTopDot'),
+        rt = this.include(my.rightTopDot,l,r,t,b,'rightTopDot-leftBottomDot'),
+        rb = this.include(my.rightBottomDot,l,r,t,b,'rightBottomDot-leftTopDot');
+        lt&&arr.push(lt)||lb&&arr.push(lb)||rt&&arr.push(rt)||rb&&arr.push(rb);
+        
+        if(!arr[0]) return 0;
+		//一个点 或者是 2个点都在其中  计算方法是一样的
+		if(arr.length===1||arr.length===2){
+			var key = arr[0].split('-'),x1=my[key[0]].x,y1=my[key[0]].y,x2=other[key[1]].x,y2=other[key[1]].y;
+			return Math.abs((x1-x2)*(y1-y2));		
+		};			
+		//完全重合
+		if(arr.length===4){
+			return 162*162;	
+		};		
+    },
+	//看点是不是在另一个div中
+    include : function(dot,l,r,t,b,key){
+		return (dot.x>=l&&dot.x<=r&&dot.y>=t&&dot.y<=b)?key:false;
+    }
+};
+window.onload = function(){
+    extend(Drag.options,{callbackmove:move,callbackup:up});
+	
+    function up(elem){
+        for(var n in overlap.overlapList)
+            removeClass(overlap.overlapList[n][0],'focus')
+        overlap.overlapList = {};
+    };
+	
+    function move(elem){
+		
+        overlap.setElem(elem);
+        //p为判断返回的obj是不是空的
+        var obj = overlap.isOverlap(elem),name,p = function(o){
+            for (name in o)
+                return false;
+            return true;
+        }(obj);    
+        
+        //如果是个空对象 则返回 不进行下面的遍历
+        if(p){
+            up();
+            return;
+        };
+               
+        overlap.overlapList = obj;
+        each(overlap.hostel,function(key,config){
+            if(obj[key]){
+                addClass(obj[key][0],'focus');
+				if(obj[key][1] > 1200)
+				{
+					if(obj[key][0].id == 'hc_bds')
+					{
+						if(obj[key][0].style.display == 'block' && document.getElementById('xqhc_look_div').varyname == 27)
+						{
+							obj[key][0].innerHTML = document.getElementById('xqhc_look_div').innerHTML;
+							obj[key][0].value = document.getElementById('xqhc_look_div').value;
+							obj[key][0].varyname = document.getElementById('xqhc_look_div').varyname;
+						}
+					}
+					if(obj[key][0].id == 'xqhc_box_one_div' || obj[key][0].id == 'xqhc_box_two_div')
+					{
+						div_ecovery();
+						obj[key][0].innerHTML = document.getElementById('xqhc_look_div').innerHTML;
+						obj[key][0].value = document.getElementById('xqhc_look_div').value;
+						obj[key][0].varyname = document.getElementById('xqhc_look_div').varyname;
+					}
+					if(document.getElementById('xqhc_box_two_div').innerHTML == "" || document.getElementById('xqhc_box_one_div').innerHTML == "")
+					{
+						send_buttom.style.display = "none";
+						document.getElementById('hc_bds').innerHTML = "";
+						document.getElementById('hc_bds').style.display = "none";
+					}
+					else
+					{
+						send_buttom.style.display = "block";
+						if(document.getElementById('xqhc_box_two_div').innerHTML == document.getElementById('xqhc_box_one_div').innerHTML)
+						{
+							if(document.getElementById('xqhc_box_two_div').varyname == 25 && document.getElementById('xqhc_box_one_div').varyname == 25)
+							{
+								send_buttom.innerHTML = '<img style="cursor:pointer;" onclick=request_xqhc(); src="../new_images/ui/bshc.png" />';
+								document.getElementById('hc_bds').style.display = "block";
+							}
+							else
+							{
+								send_buttom.innerHTML ="";
+								send_buttom.style.display = "none";
+								document.getElementById('hc_bds').innerHTML = "";
+								document.getElementById('hc_bds').style.display = "none";
+							}
+						}
+						else
+						{
+							if( document.getElementById('xqhc_box_two_div').varyname != document.getElementById('xqhc_box_one_div').varyname )
+							{
+								if(document.getElementById('xqhc_box_two_div').varyname != 27 && document.getElementById('xqhc_box_one_div').varyname != 27 && document.getElementById('xqhc_box_two_div').varyname != 26 && document.getElementById('xqhc_box_one_div').varyname != 26)
+								{
+									send_buttom.innerHTML = '<img style="cursor:pointer;" onclick=request_xqhc(); src="../new_images/ui/bsxq.png" />';
+								}
+								else
+								{
+									if( (document.getElementById('xqhc_box_two_div').varyname == 26 && document.getElementById('xqhc_box_one_div').varyname == 9) || (document.getElementById('xqhc_box_two_div').varyname == 9 && document.getElementById('xqhc_box_one_div').varyname == 26) )
+									{
+										send_buttom.innerHTML = '<img style="cursor:pointer;" onclick=request_xl(); src="../new_images/ui/zbxl.png" />';
+									}
+									else
+									{
+										send_buttom.innerHTML ="";
+										send_buttom.style.display = "none";
+										document.getElementById('hc_bds').innerHTML = "";
+										document.getElementById('hc_bds').style.display = "none";
+									}
+								}
+							}
+							else
+							{
+								send_buttom.innerHTML ="";
+								send_buttom.style.display = "none";
+								document.getElementById('hc_bds').innerHTML = "";
+								document.getElementById('hc_bds').style.display = "none";
+							}
+						}
+					}
+				}
+            }else{
+                removeClass(config.elem,'focus');
+            }
+        });
+    };
+  	Drag.init(document.getElementById('xqhc_look_div'));
+   	overlap.init([document.getElementById('xqhc_box_one_div'),document.getElementById('xqhc_box_two_div'),document.getElementById('xqhc_look_div'),document.getElementById('hc_bds')]);
+};
+</script>
+<script language="javascript" src="../js/jquery-1.2.4a.js"></script>
+<script language="javascript" src="../js/ui.base.min.js"></script>
+<script language="javascript" src="../js/ui.draggable.min.js"></script>
+<script language="javascript" src="../js/ui.droppable.min.js"></script>
+<script language="javascript">
+$(function()
+{
+	$("#item_look_div").draggable( {revert: true, helper: 'original'});
+	$("#item_box_div").droppable({
+		accept: function(draggable){
+			return $(draggable).hasClass("gam");
+		},
+		drop: function(){
+			document.getElementById('item_box_div').innerHTML = document.getElementById('item_look_div').innerHTML;
+			document.getElementById('item_look_div').innerHTML = "";
+			document.getElementById('fb_button').style.display="block";
+			document.getElementById('item_box_div').value = document.getElementById('item_look_div').value
+		}
+	});
+});
+</script>
+<script type="text/JavaScript">
+<!--
+
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+/* added by Zheng.PIng */
+function hiddenContent() {
+    document.getElementById('props_types').style.display = 'none';
+}
+
+function showContent() {
+    document.getElementById('props_types').style.display = '';
+}
+/* addded by Zheng.Ping */
+//-->
+var bid=0;
+var price=0;
+var selid=0;
+var types=-1;
+var prestige=0;
+</script>
+</head>
+
+<body>
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.document.getElementById('gw').src='./function/City_Mod.php'">
+        <label></label>
+      </div>
+<div class="task">
+	<div class="task_left"></div>
+          
+    <div class="task_right">
+    
+   	  <ul class="task_nav">
+    <li id="tab1" onclick="setTab('tab',1,5);" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+    <li id="tab2" onclick="setTab('tab',2,5);"><a class="a02" href="javascript:void(0)"></a></li>
+    <li id="tab3" onclick="setTab('tab',3,5);"><a class="a03" href="javascript:void(0)"></a></li>
+	<li id="tab4" onclick="setTab('tab',4,5);"><a class="a04" href="javascript:void(0)"></a></li>
+	<li id="tab5" onclick="setTab('tab',5,5);"><a class="a05" href="javascript:void(0)"></a></li>
+    </ul>    
+	
+	
+	
+<div class="dt_task" id="con_tab_1">
+
+		<div class="box01">
+  <div class="box02">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+                    <div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                     #baseoption#
+				      </select></div>
+		  </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">价格</td>
+                      <td style="text-align:left">属性</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #shoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus"><input type="button" class="conbtn1" value="秒卖装备" onclick="allSell();" />数量：<input type="text" class="txt02"  id="num" size="5"  /><input type="button" class="conbtn" onclick="buy();" value="购买" /><input type="button" class="conbtn" value="卖出" onclick="sell();" /></div>
+	  </div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                   #bagoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+                	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+                <div id="apDiv1">
+    	<div class="task_dh02">
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div>
+		  <div class="cion01">金币:#money#</div>
+		</div>
+    </div>
+    </div>
+	
+	<!--装备分解-->
+    <div class="dt_task con" id="con_tab_4">
+		<div class="box01">
+			<div class="box02">
+				<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+		 	</div>
+			<div class="box06">
+				<div id="item_box_div" class="div item_box_div" onDblClick="clear_box_item('item_box_div')"></div>
+				<div id="item_look_div" class="div gam" style="display:none">装备</div>
+				<div id="fb_button" style="display:none"><img style="cursor:pointer;"  onclick="request_zbfj()" src="../new_images/ui/zbfj.png " />			</div>
+				<div id="synum" style="position:relative; top:130px; left:15px;">今天剩余分解次数:#syfjnum#</div>
+				<div id="info">说明:单击右侧列表选中物品,拖动小图标至分解框中,双击取出</div>
+			</div>
+	  </div>
+	  
+	  
+	  
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#equipmentbag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+      
+    </div>
+	<!--合成镶嵌-->    
+	<div class="dt_task con" id="con_tab_5">
+		<div class="box01">
+			<div class="box02">
+				<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+		 	</div>
+			<div class="box07">
+				<div id="xqhc_box_one_div" class="div xqhc_box_div xqhc_one_div" onmouseout="window.parent.UnTip();this.style.border=0;" onmouseover="look('1')" onDblClick="clear_box_item('xqhc_box_one_div')"></div>
+				<div id="xqhc_box_two_div" class="div xqhc_box_div xqhc_two_div" onmouseout="window.parent.UnTip();this.style.border=0;" onmouseover="look('2')" onDblClick="clear_box_item('xqhc_box_two_div')"></div>
+				<div id="xqhc_look_div" class="div xqhc_look_div" style="display:none; left:400px; top:80px;" onmouseup="div_ecovery()">镶嵌合成</div>
+				<div id="send_server" style="display:none;"></div>
+				<div id="hc_bds" class="xqhc_bao_div" style="height:50px; width:50px; position:absolute; top:190px; left:330px; display:none; text-align:center"></div>
+				<div id="xqkcinfo">说明:单击右侧列表选中物品,拖动小图标至合成镶嵌框中,双击取出</div>
+			</div>
+	  </div>
+	  		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#gam_equipment#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+	</div>
+	<div class="dt_task con" id="con_tab_3">
+       
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+              
+		  </div>
+				<div class="box05">
+ <table style="margin:30px 0 0 20px;">
+  <tr>
+    <td colspan="2" class="btitle">&nbsp;</td>
+    </tr>
+  #strshoplist#
+  <tr>
+    <td colspan="2" class="addbtn"><img src="../images/add.gif" alt="加入物品" onclick="strsell();" /><img src="../images/add02.gif" alt="开始强化" onclick="harden();" /></td>
+    </tr>
+</table> 
+
+
+</div>
+				<div class="plus">双击可以取下物品</div>
+	  </div>
+	  
+	  
+	  
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+               	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#strmybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+      
+    </div>  
+	
+  <div class="dt_task con" id="con_tab_2">
+       
+		<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+		  </div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">需要威望</td>
+                      <td style="text-align:left">属性</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #preshoplist#
+			      </table>
+				</div>  
+				</div>
+				<div class="plus">数量：<input type="text" class="txt02"  id="prenum" size="5"  /><input type="button" class="conbtn" value="购买" onclick="prebuy();" /></div>
+			</div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                   #bagoption#
+				      </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">卖出价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+                	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist"> #mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+<div id="apDiv1">
+    	<div class="task_dh02">
+			
+            <div class="cion"><img src="../new_images/ui/icon05.jpg" width="20" height="18" /></div>
+          <div class="cion01">威望:#prestige#</div>
+		</div>
+    </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
+<!--Add by XueYuan 2011-2-14-->
+<script language="javascript">
+// Add by DuHao 2009-5-13
+var srcs = 0
+srcs = '#srcs#';
+var send_buttom = document.getElementById('send_server');
+
+if(srcs == 'strength'){
+	setTab('tab',3,5);
+}
+function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+function copyWord(words)
+{
+	window.parent.document.getElementById('baike_input').value=words;
+}
+function sel(obj)
+{
+	if(typeof(selid)=="object") 
+	{
+		selid.style.backgroundColor='#fff';
+	}
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	try
+	{
+		var pro = document.getElementById(obj.id.replace("t","s")).innerHTML;
+		document.getElementById('num').value= parseInt(pro);
+	}
+	catch(e)
+	{
+	}
+}
+function buy(){
+	var nums = parseInt(document.getElementById('num').value);
+	if(bid == 0 ){window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump = price*parseInt(document.getElementById('num').value)
+		if (sump==0) window.parent.Alert('数据错误！');
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=t.responseText;
+					if(n==10) window.parent.Alert('您的金币不够！');
+					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)-sump;}
+					else if(n==3) {window.parent.Alert('请选择要购买的装备!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/ZbGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		document.getElementById('mybag').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php', opt);
+}
+
+function sell(){
+	var nums = parseInt(document.getElementById('num').value); 
+	if(bid == 0 ){window.parent.Alert('请先选择要卖出的物品。');return;}
+	else{
+	    if(!validInt(nums)) {window.parent.Alert('数量只能是数字！');return false;}
+		else if(nums<1 || nums>9999){window.parent.Alert('卖出数量范围是1-9999之间的整数！');return;}
+		
+		if (types==2 && nums!=1)
+		{
+			window.parent.Alert('不可叠加物品只能单一卖出');return;
+		}
+
+		var sump = price*parseInt(nums);
+		if(confirm('你确定卖出选中的物品吗? 总共将获得 '+sump+' 金币！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)+sump;}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
+					else window.parent.Alert('卖出失败!');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/sellBag.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+
+function allSell(){
+    if(confirm("确定要一次性卖完背包里的所有装备吗？请谨慎操作！一经卖出，概不负责！")){
+        //window.parent.Alert("测试");
+        var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)+sump;}
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
+					else window.parent.Alert('卖出失败!'+n);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/sellBagAllZB.php?', opt);
+    }
+}
+
+function dbclickSell(){
+    sell();
+}
+
+var LastKey = "";
+
+
+function showTip(id,bid,sign,type)
+{
+	equipInfos = window.parent.equipInfos;
+	var x = 500;
+	var y = 100;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined' && equipInfos[key] != "no"){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key && equipInfos[key] != "no"){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+
+
+function prebuy(){
+	var nums = parseInt(document.getElementById('prenum').value);
+	if(bid == 0 ){window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums == "")
+	{
+		window.parent.Alert('请先填写数量！');return;
+	}
+	else if(nums != 1){window.parent.Alert('装备一次只能买一个！');return;}
+	else{
+		var sump = prestige*parseInt(document.getElementById('prenum').value);
+		if (sump==0) window.parent.Alert('数据错误！');
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 威望！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==10) window.parent.Alert('您的威望不够！');
+					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');window.location.reload();}
+					else if(n==3) {window.parent.Alert('请选择要购买的装备!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/zbPrestigeGate.php?bid='+bid+'&n='+nums,opt);
+		}
+		else return;
+	}
+}
+
+function strsell(){
+	if(bid == 0){window.parent.Alert('请先选择要强化的装备或辅助道具!');return;}
+	else{
+		var opt = {
+    		 method: 'get',
+			 onSuccess: function(t) {
+			 	var n=t.responseText;
+				if(n==0) 
+				{
+					window.parent.Alert('数据有误！');
+				}
+				else if(n==1) 
+				{
+					window.parent.Alert('该装备不可强化！');
+				}
+				
+				else
+				{
+					window.parent.document.getElementById('gw').src='./function/Zb_Mod.php?srcs=strength'+n;//精练道具
+				}
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/zbstrengthGate.php?pid='+pid+'&bid='+bid,opt);
+	}
+	//else return;
+}
+
+//开始强化
+function harden()
+{
+	var hid;//要强化的装备的ID
+	var hids;//辅助道具的ID
+	var bids;//要强化的装备在背包中的ID
+	if(document.getElementById("apid") == null || document.getElementById("bid") == null)
+	{
+		hid = "";
+		bid = "";
+		window.parent.Alert("您没有加入要强化的装备！");
+		return false;
+	}
+	if(document.getElementById("pids") == null)
+	{
+		hid = "";
+		if(!confirm("确认要开始强化吗？还没有加入辅助道具噢！"))
+		{
+			return false;
+		}
+	}
+	else
+	{
+		hids = document.getElementById("pids").value;
+	}
+	bids = document.getElementById("bid").value;
+	hid = document.getElementById("apid").value;
+	equipInfos = window.parent.equipInfos;
+	key = bids+"_0_1_2";
+	equipInfos[key] = "no";
+	key = bids+"_0_1_1";
+	equipInfos[key] = "no";
+	if(!confirm("确认要开始强化吗？失败后装备将会消失噢！"))
+	{
+		return false;
+	}
+	if(!confirm("确认要开始强化吗？失败后装备将会消失噢！"))
+	{
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 var n = t.responseText;
+				 if(n == 0)
+				 {
+				 	window.parent.Alert("您没有加入要强化的装备！");
+				 }
+				 if(n == 11)
+				 {
+				 	window.parent.Alert("没有到冷却时间，请稍候再试……");
+				 }
+				 else if(n == 1)
+				 {
+				 	window.parent.Alert("您辅助道具信息出错！");
+				 }
+				 else if(n == 3)
+				 {
+				 	window.parent.Alert("您的金币不够，不能强化！");
+				 }
+				 else if(n == 2)
+				 {
+				 	window.parent.document.getElementById('gw').src='./function/Zb_Mod.php?srcs=strength';
+					setTab('tab',3,5);
+				 	window.parent.Alert("装备强化失败！");
+				 }
+				 else if(n == 15)
+				{
+					window.parent.Alert("当前强化的最高等级为15！");
+				}
+				 else if(n == 4)
+				 {
+				 	window.parent.Alert("您没有相应的必需材料！");
+				 }
+				 else if(n == 10)
+				 {
+				 	window.parent.document.getElementById('gw').src='./function/Zb_Mod.php?srcs=strength';
+					setTab('tab',3,5);
+				 	window.parent.Alert("恭喜装备强化成功！");
+		
+				 }
+				 else
+				 {
+				 	window.parent.Alert("装备强化有误！");
+				 }
+					//window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_zbstrength.php?pid='+hid+'&bid='+bids+'&pids='+hids, opt);
+}
+
+
+
+function takeoff(id)
+{
+	if(confirm('你确定取下物品吗?'))
+	{
+		var opt = {
+					method: 'get',
+					 onSuccess: function(t){
+						var n=parseInt(t.responseText);
+						 if(n == 1)
+						 {
+							window.parent.Alert("物品取下成功!");
+							window.parent.document.getElementById('gw').src='./function/Zb_Mod.php?srcs=strength';
+							setTab('tab',3,5);
+						 }
+						 else
+						 {
+							window.parent.Alert('操作有误！');
+						 }
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('../function/offprops.php?id='+id+'&action=to',opt);
+	}
+}
+function div_apear(para,id)
+{
+	var td_equipmen = document.getElementById("item_look_div");
+	td_equipmen.style.top=80;
+	td_equipmen.style.left=400;
+	td_equipmen.style.display = "block";
+	td_equipmen.innerHTML = '<img src="../images/props/'+para+'">';
+	document.getElementById("item_look_div").value = id;
+}
+function div_disapear(para)
+{
+	var td_equipmen = document.getElementById(para);
+	td_equipmen.style.display = "none";
+}
+function clear_box_item(para)
+{
+	document.getElementById(para).innerHTML = "";
+	document.getElementById('fb_button').style.display="none";
+	send_buttom.style.display="none";
+	document.getElementById('hc_bds').style.display="none";
+	document.getElementById('hc_bds').innerHTML = "";
+	document.getElementById('hc_bds').varyname = "";
+	document.getElementById('hc_bds').value = "";
+}
+function request_zbfj()
+{
+	document.getElementById('fb_button').style.display = "none";
+	var para = document.getElementById('item_box_div').value;
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t){
+						var n=t.responseText;
+						var props_div = "tr"+para;
+						if(n == 'illegal')
+						{
+							 window.parent.Alert('Illegal operation');
+						}
+						else if(n == 'memcacheerror')
+						{
+							window.parent.Alert('memory load error');
+						}
+						else if(n == 'nofjnum')
+						{
+							window.parent.Alert('你今天的分解次数已用完,请明天再来');
+						}
+						else if(n == 'fail')
+						{
+							var sycs = document.getElementById('synum').innerHTML.split(':');
+							sycs[1] = sycs[1] - 1;
+							document.getElementById('synum').innerHTML = sycs[0]+":"+sycs[1];
+							window.parent.Alert('分解失败,装备消失');
+							document.getElementById('item_box_div').innerHTML = '';
+							document.getElementById(props_div).style.display = "none";
+						}
+						else
+						{
+							var sycs = document.getElementById('synum').innerHTML.split(':');
+							sycs[1] = sycs[1] - 1;
+							document.getElementById('synum').innerHTML = sycs[0]+":"+sycs[1];
+							var gem_info = n.split(',');
+							window.parent.Alert('分解成功,得到'+gem_info[0]+gem_info[1]+'个');
+							document.getElementById('item_box_div').innerHTML = '<img src="../images/props/'+gem_info[2]+'">';
+							document.getElementById(props_div).style.display = "none";
+							var new_gam_arr = document.getElementById('con_tab_5').getElementsByTagName('tr');
+							
+							var new_gam_id = 'tr_hecheng'+gem_info[3];
+							var baghas = 0;
+							for(var i=1;i<new_gam_arr.length;i++)
+							{
+								if(new_gam_arr[i].id == new_gam_id)
+								{
+									if(gem_info[4] == 25 || gem_info[4] == 26 || gem_info[4] == 27)
+									{
+										document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML = parseInt(document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML) + gem_info[1];
+										baghas = 1;
+										break;
+									}
+								}
+							}
+							if(baghas != 1)
+							{
+								if(gem_info[4] == 25 || gem_info[4] == 26 || gem_info[4] == 27)
+								{
+									var object = new_gam_arr[1].parentNode;
+									create_new_props(gem_info[3],gem_info[1],gem_info[0],gem_info[2],gem_info[4],object);
+								}
+								var key = gem_info[3]+"_0_1_2";	
+								equipInfos[key] = "no";	
+								var key = gem_info[3]+"_0_1_1";	
+								equipInfos[key] = "no";	
+							}
+						}
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('../function/zbfjGate.php?props='+para,opt);
+}
+function xqhc_apear(para,valueid,varyname)
+{
+	var apear = document.getElementById('xqhc_look_div');
+	apear.style.display = "block";
+	apear.innerHTML = '<img src="../images/props/'+para+'">';
+	apear.value = valueid;
+	apear.varyname = varyname;
+}
+function request_xqhc()
+{
+	send_buttom.style.display = "none";
+	var bds = 0;
+	var para1 = document.getElementById('xqhc_box_one_div');
+	var para2 = document.getElementById('xqhc_box_two_div');
+	if(document.getElementById('hc_bds').style.display == "block" && typeof(document.getElementById('hc_bds').value) != "undefined")
+	{
+		document.getElementById('hc_bds').style.display = "none";
+		document.getElementById('hc_bds').innerHTML = "";
+		document.getElementById('hc_bds').varyname = "";
+		bds = document.getElementById('hc_bds').value; 
+		document.getElementById('hc_bds').value = "";
+	}
+	
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t){
+						var n=t.responseText;
+						if(n == "illegal" || n=="dataerror")
+						{
+							window.parent.Alert("物品数量不足,操作失败");
+							return;
+						}
+						else if(n=="bsdnouse")
+						{
+							window.parent.Alert("保底石使用不在范围内");
+							return;
+						}
+						else if(n=="noenough")
+						{
+							window.parent.Alert("物品数量不足,操作失败");
+							return;
+						}
+						else if(n == "busy")
+						{
+							window.parent.Alert("操作太快");
+							return;
+						}
+						else if(n == "full")
+						{
+							window.parent.Alert("该宝石已达满级,不能继续合成");
+							return;
+						}
+						else if(n=="nosame")
+						{
+							window.parent.Alert("不同类型或不同级别的宝石不能合成");
+							return;
+						}
+						else if(n.indexOf("fail") != -1)
+						{
+							if(n=="fail")
+							{
+								window.parent.Alert("合成失败,失去两颗宝石");
+								document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML -= 1;
+								if(document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML == 0)
+								{
+									document.getElementById('tr_hecheng'+para1.value).style.display = "none";
+								}
+								para1.value = "";
+								para1.innerHTML = "";
+							}
+							else
+							{
+								window.parent.Alert("合成失败,失去一颗宝石");
+								var bds_sy = n.split('|');
+								if( bds_sy[1] != 0 )
+								{
+									document.getElementById('tr_hecheng'+bds).childNodes[2].innerHTML = bds_sy[1];
+								}
+								else
+								{
+									document.getElementById('tr_hecheng'+bds).childNodes[2].style.display = "none";
+								}
+							}
+							document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML -= 1;
+							if(document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML == 0)
+							{
+								document.getElementById('tr_hecheng'+para2.value).style.display = "none";
+							}
+							para2.value = "";
+							para2.innerHTML = "";
+							document.getElementById('xqhc_look_div').innerHTML = '';
+							document.getElementById('xqhc_look_div').style.display = "none";
+							return;
+						}
+						else
+						{
+							var re = n.split(',');
+							if(re[1] == "ok")
+							{
+								key = re[2].value+"_0_1_2";	
+								equipInfos[key] = "no";	
+								if(bds != 0)
+								{
+									document.getElementById('tr_hecheng'+bds).childNodes[2].innerHTML -= 1;
+									if(document.getElementById('tr_hecheng'+bds).childNodes[2].innerHTML == 0)
+									{
+										document.getElementById('tr_hecheng'+bds).style.display = "none";
+									}
+								}
+								document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML -= 1;
+								document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML -= 1;
+								document.getElementById('xqhc_box_one_div').innerHTML = '<img src="../images/props/'+re[0]+'">';
+								window.parent.Alert("宝石合成成功,得到高一级宝石");
+								if(document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML == 0)
+								{
+									document.getElementById('tr_hecheng'+para2.value).style.display = "none";
+								}
+								if(document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML == 0)
+								{
+									document.getElementById('tr_hecheng'+para1.value).style.display = "none";
+								}
+								para1.value = re[2];
+								para2.innerHTML = "";
+								para2.value = "";
+								document.getElementById('xqhc_look_div').innerHTML = '';
+								document.getElementById('xqhc_look_div').style.display = "none";
+								
+								var new_gam_arr = document.getElementById('con_tab_5').getElementsByTagName('tr');
+								var new_gam_id = 'tr_hecheng'+re[2];
+								var baghas = 0;
+								for(var i=1;i<new_gam_arr.length;i++)
+								{
+									if(new_gam_arr[i].id == new_gam_id)
+									{
+										document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML = parseInt(document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML) + 1;
+										baghas = 1;
+										break;
+									}
+								}
+								if(baghas != 1)
+								{
+									var object = new_gam_arr[1].parentNode;
+									create_new_props(re[2],1,re[4],re[0],re[3],object);
+								}
+								return;
+							}
+							else if(n=="mosaicd")
+							{
+								window.parent.Alert("此装备已经镶嵌过宝石了,再次镶嵌请先进行洗练");
+								return;
+							}
+							else if(n=="dataerror")
+							{
+								window.parent.Alert("宝石数据错误,请联系GM");
+								return;
+							}
+							else if(n=="badpostion")
+							{
+								window.parent.Alert("该宝石不能与该位置的装备进行镶嵌");
+								return;
+							}
+							else if(n=="badcolor")
+							{
+								window.parent.Alert("该宝石不能与该颜色的装备进行镶嵌");
+								return;
+							}
+							else if(n=="nodeal")
+							{
+								window.parent.Alert("碎片不能直接用于镶嵌哦");
+							}
+							if(re[0] == "xq")
+							{
+								window.parent.Alert("镶嵌成功,获得属性:"+re[1]);
+								if( document.getElementById('xqhc_box_one_div').varyname == 25 )
+								{
+									key = para2.value+"_0_1_2";	
+									equipInfos[key] = "no";	
+									key = para2.value+"_0_1_1";	
+									equipInfos[key] = "no";	
+									document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML -= 1;
+									if(document.getElementById('tr_hecheng'+para1.value).childNodes[2].innerHTML == 0)
+									{
+										document.getElementById('tr_hecheng'+para1.value).style.display = 'none';
+									}
+									para1.innerHTML = "";
+									para1.value = "";
+									para1.varyname = "";			
+								}
+								if( document.getElementById('xqhc_box_two_div').varyname == 25 )
+								{
+									key = para1.value+"_0_1_2";	
+									equipInfos[key] = "no";	
+									key = para1.value+"_0_1_1";
+									equipInfos[key] = "no";	
+									document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML -= 1;
+									if(document.getElementById('tr_hecheng'+para2.value).childNodes[2].innerHTML == 0)
+									{
+										document.getElementById('tr_hecheng'+para2.value).style.display = 'none';
+									}
+									para2.innerHTML = "";
+									para2.value = "";
+									para2.varyname = "";
+								}
+								document.getElementById('xqhc_look_div').innerHTML = '';
+								document.getElementById('xqhc_look_div').style.display = "none";
+							}
+							
+						}
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('../function/xqhcGate.php?props1='+para1.value+'&props2='+para2.value+'&bds='+bds,opt);
+}
+function request_xl()
+{
+	send_buttom.style.display = "none";
+	var para1 = document.getElementById('xqhc_box_one_div').value;
+	var para2 = document.getElementById('xqhc_box_two_div').value;
+	var opt = {
+			method: 'get',
+			onSuccess: function(t){
+			var n=t.responseText;
+			if(n=="busy")
+			{
+				window.parent.Alert("操作太快");
+				return;
+			}
+			else if(n=="illegal")
+			{
+				window.parent.Alert("非法操作");
+				return;
+			}
+			else if(n=="noneed")
+			{
+				window.parent.Alert("该装备没有镶嵌属性,不能进行洗练");
+				return;
+			}
+			else if(n=="end")
+			{
+				window.parent.Alert("洗练成功,装备失去镶嵌属性");
+				if( document.getElementById('xqhc_box_one_div').varyname == 26 )
+				{
+					key = para2+"_0_1_2";
+					document.getElementById('xqhc_box_one_div').innerHTML = "";
+					document.getElementById('xqhc_box_one_div').value = "";
+					document.getElementById('tr_hecheng'+para1).childNodes[2].innerHTML -= 1;
+					equipInfos[key] = "no";
+				}
+				if( document.getElementById('xqhc_box_two_div').varyname == 26 )
+				{
+					key = para1+"_0_1_2";
+					document.getElementById('xqhc_box_two_div').innerHTML = "";
+					document.getElementById('xqhc_box_two_div').value = "";
+					document.getElementById('tr_hecheng'+para2).childNodes[2].innerHTML -= 1;
+					equipInfos[key] = "no";
+				}
+			}
+			return;
+		},
+			on404: function(t) {
+		},
+			onFailure: function(t) {
+		},
+			asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/zbxlGate.php?props1='+para1+'&props2='+para2,opt);
+}
+function look(para)
+{
+	switch (para)
+	{
+		case "1" :
+		{
+			var lookid = document.getElementById("xqhc_box_one_div").value;
+			break;
+		}
+		case "2" :
+		{
+			var lookid = document.getElementById("xqhc_box_two_div").value;	
+			break;
+		}
+	}
+	if(typeof(lookid) != 'undefined')
+	{
+		showTip(lookid,0,1,2);
+	}
+}
+function div_ecovery()
+{
+	document.getElementById('xqhc_look_div').style.top = "80px";
+	document.getElementById('xqhc_look_div').style.left = "400px";
+}
+function create_new_props(id,num,name,pic,pid,object)
+{
+	mytr = document.createElement("tr");
+	for(var i=0;i<3;i++)
+	{
+		mytd = document.createElement("td");
+
+		onclick_info = "bid="+id+";price=1;sel(this);pid="+pid+";"
+		switch(i)
+		{
+			case 0 :
+			{
+				tdcontent = document.createElement("img");
+				tdcontent.src = "../images/ui/bag/25.gif";
+				tdcontent.style.width = "25px";
+				tdcontent.style.height = "25px";
+				mytd.setAttribute("width","35px");
+				break;
+			}
+			case 1 :
+			{
+				//onclick_info = "bid="+id+";price=1;sel(this);pid="+pid+";"
+				tdcontent = document.createTextNode(name);
+				set_td_id = "t"+pid;
+				mytd.setAttribute("id",set_td_id);
+				mytd.setAttribute("width","110px");
+				mytd.onclick = function ()
+				{
+					sel(this);
+					bid=id;
+					price=1;
+					pid=pid;
+				}
+				mytd.onmouseout = function ()
+				{
+					window.parent.UnTip();
+					this.style.border=0;
+				}
+				mytd.onmouseover = function ()
+				{
+					showTip(id,0,1,2);
+					this.style.border='solid 1px #DFD496';
+				}
+				mytd.setAttribute("style","text-align:left; border:0pt none;");
+				mytd.style.cursor = 'pointer';
+				mytd.onmousedown = function ()
+				{
+					xqhc_apear(pic,id,25);
+				}
+				break;
+			}
+			case 2 :
+			{
+				tdcontent = document.createTextNode(num);
+				set_td_id = "s"+pid;
+				mytd.setAttribute("id",set_td_id);
+				mytd.setAttribute("style","text-align: left;");
+				break;
+			}
+		}
+		mytd.appendChild(tdcontent);
+		mytr.appendChild(mytd);
+		mytr.setAttribute("id","tr_hecheng"+id);
+		mytr.setAttribute("style","display: block;");
+	}
+	object.appendChild(mytr);
+}
+</script>

@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>女神要塞-积分偷取</title>
+<style type="text/css"> 
+<!--
+body { width: auto; height: auto; margin: 0px auto; font-size: 12px; background:#eeeeee;}
+*{ margin: 0px; padding: 0px; }
+pre { margin: 0px; padding: 0px; float: left; }
+img { margin: 0px; padding: 0px; float: left; border: 0px; }
+ul { margin: 0px; padding: 0px; }
+li { display: inline; list-style-type: none; }
+.nav_box { width:788px; height:319px; float:left; background:url(../images/ys/nsjf_bg.jpg);}
+.nav01{width:788px; float:left; padding-top:30px;}
+.nav01_left{width:200px; float:left; padding:5px 0 0 30px;}
+.nav01_center{width:233px; float:left; height:43px; text-align:center; padding-top:20px;}
+.nav01_right{width:300px; float:left; background:url(../images/ys/jl_bg.jpg); height:63px;}
+ 
+.team {position:relative; width:200px; height:54px;background:url(../images/ys/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/team.png');}
+.name {position:absolute; left:85px; top:5px; width:102px; height:16px; line-height:16px; text-align:center}
+.avatar {position:absolute; width:48px; height:48px; left:30px; top:2px;}
+.avatar img {position:absolute; width:48px; height:48px; display:block}
+.red {position:absolute; left:79px; top:28px; width:118px; height:10px}
+.red p {height:10px; overflow:hidden; background:url(../images/ys/red.gif)}
+.blue {position:absolute; left:73px; top:41px; width:123px; height:6px}
+.blue p {height:6px; overflow:hidden; background:url(../images/ys/blue.gif)}
+.level {position:absolute; left:20px; top:29px;}
+.team .name {left:83px; top:3px}
+.team .avatar {left:28px; top:0}
+.team .level {left:18px; top:27px}
+.team .red {left:76px; top:26px;}
+.team .blue {left:70px; top:39px;}
+.teams {position:absolute; width:220px; z-index:20; left:13px; top:8px; color:#582500}
+.leader {position:relative; width:220px; height:58px; margin-bottom:6px; background:url(../images/ys/leader.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ys/leader.png');}
+ 
+.nav02{width:725px; float:left; height:200px; margin:0px 5px 0 35px;}
+.text02{font-size:12px; color:#6d3100; line-height:19px;}
+.text03{font-size:18px; color:#273600; line-height:22px; font-family:"黑体";}
+.nav02_left{width:285px; height:170px; float:left; margin:25px 0 0 30px;}
+.nav02_right{width:316px; height:158px; float:left; margin:38px 0 0 70px;}
+.text01{font-size:12px; color:#273600; line-height:22px;}
+-->
+</style>
+</head>
+ <script language="javascript" src="/javascript/prototype.js"></script>
+<script language="javascript">
+window.parent.autoack = false;
+var curbb="#sbb#";
+#timejs#
+function Setbbs(obj,bb)
+{
+	curbb=bb;
+	for(var j=1;j<4;j++)
+	{	
+		try{
+			if(document.all)
+			{
+				$('i'+j).style.filter = "alpha(opacity=50)";
+			}else{
+				$('i'+j).style.opacity= 0.5;
+			}
+		}catch(e){
+			var x=e;
+			continue;
+		}
+	}
+
+	if(document.all)
+	{
+		$('i'+obj).style.filter ="alpha(opacity=100)";
+	}else{
+		$('i'+obj).style.opacity= 1;
+	}
+}
+
+var lefttime=-10;
+function do_count_down()
+{
+	if(lefttime<-5)
+	{
+		if(times[2]>times[1]){
+			lefttime=0;
+		}else{
+			lefttime=times[1]-times[2];
+		}
+	}
+
+	if(lefttime>0)
+	{
+		lefttime--;
+		$('count_down').innerHTML=lefttime+'秒';
+		setTimeout('do_count_down()',1000);
+	}else{
+		window.location="/function/Expore_Mod.php";
+	}
+}
+</script>
+<body onload="do_count_down()">
+<div class="nav_box">
+	<div class="nav01">
+		<div class="nav01_left">
+		#info#
+		</div>
+		<div class="nav01_center text03">倒计时：<span id="count_down"></span></div>
+		<div class="nav01_right">
+		  <table width="230" border="0" cellspacing="0" cellpadding="0" style="margin:10px 0 0 65px;">
+            <tr>
+              <td height="22">击败次数：#v_times# </td>
+              <td>连击次数：#sv_times#</td>
+            </tr>
+            <tr>
+              <td height="22">失败次数：#f_times#</td>
+              <td>连败次数：#sf_times#</td>
+            </tr>
+          </table>
+		</div>
+	</div>
+	<div class="nav02">
+		<div class="nav02_left text02">
+
+1.20:25-20:30此段时间内，玩家可以通过点击使用道具来掠夺其他玩家积分；<br />
+
+2.掠夺积分是随机选择一名玩家进行掠夺；<br />
+
+3.能够掠夺的积分为1%-50%的随机数；<br />
+
+4.掠夺成功消耗一枚掠夺道具；<br />
+
+5.在整个挑战还没有结束前，若离开战场，则视为挑战失败；<br />
+
+6.掠夺结束后将显示当天挑战积分排名，获得第一的玩家可以获得挑战奖励。		
+	  </div>
+		<div class="nav02_right">
+		<div style="overflow-y: scroll; overflow-x: hidden; height: 130px;">
+		  <table width="300" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td height="22" align="center" class="text02">名次</td>
+              <td align="center" class="text02">昵称</td>
+              <td align="center" class="text02">积分</td>
+            </tr>
+            #ph#
+          </table>
+		  </div>
+		  <table width="300" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="27" height="26" align="right">&nbsp;</td>
+              <td width="27" align="right"><img src="../images/ys/tool2.jpg" width="20" height="20" /></td>
+              <td width="171" class="text02">#stolenStr#</td>
+              <td width="75"><img src="../images/ys/cion.jpg" width="59" height="17"  onclick="window.location='?stolen';" style="cursor:pointer"/></td>
+            </tr>
+          </table>
+		</div>
+	</div>
+</div>
+</body>
+</html>

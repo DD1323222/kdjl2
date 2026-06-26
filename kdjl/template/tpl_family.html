@@ -1,0 +1,958 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>家族殿堂</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/family01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.leaft{margin:3px 0 0 5px;background:url(..//../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:90px;display:block;}
+.a01{background:url(../new_images/ui/family02.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/family02.jpg) no-repeat 0 -29px;height:29px;}
+.a02{background:url(../new_images/ui/family02.jpg) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/family02.jpg) no-repeat -90px -29px;height:29px;}
+.a03{background:url(../new_images/ui/family02.jpg) no-repeat -179px 0;height:29px;}
+.task_nav li.on .a03{background:url(../new_images/ui/family02.jpg) no-repeat -179px -29px;height:29px;}
+
+.task_dh02{width:300px; height:20px; float:left;}
+.cion{height:18px; float:left; padding:3px 0 0 10px; }
+.cion01{height:16px; float:left; padding:5px 0 0 5px; color:#333;}
+.box{width:650px; height:290px; float:left;}
+.box01{width:602px; float:left; padding-left:14px;}
+.box02{width:602px; float:left; height:28px;}
+.box03{width:600px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;}
+
+.box05{width:292px; float:left; padding-left:14px;}
+.box06{width:292px; float:left; height:28px;}
+.box07{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+
+
+.bb01{ height:24px; float:left; padding-top:2px;}
+.bb02{ height:24px; float:right;padding-top:4px;}
+.bb03{ height:20px; float:right;padding-top:8px;}
+.txt01{color:#FF0000; font-weight:bold; font-size:12px;}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:600px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.tit01 {border-collapse:collapse;width:100%;font-size:12px; color:#BF7D1A;}
+.con{display:none;}
+#apDiv1 {
+	position:absolute;
+	width:305px;
+	height:20px;
+	z-index:2;
+	left: 402px;
+	top: 5px;
+}
+.dt_list01{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.STYLE1 {color: #6C4200}
+.nav{
+	width:459px;
+	height:294px;
+	color:#630;
+	position:absolute;
+	left: 180px;
+	top: 3px;
+}
+.nav_01{width:459px; height:37px; float:left;}
+.nav_02{width:419px; height:279px; background-image:url(../new_images/ui/cjjzbg03.gif); float:left; padding:15px 0 0 40px; } 
+.tt1 {
+	border: 1px solid #960;background-color:#F3E4B2;
+}
+.tt2 {
+	border: 1px solid #960; height:50px; background-color:#F3E4B2;
+}
+</style>
+
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript">
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+function hiddenContent() {
+    $('props_types').style.display = 'none';
+}
+
+function showContent() {
+    $('props_types').style.display = '';
+}
+
+var bid=0;
+var price1=0;
+var price=0;
+var price2=0;
+var selid=0;
+var types=-1;
+var guild_id = 0;
+var qxuid = 0;
+</script>
+<body>
+<div id="Layer1"  style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php?op=2'">
+		<label></label>
+	  </div>
+<div class="task">
+	<div class="task_left"></div>
+		  
+	<div class="task_right">		
+		<ul class="task_nav">
+			<li id="tab1" onclick="setTab('tab',1,3);" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+			<li id="tab2" onclick="setTab('tab',2,3);"><a class="a02" href="javascript:void(0)"></a></li>
+			<li id="tab3" onclick="setTab('tab',3,3);"><a class="a03" href="javascript:void(0)"></a></li>
+		</ul>    
+		<div class="dt_task" id="con_tab_1">
+			<div class="box01">
+				<div id="first">
+					<div class="box02">
+						<span class="bb01"><img src="../new_images/ui/icon11.jpg" width="75" height="25" /></span>
+						<div class="bb01"></div>
+						<div class="bb02"><span class="txt01">点击这里查询家族：</span>
+							<select name="select" onchange="getguild(this.options[this.selectedIndex].value)">
+							<option value="1">家族荣誉度</option>
+							<option value="2">家族等级</option>
+							<option value="3">家族成员</option>
+							</select>
+						</div>
+					</div>
+					<div class="box03">
+						<div id="guild">
+							<table border="0" cellspacing="0" class="tit01">
+							<tr>
+							<td width="20%" height="24" align="center">家族名称</td>
+							<td width="20%" align="center" >族长</td>
+							<td width="20%" align="center" >家族荣誉度</td>
+							<td width="20%" align="center" >家族等级</td>
+							<td width="20%" align="center">家族成员</td>
+							</tr>
+							</table>
+							<div class="dt_list clearfix">
+							<table class="tit01" id="shoplist">
+							#guild#
+							</table>
+							</div>
+						</div> 
+						<div id='jhjs' align="center" style="position:absolute; width:72px; left:241px; cursor:pointer; padding-top:5px; background-image:url(../images/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="parent.$('create_guild').style.display='block'"> 创建家族
+						</div>
+					</div>
+					
+					
+					<!--div id="create_guild" style="position:absolute; width:500px; z-index:3; background-color:#996600; display:none">
+		    <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+              <tr>
+                <td height="25">创建家族</td>
+                <td height="25" align="right"><span class="STYLE1" style="cursor:pointer" onclick="$('create_guild').style.display='none'">关闭&nbsp;&nbsp;</span></td>
+              </tr>
+              <tr>
+                <td width="49%">家族名称：
+                  <input name="name" type="text" id="name" />                </td>
+                <td width="51%"><div style="line-height:17px;">家族在线人员越多，家族内人员可获得的经验加成越多，家族人员可通过家族荣誉战获得荣誉点，荣誉点可通过家族商店购买特殊道具。</div></td>
+              </tr>
+              <tr>
+                <td>家族介绍：<textarea name="info" cols="10" rows="3" id="info" style="width:150px; height:50px"></textarea></td>
+                <td>字数不得超过200字</td>
+              </tr>
+              <tr>
+                <td><div style="line-height:17px;">
+                  <p>创建条件：<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.拥有vip卡<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.尚未加入其它家族<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.未向其它家族提出申请<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.至少拥有10点vip积分</p>
+                  <p>
+                  </p>
+                </div></td>
+                <td align="right" valign="bottom"><span class="STYLE1" style="cursor:pointer" onclick="create_ajax()">确定创建</span>&nbsp;&nbsp;&nbsp;&nbsp;<br /><br /></td>
+              </tr>
+            </table>
+		  </div-->
+				</div>			
+				
+				
+					
+		</div>
+		</div>
+		
+		<div id="guild_level_info" style="z-index:5; background-image:url(../images/ui/main/boxk.gif
+);position:absolute;width:266px;height:162px; left:330px; top:100px; color:#6C4200; background-repeat:no-repeat; padding:15px;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#DFDABC;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#DFDABC;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#DFDABC;scrollbar-track-color:#DFDABC;scrollbar-arrow-color:#ffffff;display:none">
+					#guild_level_info#
+			  </div>
+		<!--详细信息-->
+				<div id="give_props" style="z-index:4; position:absolute; width:250px; height:106px; left:287px; background-color:#E1CEA1; display:none; top: 105px; border:1px solid #B18033;">
+				<table width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
+						<tr>
+						<td width="26%" height="40" valign="bottom"><span class="STYLE1">物品名称：</span></td>
+						<td width="74%" valign="bottom"><input name="pname" type="text" id="pname" /></td>
+						</tr>
+						<tr>
+						<td height="30"><span class="STYLE1">物品数量：</span></td>
+						<td><input name="psum" type="text" id="psum" /></td>
+						</tr>
+						<tr>
+						<td height="25" colspan="2" align="center"><input type="button" name="Submit" value="捐赠" onclick="donation()" /></td>
+						</tr>
+					</table>
+	  </div>
+	  <!--权限操作-->
+				<div id="permissions" style="z-index:5; border:1px solid #B18033; position:absolute;width:152px;height:106px; left:330px; top:100px; background-color:#E1CEA1; color:#6C4200;display:none">
+					<table width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
+						<tr>
+						<td width="49%" height="25">您要将<span id="qxname"></span>设为：</td>
+						</tr>
+						<tr>
+						<td height="25" style="cursor:pointer" onclick="permissions(2)">1.长老</td>
+						</tr>
+						<tr>
+						<td height="25" style="cursor:pointer" onclick="permissions(1)">2.成员</td>
+						</tr>
+						<tr>
+						<td height="25" style="cursor:pointer" onclick="permissions(3)">3.转让会长</td>
+						</tr>
+					</table>
+			  </div>
+			  
+		<div class="dt_task con" id="con_tab_2">       
+			     
+		</div>        
+		
+		<div class="dt_task con" id="con_tab_3">       
+			<div class="box05">
+				<div class="box06">
+					<div class="bb01"><img src="../new_images/ui/shop03.jpg" width="65" height="25" /></div>
+				</div>
+				<div class="box07">
+					<table border="0" cellspacing="0" class="tit01">
+					<tr>
+					<td height="24" style="width:35px; text-align:left"></td>
+					<td style="width:100px; text-align:left">名称</td>
+					<td style="width:60px; text-align:left">荣誉点数</td>
+					<td style="text-align:left">贡献度</td>
+					</tr>
+					</table>
+					<div class="dt_list01 clearfix">
+						<table class="tit01" id="shoplist">
+						#shoplist#
+						</table>
+					</div>  
+				</div>
+				<div class="plus">数量：<input type="text" size="5" id="FamilyNum"  />
+				<input type="button" class="conbtn" onclick="FamilyUpgrade();" value="升级" />
+				<input type="button" class="conbtn" onclick="FamilyBuy();" value="购买" /></div>
+			</div>
+			<div class="box05">
+				<div class="box06">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02">
+						<span class="txt01">分类查看</span>
+						<select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+						#bagoption#
+						</select>
+					</div>
+				</div>
+				<div class="box07">
+					<table border="0" cellspacing="0" class="tit01">
+					<tr>
+					<td height="24" style="width:35px; text-align:left"></td>
+					<td style="width:100px; text-align:left">名称</td>
+					<td style="width:60px; text-align:left">卖出价格</td>
+					<td style="text-align:left">数量</td>
+					</tr>
+					</table>
+					<div class="dt_list01 clearfix">
+					<table class="tit01" id="mybag1">#mybag#</table>
+					</div>
+				</div>
+				<div class="plus">背包空间：#baglimit# </div>
+			</div>
+		</div>
+		<div id="apDiv1">
+		<div class="task_dh02">
+			<div class="cion"><img src="../new_images/ui/icon13.jpg" width="20" height="19" /></div>
+			<div class="cion01">荣誉点数:#honor#</div>
+			<div class="cion"><img src="../new_images/ui/icon14.jpg" width="20" height="19" /></div>
+			<div class="cion01">贡献度:#contribution#</div>
+		</div>
+	</div>
+	</div>
+	
+</div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+//ajax请求得到家族列表
+function getguild(id){
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					//window.parent.Alert(t.responseText);
+					var str = t.responseText;
+					$('guild').innerHTML = str;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		//window.status=		'../function/get.sjSkill.php?id='+sid+'&pid='+pid;
+		var ajax=new Ajax.Request('../function/guild.php?op=show&id='+id, opt);
+}
+
+//家族创建发送验证请求
+function create_ajax(){
+	var name = parent.$('name').value;
+	var info = parent.$('info').value;
+	if(name == '' || info == ''){
+		window.parent.Alert('请填写完整！');
+		return;
+	}
+	if(name.length > 50 || info.length > 200){
+		window.parent.Alert('填写格式不正确！');
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					//window.parent.Alert(t.responseText);
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('填写格式不正确！');
+					}else if(str == 2){
+						window.parent.Alert('您已经向其它的家族发出请求，不能创建！');
+					}else if(str == 3){
+						window.parent.Alert('您已经加入到其它家族，不能创建！');
+					}else if(str == 4){
+						window.parent.Alert('您的积分不足10，不能创建！');
+					}else if(str == 5){
+						window.parent.Alert('您没有家族令牌，不能创建！');
+					}else if(str == 6){
+						window.parent.Alert('恭喜您，创建成功！');
+						window.location.reload();
+					}else if(str == 10){
+						window.parent.Alert('离上次您解散或者退出家族没有24小时的冷却时间，请稍候再试！');
+						window.location.reload();
+					}else{
+						window.parent.Alert(str);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=create&name='+name+'&info='+info, opt);
+}
+
+//查询家族详细信息
+function show_guild_info(gid){
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					//window.parent.Alert(t.responseText);
+					var str = t.responseText;
+					//$('guild_info').innerHTML = '<table width="100%" border="0" align="right" cellpadding="0" cellspacing="0" id="info_show">'+str+'</table>';
+					if(gid != 0){
+						for(var i=1;i<4;i++)
+						$('con_tab_'+i).style.display = 'none';	
+					}
+					$('con_tab_2').innerHTML = str;
+					$('con_tab_2').style.display = 'block';		
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		//window.status=		'../function/get.sjSkill.php?id='+sid+'&pid='+pid;
+		var ajax=new Ajax.Request('../function/guild.php?op=show_guild_info&gid='+gid, opt);
+}
+
+function fh(){
+	for(var i=1;i<4;i++)
+		$('con_tab_'+i).style.display = 'none';				
+	$('con_tab_2').innerHTML = str;
+	$('con_tab_2').style.display = 'block';	
+}
+
+//添加好友
+function friendlist(name)
+{
+	if(name=='' || name.length<2) 
+	{
+		window.parent.Alert('请正确输入玩家的角色名！'); 
+		return false;
+	}
+	
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	if(t.responseText.substr(0,1) =='#')
+					{
+						window.parent.Alert('添加好友'+name+'成功！');
+					}else window.parent.Alert(t.responseText);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/friendGate.php?op=add&name='+name, opt);
+}
+
+
+//开除成员
+function fire(member_id,guild_id){
+	if(member_id == '' || guild_id == ''){
+		return;
+	}
+	if(!confirm('您确定将他开除家族？')){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('操作有误！');
+					}else if(str == 2){
+						window.parent.Alert('您不能开除自己！');
+					}else if(str == 3){
+						window.parent.Alert('您不在此家族，不能作此操作！');
+					}else if(str == 4){
+						window.parent.Alert('您是普通成员，不能开除其它成员');
+					}else if(str == 5){
+						window.parent.Alert('对方不在此家族，您不能操作');
+					}else if(str == 6){
+						window.parent.Alert('您没有权限开除比您职位高的成员！');
+					}else if(str == 7){
+						window.parent.Alert('操作成功！');
+						show_guild_info(guild_id);
+					}else{
+						window.parent.Alert('操作失败！');
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=fire&member_id='+member_id+'&guild_id='+guild_id, opt);
+}
+
+//申请加入
+function apply(){
+	if(guild_id == 0){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						if(!confirm('您已经申请加入别的家族，你是否确定加入此家族？')){
+							return;
+						}
+						var opt = {
+								method: 'get',
+								 onSuccess: function(a) {
+									var strs = a.responseText;
+									if(strs == 2){
+										window.parent.Alert('您已经加入其它或者此家族，不能再申请！');
+									}else if(strs == 1){
+										window.parent.Alert('您已经申请加入别的家族，不能再申请了！');
+									}else if(strs == 4){
+										window.parent.Alert('对方人数已满，不能再申请！');
+									}else if(strs == 3){
+										window.parent.Alert('申请成功，请稍候再来查看！');
+									}else if(strs == 10){
+										window.parent.Alert('您退出没有24小时，不能申请，请稍候再试！');
+									}else window.parent.Alert('申请失败！');
+								},
+								on404: function(a) {
+								},
+								onFailure: function(a) {
+								},
+								asynchronous:true        
+							}
+						var ajax=new Ajax.Request('../function/guild.php?op=apply&ac=do&gid='+guild_id, opt);
+					}else if(str == 2){
+						window.parent.Alert('您已经加入其它或者此家族，不能再申请！');
+					}else if(str == 3){
+						window.parent.Alert('申请成功，请稍候再来查看！');
+					}else if(str == 10){
+						window.parent.Alert('您退出没有24小时，不能申请，请稍候再试！');
+					}else window.parent.Alert('申请失败！');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=apply&gid='+guild_id, opt);
+}
+
+//退出
+function exit(){
+	if(!confirm('退出后24小时内不能申请加入或者创建家族，您确定退出该家族？')){
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 2){
+						window.parent.Alert('您尚未加入此家族，不用退出！');
+					}else if(str == 3){
+						window.parent.Alert('退出成功！');
+					}else if(str == 4){
+						window.parent.Alert('您是会长，不能申请退出!');
+					}else{
+						window.parent.Alert('退出失败！');
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=exit&gid='+guild_id, opt);
+}
+
+function dissolut(){
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 2){
+						window.parent.Alert('您没有权限解散！');	
+					}else if(str == 'tips'){
+						if(!confirm('您确定解散这个家族吗？解散后24小时内不能申请加入或者创建家族.')){
+							return;
+						}
+						if(!confirm('您真的确定解散这个家族吗？解散后24小时内不能申请加入或者创建家族.')){
+							return;
+						}
+						var opt = {
+								method: 'get',
+								 onSuccess: function(tt) {
+									var strs = tt.responseText;
+									if(strs == 'ok'){
+										window.parent.Alert('解散成功！');
+										window.location.reload();
+									}
+								},
+								on404: function(tt) {
+								},
+								onFailure: function(tt) {
+								},
+								asynchronous:true        
+							}
+						var ajax=new Ajax.Request('../function/guild.php?op=dissolut&ac=do&gid='+guild_id, opt);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=dissolut&gid='+guild_id, opt);
+}
+
+function giveProps(){
+	if($('give_props').style.display == 'none'){
+		$('give_props').style.display = 'block';
+	}else $('give_props').style.display = 'none';
+}
+
+function donation(){
+	var pname = $('pname').value;
+	var psum = $('psum').value;
+	if(pname == '' || psum == ''){
+		window.parent.Alert('请填写完整！');
+	}
+	if(isNaN(psum)){
+		window.parent.Alert('数量必须是数字！');
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('您不在此家族，不能捐献！');
+					}else if(str == 2){
+						window.parent.Alert('没有这个物品，请检查您的输入是否有误！');
+					}else if(str == 3){
+						window.parent.Alert('升到下一级不需要您捐献这个物品！');
+					}else if(str == 4){
+						window.parent.Alert('您要捐赠的物品已经足够了！');
+					}else if(str == 5){
+						window.parent.Alert('您没有足够的物品!');
+					}else if(str == 10){
+						show_guild_info(guild_id);
+						window.parent.Alert('捐献成功！');
+					}
+					$('give_props').style.display = 'none';
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=giveProps&gid='+guild_id+'&pname='+pname+'&psum='+psum, opt);
+}
+
+//家族福利
+function guild_welfare(){
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('您不在此家族，不能领取这个家族的家族福利！');
+					}else if(str == 2){
+						window.parent.Alert('数据读取有误!');
+					}else if(str == 3){
+						window.parent.Alert('已经领过了，今天不能再领!');
+					}else{
+						window.parent.Alert(str);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=guild_welfare&gid='+guild_id, opt);
+}
+
+//升级
+function next_level(){
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('您没有权限升级家族!');
+					}else if(str == 2){
+						window.parent.Alert('家族成员不够!');
+					}else if(str == 3){
+						window.parent.Alert('家族荣誉不够!');
+					}else if(str == 4){
+						window.parent.Alert('物品不够!');
+					}else if(str == 5){
+						show_guild_info(guild_id);
+						window.parent.Alert('恭喜您升级成功!');
+						
+					}else{
+						window.parent.Alert(str);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=next_level&gid='+guild_id, opt);
+}
+
+//设置权限
+function permissions(num){
+	if(num == ''){
+		return;
+	}
+	if(qxuid == ''){
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var str = t.responseText;
+					if(str == 1){
+						window.parent.Alert('您没有权限操作！');
+					}else if(str == 2){
+						window.parent.Alert('该用户不在您的家族!');
+					}else if(str == 3){
+						window.parent.Alert('人数已满，不能再加入!');
+					}else if(str == 4){
+						window.parent.Alert('最多只有两个长老!');
+					}else if(str == 5){
+						window.parent.Alert('您不能操作自己!');
+					}else if(str == 10){
+						show_guild_info(guild_id);
+						getguild(1);
+						window.parent.Alert('操作成功!');
+						
+					}else{
+						window.parent.Alert(str);
+					}
+					$('permissions').style.display='none';
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/guild.php?op=permissions&gid='+guild_id+'&qxuid='+qxuid+'&num='+num, opt);
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	try
+	{
+		var pro = $(obj.id.replace("t","s")).innerHTML;
+		$('FamilyNum').value= parseInt(pro);
+	}
+	catch(e)
+	{		
+		$('FamilyNum').value = "";
+	}
+}
+function FamilyBuy(){
+	var nums = parseInt($('FamilyNum').value);
+	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump1 = price1*parseInt($('FamilyNum').value)
+		var sump2 = price2*parseInt($('FamilyNum').value)
+		
+		if (sump1==0 && sump2==0) window.parent.Alert('数据错误！');
+		
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump1+' 荣誉点,'+sump2+' 贡献度！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==11) window.parent.Alert('您的荣誉点不够！');
+					else if(n==10) window.parent.Alert('您的贡献度不够！');
+					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
+					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/FamilyGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag1').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
+}
+var equipInfos = {};
+var LastKey = "";
+if(!document.all){    
+	var Event;
+	window.onmousemove = function(){
+							Event = window.parent.event;
+					}
+}
+function showTip(id,bid,sign,type)
+{
+	var x = 500;
+	var y = 100;
+	equipInfos = window.parent.equipInfos;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined'){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+
+function FamilyUpgrade()
+{
+	if(confirm('你确定要升级吗！'))
+	{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var n=parseInt(t.responseText);
+					if(n==1) window.parent.Alert('您不是族长或长老，不能升级商店！');
+					else if(n==2) window.parent.Alert('您所在的家族商店等级不能超过家族等级！');
+					else if(n==3) {window.parent.Alert('您升级商店所需物品不够!');}//refresh bag.
+					else if(n==4) {window.parent.Alert('升级失败!');}
+					else if(n==5) {window.parent.Alert('恭喜您，升级成功!!');}
+					else if(n==6) {window.parent.Alert('操作过快,请稍后升级!!');}
+					else{window.parent.Alert('升级失败')};
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+	var ajax=new Ajax.Request('../function/FamilyUpgrade.php', opt);
+	}
+	else
+	{
+		return;
+	}
+}
+function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	if(cursel == 2){
+		show_guild_info(0);
+		var opt = {
+			method: 'get',
+			onSuccess: function(t) {
+						guild_id = t.responseText;
+					},
+			asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/guild.php?op=select_guild', opt);
+	}
+}
+function FamilyBuy(){
+	var nums = parseInt($('FamilyNum').value);
+	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
+	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else{
+		var sump1 = price1*parseInt($('FamilyNum').value)
+		var sump2 = price2*parseInt($('FamilyNum').value)
+		
+		if (sump1==0 && sump2==0) window.parent.Alert('数据错误！');
+		
+		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump1+' 荣誉点,'+sump2+' 贡献度！'))
+		{
+			var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==11) window.parent.Alert('您的荣誉点不够！');
+					else if(n==10) window.parent.Alert('您的贡献度不够！');
+					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
+					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/FamilyGate.php?bid='+bid+'&n='+nums, opt);
+		}
+		else return;
+	}
+}
+function ajaxfun()
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+			 		$('mybag1').innerHTML=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
+}
+function guild_level_info(){
+	if($('guild_level_info').style.display=='none'){
+		$('guild_level_info').style.display='block';
+		setTimeout('guild_level_info_none()',5000);
+	}
+	else $('guild_level_info').style.display='none';
+}
+function guild_level_info_none(){
+	$('guild_level_info').style.display='none';
+}
+function guild_permissions_none(){
+	$('permissions').style.display='none';
+}
+</script>

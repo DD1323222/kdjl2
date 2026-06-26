@@ -1,0 +1,912 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>皇宫</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/king_03.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.text01{font-size:12px; font-weight:bold; color:#666;}
+.text02{font-size:12px; font-weight:bold; color:#ff6600;}
+a,a:visited {color:#513a11; text-decoration:none}
+a {blr:expression(this.onFocus=this.blur());outline:none;}
+area{blr:expression(this.onFocus=this.blur());outline:none;}
+a:hover {text-decoration:underline}
+h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%} 
+.con{display:none;}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;line-height:29px;}
+.task_nav li a{width:90px;display:block;}
+.a01{background:url(../new_images/ui/king_05.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../new_images/ui/king_05.jpg) no-repeat 0 -29px;height:29px;}
+.a02{background:url(../new_images/ui/king_05.jpg) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../new_images/ui/king_05.jpg) no-repeat -90px -29px;height:29px;}
+.a03{background:url(../new_images/ui/king_05.jpg) no-repeat -179px 0;height:29px;}
+.task_nav li.on .a03{background:url(../new_images/ui/king_05.jpg) no-repeat -179px -29px;height:29px;}
+.a04{background:url(../new_images/ui/king_05.jpg) no-repeat -269px 0;height:29px;}
+.task_nav li.on .a04{background:url(../new_images/ui/king_05.jpg) no-repeat -269px -29px;height:29px;}
+.dt_item{display:inline;float:left;width:290px;height:278px;margin:0 10px 8px 10px;}
+.dt_item h3{color:#bf7d1a;font-size:12px;font-weight:normal;line-height:24px;background:#fff;padding-left:5px;border-bottom:#bf7d1a 1px solid}
+.dt_item h3 span{float:right;padding-right:10px;}
+.dt_task{width:640px;height:260px}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:216px;width:290px;scrollbar-face-color:#DFDABC;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#DFDABC;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#DFDABC;scrollbar-track-color:#DFDABC;scrollbar-arrow-color:#ffffff;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.dt_list2{overflow-x:hidden;overflow-y:scroll;background:#fff;height:230px;width:300px;padding:5px;scrollbar-face-color:#DFDABC;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#DFDABC;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#DFDABC;scrollbar-track-color:#DFDABC;scrollbar-arrow-color:#ffffff;}
+.dt_list2 p{line-height:20px;color:#BF7D1A;font-size:12px;}
+.dt_list2 p b{font-weight:normal;color:#060}
+.part_con {text-indent:2em;color:#bf7d1a;font-size:12px;line-height:20px}
+.answer{width:615px;height:250px;border:#b4a449 1px solid;background:#fffceb;margin-left:auto;margin-right:auto; padding-top:5px; margin:10px 0 0 10px;}
+.jl{width:615px;height:250px;background:url("../new_images/ui/king_bg.jpg");margin-left:auto;margin-right:auto; padding-top:10px;border:#b4a449 1px solid;margin:10px 0 0 10px;}
+.jl_01{width:605px; float:left; height:15px; padding-left:10px;}
+.jl_02{width:615px; float:left; height:65px; line-height:20px;}
+.an_l{float:left;width:70%;}
+.an_r {float:right;margin:10px;}
+.an_l h1{background:url(../images/icon01.gif) no-repeat 5px 5px;line-height:24px;height:24px;padding-left:25px;font-weight:600;color:#333;border-bottom:#b4a449 1px solid;}
+.an_l p{line-height:20px;color:#BF7D1A;font-size:12px;padding:15px 0 0 10px;}
+.an_r li{color:#f00;margin:10px 0;}
+.answer p{line-height:20px;color:#BF7D1A;font-size:12px;padding:15px 0 0 10px; }
+.intxt{border:#b4a449 1px solid;padding:2px;margin:0 10px 0 200px;}
+.stu{background:url(../images/i_bnt.gif) no-repeat 0 -34px;width:39px;height:17px;cursor:pointer;border:0 none;margin:1px 0}
+.eggs_panel{
+	margin:10px;
+	margin-top:0px;
+	width:100px;
+	height:100px;
+	text-align:center;
+}
+.arrows{
+	width:100px;
+	margin-right:10px;
+	margin-left:10px;
+	text-align:center;
+	float:left;
+}
+#break{
+	position:absolute;
+	z-index:2;
+	width:630px;
+	height:50px;
+	margin-top:60px;
+}
+.result{
+	width:115px;
+	margin-right:2px;
+	margin-left:2px;
+	padding-top: 5px; 
+	padding-bottom: 5px; 
+	text-align:center;
+	height:25px;
+	float:left;
+	background:#0099FF;
+	border:#000000;
+	vertical-align:middle;
+	color:#FFFFFF;
+	border:1px #000000 groove;
+}
+#lock
+{
+	height:105px;
+	width:615px;
+	z-index:3;
+	position:absolute;
+	top:190px;
+	text-align:center;
+	background:#000000;
+}
+</style>
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+</script>
+<script language="javascript" src="../javascript/prototype.js"></script>
+</head>
+
+<body onload="prizeflagshow()">
+<div id="Layer1"  style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php'">
+	  <label></label>
+  	</div>
+<div class="task">
+  <div class="task_left"></div>
+	
+<div class="task_right">
+    <ul class="task_nav">
+    <li id="tab1" onclick="setTab('tab',1,4)" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+    <li id="tab2" onclick="setTab('tab',2,4)"><a class="a02" href="javascript:void(0)"></a></li>
+	<li id="tab3" onclick="setTab('tab',3,4)"><a class="a03" href="javascript:void(0)"></a></li>
+	<li id="tab4" onclick="setTab('tab',4,4)"><a class="a04" href="javascript:void(0)"></a></li>
+    </ul>
+	
+	<div class="dt_task" id="con_tab_1" >
+        <div class="jl">
+       		<div class="jl_01"><span class="text01" id="dayprizeflag"></span></div>
+     		<div class="jl_02">
+            	<table width="615" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="97"><img src="../new_images/ui/king_18.jpg" border="0" width="97" height="65"/></td>
+    <td width="268" align="left">说明：<br />
+      每日福利礼包，免费领取，用户每天可以通过皇宫日常奖励界面领取一次，随机开除不同道具。</td>
+    <td width="37">&nbsp;</td>
+    <td width="144">#dayprizestr#</td>
+    <td width="69"><img src="../new_images/ui/king_19.jpg" border="0" width="39" height="17" id="daybtn" style="cursor:pointer" onclick="getPrize(1)" /></td>
+  </tr>
+</table>
+            </div>
+            <div class="jl_01"><span class="text01" id="weekprizeflag"></span></div>
+     		<div class="jl_02">
+            <table width="615" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="97"><img src="../new_images/ui/king_17.jpg" border="0" width="97" height="65"/></td>
+    <td width="268" align="left">说明：<br />
+      周末福利奖励物品，周末时开启奖励领取，一个账号一周只能领取一次。</td>
+    <td width="37">&nbsp;</td>
+    <td width="144">#weekprizestr#</span></td>
+    <td width="69"><img src="../new_images/ui/king_19.jpg" border="0" width="39" height="17" id="weekbtn" style="cursor:pointer" onclick="getPrize(2)"/></td>
+  </tr>
+</table>
+            </div>
+            <div class="jl_01"><span class="text01" id="holidayprizeflag"></span></div>
+     		<div class="jl_02">
+            <table width="615" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="97"><img src="../new_images/ui/king_16.jpg" border="0" width="97" height="65"/></td>
+    <td width="268" align="left">说明：<br />
+      节日福利，每逢佳节时候开启，根据官方公告可以查询奖励物品领取次数以及奖励物品内容。</td>
+    <td width="37">&nbsp;</td>
+    <td width="144">#holidayprizestr#</span></td>
+    <td width="69"><img src="../new_images/ui/king_19.jpg" border="0" width="39" height="17" id="holidaybtn" style="cursor:pointer" onclick="getPrize(3)"/></td>
+  </tr>
+</table>
+            </div>
+        </div>
+        </div>
+	
+	
+        <div class="dt_task con" id="con_tab_2" >
+        <div class="answer">
+        <p>威望说明：威望是玩家通过使用怪物掉落的各种威望卷轴而增加的属性。<br />
+     威望的作用：<br />
+         （1）威望可以到道具店与铁匠铺购买相关的威望道具和装备。<br />
+         （2）威望可以通过交纳到皇宫增加贵族威望。<br />
+         （3）某些任务也需要收取一定的威望才可以完成。（暂未开放）<br />
+     贵族威望的作用：<br />
+         （1）贵族威望越高，完成某些任务得到的经验和奖励会越高。（暂未开放）<br />
+     当前威望：#prestige#<br />
+     贵族威望：#jprestige#<input type="text" id="num" name="num" class="intxt" /><input name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;"  onclick="prestige()" value="交纳"/></p> 
+     
+        </div>
+        </div>
+         
+    <div class="dt_task con" id="con_tab_3">
+        <div class="answer">
+        <div class="an_l">
+        <h1>答题说明</h1>
+        <p>#anounce_msg#
+        </p>
+        </div>
+        <div class="an_r">
+            <ul>
+                <li><a href="#"><img src="../images/star_on.gif" alt="开始答题" border="0" onclick="answer()" /></a></li>
+                <li><a href="#"><img src="../images/star_off.gif" alt="领取奖励" border="0"  onclick="getResult1()" #active# /></a></li>
+                <li>累计答对次数：#oksum#</li>
+            </ul>
+        </div>
+        </div>
+    </div>
+		<!--家族-->
+		<!--家族结束-->
+	<div class="dt_task con" id="con_tab_4" >
+	 <div class="answer">
+	 <div id="lock" style="filter:alpha(opacity=40);opacity:0.4"><img src = "../new_images/ui/egg_Mod/zdloading.gif" width="100" height="100" /></div>
+	 <div style=" width:600px; height:65px;">
+	 	<div class="arrows" style="float:left;">
+	 	</div> 
+		<div class="arrows" style="float:left;">
+	 	</div>
+		<div class="arrows" style="float:left;">
+	 	</div>  
+		<div class="arrows" style="float:left;">
+	 	</div> 
+		<div class="arrows" style="float:left;">
+	 	</div> 
+	 </div>
+	 <div id="break">
+		<div class="result" style="filter:alpha(opacity=0);opacity:0; display:none;">
+		#onethinginfo#
+	 	</div>
+		<div class="result" style="filter:alpha(opacity=0);opacity:0; display:none;">
+		#twothinginfo#
+	 	</div>
+		<div class="result" style="filter:alpha(opacity=0);opacity:0; display:none;">
+		#threethinginfo#
+	 	</div>
+		<div class="result" style="filter:alpha(opacity=0);opacity:0; display:none;">
+		#fourthinginfo#
+	 	</div>
+		<div class="result" style="filter:alpha(opacity=0);opacity:0; display:none;">
+		#fivethinginfo#
+	 	</div>
+	 </div>
+	 <div>
+	 <div class="eggs_panel" style="float:left;filter:alpha(opacity=100);opacity:1"><img src="../new_images/ui/egg_Mod/golden_egg.gif" onclick="arrows(1)">
+	 </div>
+	 <div class="eggs_panel" style="float:left;filter:alpha(opacity=100);opacity:1"><img src="../new_images/ui/egg_Mod/golden_egg.gif" onclick="arrows(2)">
+	 </div>
+	 <div class="eggs_panel" style="float:left;filter:alpha(opacity=100);opacity:1"><img src="../new_images/ui/egg_Mod/golden_egg.gif" onclick="arrows(3)">
+	 </div>
+	 <div class="eggs_panel" style="float:left;filter:alpha(opacity=100);opacity:1"><img src="../new_images/ui/egg_Mod/golden_egg.gif" onclick="arrows(4)">
+	 </div>
+	 <div class="eggs_panel" style="float:left;filter:alpha(opacity=100);opacity:1"><img src="../new_images/ui/egg_Mod/golden_egg.gif" onclick="arrows(5)">
+	 </div>
+	 </div>
+	 <div id="express">
+	 <div style="float:left; width:400px; margin-left:20px;">砸蛋必须要有砸蛋券才能进行；<br />
+砸蛋券分为银蛋券、金蛋券，这些砸蛋券可以通过神秘商店购买获得；
+</div>
+	 </div>
+	 <div style="float:right; margin-right:20px;">
+	 <ul>
+	 	<li style="padding-bottom:20px;">
+		<select id="choose_egg" onchange="choose()">
+		<option value="golden">金蛋券 #golden_num# 个</option>
+		<option value="silver">银蛋券 #silver_num# 个</option>
+		<option value="copper">铜蛋券 #copper_num# 个</option>
+		</select>
+		</li>
+		<li style="padding-bottom:20px;"><img src="../new_images/ui/choose.jpg" onclick="transfer_info()" /></li>
+	</ul>
+	</div>
+	</div>
+	</div>
+</div>
+</div>
+
+</body>
+<script type="text/javascript">
+var word;
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+// Get aoyun result.
+function getauto()
+{
+	if(confirm("为了能够尽快的恢复口袋精灵世界的和平，\n我们提供了自动寻怪奖励,每天您可以到我这里领取800次的自动寻怪奖励.\n您确定现在就要领取吗？"))
+	{
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					window.parent.Alert(t.responseText);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		//window.status=		'../function/get.sjSkill.php?id='+sid+'&pid='+pid;
+		var ajax=new Ajax.Request('../function/ext_King.php?op=getauto', opt);
+	}
+}
+function getResult1()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	var n = t.responseText;
+					if(n == "10")
+					{
+						window.parent.Alert("请完成所有答题再领取奖励。");
+					}
+					else if(n == "100")
+					{
+						window.parent.Alert("活动已关闭！");
+					}
+					else if(n != "")
+					{
+						window.parent.Alert(n);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Aoyun.php', opt);
+}
+function getResult()
+{
+	/*var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					window.parent.Alert(t.responseText);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Aoyun.php', opt);*/
+}
+
+function answer()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	var n = t.responseText;
+					if(n == "1")
+					{
+						window.location.href='../function/Aoyunti_Mod.php';
+					}
+					else if(n == "100")
+					{
+						window.parent.Alert("活动已关闭！");
+					}
+					else
+					{
+						window.parent.Alert("不在答题时间,答题时间详见答题说明");
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Aoyun.php?action=answer', opt);
+}
+
+function prestige()
+{
+	var num = $("num").value;
+	if(num == "")
+	{
+		window.parent.Alert("请先填写您要缴纳的威望的数量！");
+		return false;
+	}
+	else if(num < 1 || num > 10000)
+	{
+		window.parent.Alert("请输入1到10000的整数！");
+		return false;
+	}
+	if(parseInt(num,10)!=num)
+	{
+		window.parent.Alert("不能交纳小数哦！");
+		return false;
+	}else{
+		num = parseInt(num,10);
+	}
+	if(!confirm('您确认交纳'+num+'点威望吗？'))
+	{
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 var n = parseInt(t.responseText);
+				 if(n == 1)
+				 {
+				 	window.parent.Alert("请先填写您要缴纳的威望！");
+				 }
+				 else if(n == 2)
+				 {
+				 	window.parent.Alert("您当前威望没有这么多哦，忽悠我呢~");
+				 }
+				 else if(n == 10)
+				 {
+				 	window.parent.Alert('您已成功缴纳了'+num+'点威望！');
+					window.location.reload();
+				 }
+				 else
+				 {
+				 	window.parent.Alert('缴纳失败！');
+				 }
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+		var ajax=new Ajax.Request('../function/KinPrestigeGate.php?num='+num, opt);
+}
+var dayprizeflag = '#dayprizeflag#';
+var weekprizeflag = '#weekprizeflag#';
+var holidayprizeflag = '#holidayprizeflag#';
+function prizeflagshow(){
+	if(dayprizeflag == 0){
+		$('dayprizeflag').innerHTML = '已经领取';
+		$('dayprizeflag').className = 'text01';
+		$('daybtn').style.filter='gray';
+	}else if(dayprizeflag == 1){
+		$('dayprizeflag').innerHTML = '尚未领取';
+		$('dayprizeflag').className = 'text02';
+	}else if(dayprizeflag == 2){
+		$('dayprizeflag').innerHTML = '尚未开启';
+		$('dayprizeflag').className = 'text01';
+		$('daybtn').style.filter='gray';
+	}
+	
+	if(weekprizeflag == 0){
+		$('weekprizeflag').innerHTML = '已经领取';
+		$('weekbtn').style.filter='gray';
+		$('weekprizeflag').className = 'text01';
+	}else if(weekprizeflag == 1){
+		$('weekprizeflag').innerHTML = '尚未领取';
+		$('weekprizeflag').className = 'text02';
+	}else if(weekprizeflag == 2){
+		$('weekprizeflag').innerHTML = '尚未开启';
+		$('weekbtn').style.filter='gray';
+		$('weekprizeflag').className = 'text01';
+	}else if(weekprizeflag == 3){
+		$('weekprizeflag').innerHTML = '不是周末';
+		$('weekbtn').style.filter='gray';
+		$('weekprizeflag').className = 'text01';
+	}
+	
+	if(holidayprizeflag == 0){
+		$('holidayprizeflag').innerHTML = '已经领取';
+		$('holidaybtn').style.filter='gray';
+		$('holidayprizeflag').className = 'text01';
+	}else if(holidayprizeflag == 1){
+		$('holidayprizeflag').innerHTML = '尚未领取';
+		$('holidayprizeflag').className = 'text02';
+	}else if(holidayprizeflag == 2){
+		$('holidayprizeflag').innerHTML = '尚未开启';
+		$('holidaybtn').style.filter='gray';
+		$('holidayprizeflag').className = 'text01';
+	}else if(holidayprizeflag == 3){
+		$('holidayprizeflag').innerHTML = '不是节假日';
+		$('holidaybtn').style.filter='gray';
+		$('holidayprizeflag').className = 'text01';
+	}
+}
+
+function getPrize(type)
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	var res = t.responseText;
+					if(res.indexOf('奖励领取成功') != -1){
+						if(type == 1){
+							dayprizeflag = 0;
+						}else if(type == 2){
+							weekprizeflag = 0;
+						}else if(type == 3){
+							holidayprizeflag = 0;
+						}
+						prizeflagshow();
+					}
+					window.parent.Alert(t.responseText);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('/function/getPrize.php?type='+type, opt);
+}
+var ie;
+if(typeof(document.getElementsByClassName('result')[0].filters) != 'undefined')
+{
+	ie = 'ie';
+}
+else
+{
+	ie = 'fox';
+}
+var ob_result = document.getElementsByClassName('result');
+var ob_eggs_panel = document.getElementsByClassName('eggs_panel');
+var ob_choose = document.getElementById('choose_egg');
+var ob_arrows  = document.getElementsByClassName('arrows');
+var zd_cold = 1;
+function choose()
+{
+	var xulie = 1;
+	ob_result = document.getElementsByClassName('result');
+	ob_eggs_panel = document.getElementsByClassName('eggs_panel');
+	ob_arrows  = document.getElementsByClassName('arrows');
+	ob_choose = document.getElementById('choose_egg');
+	if( ie == 'ie' )
+	{
+		for(i=0;i< ob_eggs_panel.length;i++)
+		{
+			ob_eggs_panel[i].innerHTML = '<img src = "../new_images/ui/egg_Mod/'+ob_choose.value+'_egg.gif" onclick="arrows('+xulie+')" />';		
+			ob_result[i].filters.Alpha.Opacity=0;
+			ob_eggs_panel[i].filters.Alpha.Opacity=100;
+			xulie++;
+		}
+	}
+	else
+	{
+		for(i=0;i< ob_eggs_panel.length;i++)
+		{
+			ob_eggs_panel[i].innerHTML = '<img src = "../new_images/ui/egg_Mod/'+ob_choose.value+'_egg.gif" onclick="arrows('+xulie+')" />';	
+			ob_result[i].style.opacity=0;
+			ob_eggs_panel[i].style.opacity=1;	
+			xulie++;
+		}
+	}
+}
+function arrows(para)
+{
+	egg_type = ob_choose.value;
+	if( ob_choose.value.length < 1 )
+	{
+		ob_choose.value = 'golden';
+	}
+	if( ie == 'ie' )
+	{
+		for(i=0;i<ob_eggs_panel.length;i++)
+		{
+			arrows_para = i+1;
+			ob_eggs_panel[i].innerHTML = '<img src="../new_images/ui/egg_Mod/'+egg_type+'_egg.gif" onclick="arrows('+arrows_para+')">';
+			ob_result[i].filters.Alpha.Opacity=0;
+			ob_eggs_panel[i].filters.Alpha.Opacity=100;		
+		}
+	}
+	else
+	{
+		for(i=0;i<ob_eggs_panel.length;i++)
+		{
+			arrows_para = i+1;
+			ob_eggs_panel[i].innerHTML = '<img src="../new_images/ui/egg_Mod/'+egg_type+'_egg.gif" onclick="arrows('+arrows_para+')">';
+			ob_result[i].style.opacity = 0;
+			ob_eggs_panel[i].style.opacity = 1;
+		}
+	}
+	for(i=0;i<ob_arrows.length;i++)
+	{
+		if(i == para-1)
+		{
+			ob_arrows[i].innerHTML = '<img src = "../new_images/ui/egg_Mod/arrows.gif" />';
+		}
+		else
+		{
+			ob_arrows[i].innerHTML = "&nbsp;";
+		}
+	}
+	
+}
+function display(para,end)
+{
+	if( ie == 'ie' )
+	{
+		ob_eggs_panel[para-1].filters.Alpha.Opacity-=10;
+		if( ob_eggs_panel[para-1].filters.Alpha.Opacity == 0 )
+		{
+			clearInterval(MyMar);
+			if(typeof(end) == 'undefined')
+			{
+				MyMar_brighten = setInterval("brighten("+para+")",5);
+			}
+			else
+			{
+				ob_eggs_panel[para-1].innerHTML = '<img src = "../new_images/ui/egg_Mod/'+ob_choose.value+'_egg_break.gif" />';
+				MyMar_brighten = setInterval("brighten("+para+",1)",5);
+			}
+		}
+	}
+	else
+	{
+		ob_eggs_panel[para-1].style.opacity -= 0.1;
+		if( ob_eggs_panel[para-1].style.opacity <= 0 )
+		{
+			clearInterval(MyMar);
+			if(typeof(end) == 'undefined')
+			{
+				MyMar_brighten = setInterval("brighten("+para+")",5);
+			}
+			else
+			{
+				ob_eggs_panel[para-1].innerHTML = '<img src = "../new_images/ui/egg_Mod/'+ob_choose.value+'_egg_break.gif" />';
+				MyMar_brighten = setInterval("brighten("+para+",1)",5);
+			}
+		}
+	}
+}
+var shan = 0;
+function brighten(para,end)
+{	
+	if( ie == 'ie' )
+	{
+		ob_eggs_panel[para-1].filters.Alpha.Opacity+=10;
+		if( ob_eggs_panel[para-1].filters.Alpha.Opacity == 100 )
+		{
+			clearInterval(MyMar_brighten);
+			if(typeof(end) == 'undefined')
+			{
+				if( shan < 1 )
+				{
+					MyMar = setInterval("display("+para+")",5);
+					shan++;
+				}
+				else
+				{
+					MyMar = setInterval("display("+para+",1)",5);
+				}
+			}
+			else
+			{
+				window.parent.Alert(word);
+				MyMar_get = setInterval("get_result("+para+")",5);
+			}
+		}
+	}
+	else
+	{
+		ob_eggs_panel[para-1].style.opacity=0.1+parseFloat(ob_eggs_panel[para-1].style.opacity);
+		if( ob_eggs_panel[para-1].style.opacity >= 1 )
+		{
+			clearInterval(MyMar_brighten);
+			if(typeof(end) == 'undefined')
+			{
+				if( shan < 1 )
+				{
+					MyMar = setInterval("display("+para+")",5);
+					shan++;
+				}
+				else
+				{
+					MyMar = setInterval("display("+para+",1)",5);
+				}
+			}
+			else
+			{
+				window.parent.Alert(word);
+				MyMar_get = setInterval("get_result("+para+")",5);
+			}
+		}
+	}
+}
+function get_result(para)
+{
+	if( ie == 'ie')
+	{
+		ob_result[para-1].filters.Alpha.Opacity+=10;
+		if( ob_result[para-1].filters.Alpha.Opacity == 100 )
+		{
+			clearInterval(MyMar_get);
+			MyMar_else = Array();
+			for(i=1;i<ob_result.length+1;i++)
+			{
+				if( i != para )
+				{
+					MyMar_else[i] = setInterval("brighten_else("+i+")",5);
+				}
+			}
+		}
+	}
+	else
+	{
+		ob_result[para-1].style.opacity=0.1+parseFloat(ob_result[para-1].style.opacity);
+		if(ob_result[para-1].style.opacity >= 1 )
+		{
+			clearInterval(MyMar_get);
+			MyMar_else = Array();
+			for(i=1;i<ob_result.length+1;i++)
+			{
+				if( i != para )
+				{
+					MyMar_else[i] = setInterval("brighten_else("+i+")",5);
+				}
+			}
+		}
+	}
+}
+function brighten_else(para)
+{
+	if(ie == 'ie')
+	{
+		ob_result[para-1].filters.Alpha.Opacity +=20;
+		ob_eggs_panel[para-1].filters.Alpha.Opacity -=5;
+		if( ob_result[para-1].filters.Alpha.Opacity == 100 )
+		{
+			clearInterval(MyMar_else[para]);
+			if(document.getElementById("lock").style.display == 'block')
+			{
+				document.getElementById("lock").style.display="none";	
+			}
+			if( zd_cold == 0 )
+			{
+				zd_cold = 1;
+			}
+		}
+	}
+	else
+	{
+		ob_result[para-1].style.opacity =0.2+parseFloat(ob_result[para-1].style.opacity);
+		ob_eggs_panel[para-1].style.opacity = parseFloat(ob_eggs_panel[para-1].style.opacity)-0.05;
+		if( ob_result[para-1].style.opacity >= 1 )
+		{
+			clearInterval(MyMar_else[para]);
+			if(document.getElementById("lock").style.display == 'block')
+			{
+				document.getElementById("lock").style.display="none";
+			}
+			if( zd_cold == 0 )
+			{
+				zd_cold = 1;
+			}
+		}
+	}
+}
+function transfer_info()
+{
+	if( zd_cold == 1 )
+	{
+		zd_cold = 0;
+		shan = 0;
+		word = 0;
+		ob_result = document.getElementsByClassName('result');
+		ob_eggs_panel = document.getElementsByClassName('eggs_panel');
+		ob_choose = document.getElementById('choose_egg');
+		ob_arrows  = document.getElementsByClassName('arrows');
+		var tran_num =  Array();
+		if( ob_choose.value.length < 1 )
+		{
+			egg_type = 'golden';
+		}
+		else
+		{
+			egg_type = ob_choose.value;
+		}
+		if( ie == 'ie' )
+		{
+			for(i=0;i<ob_result.length;i++)
+			{
+				ob_result[i].filters.Alpha.Opacity=0;
+				ob_eggs_panel[i].filters.Alpha.Opacity=100;
+				var arrows_para = i+1;
+				ob_eggs_panel[i].innerHTML = '<img src="../new_images/ui/egg_Mod/'+egg_type+'_egg.gif" onclick="arrows('+arrows_para+')">';
+			}
+		}
+		else
+		{
+			for(i=0;i<ob_result.length;i++)
+			{
+				ob_result[i].style.opacity=0;	
+				ob_eggs_panel[i].style.opacity=1;
+				var arrows_para = i+1;
+				ob_eggs_panel[i].innerHTML = '<img src="../new_images/ui/egg_Mod/'+egg_type+'_egg.gif" onclick="arrows('+arrows_para+')">';
+			}
+		}
+		for(i=0;i<ob_choose.length;i++)
+		{
+			if(ob_choose[i].selected==true)
+			{
+				var tran_num = ob_choose[i].innerHTML.split(" ");
+				if(tran_num[1] == 0)
+				{
+					window.parent.Alert("你没有此蛋券哦");
+					zd_cold = 1;
+					return false;
+				}
+			}
+		}
+		for(i=0;i<ob_arrows.length;i++)
+		{
+			if( ob_arrows[i].innerHTML != "&nbsp;" )
+			{
+				var choose_egg = i+1;
+				break;
+			}
+		}
+		if(typeof(choose_egg) == 'undefined')
+		{
+			window.parent.Alert("请选择一个蛋哦");
+			zd_cold = 1;
+			return false;
+		}
+		for(i=0;i<ob_arrows.length;i++)
+		{
+			if( ob_arrows[i].innerHTML != "&nbsp;" )
+			{
+				ob_arrows[i].innerHTML = '<img src = "../new_images/ui/egg_Mod/arrows_hit.gif" />';
+				break;
+			}
+		}
+		//alert(egg_type+choose_egg);
+		var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						for(i=0;i<ob_arrows.length;i++)
+						{
+							if( ob_arrows[i].innerHTML != "&nbsp;" )
+							{
+								ob_arrows[i].innerHTML = '<img src = "../new_images/ui/egg_Mod/arrows.gif" />';
+								break;
+							}
+						}
+						var res = t.responseText;
+						if(res=='error'){
+							window.parent.Alert("砸蛋出错了");
+							zd_cold = 1;
+							return false;
+						}
+						if(res=='bagfull')
+						{
+							window.parent.Alert("砸蛋失败，您的包裹满了");
+							zd_cold = 1;
+							return false;
+						}
+						if(res == 'noegg')
+						{
+							window.parent.Alert("没有相应的蛋券哦");
+							zd_cold = 1;
+							return false;
+						}
+						var res_arr = Array();
+						res_arr = res.split("|");
+						var update = document.getElementById('choose_egg').childNodes;
+						var count_arr = Array(); 
+						for(i=0;i<update.length;i++)
+						{
+							if(update[i].value == egg_type )
+							{
+								count_arr = update[i].innerHTML.split(" ");
+								update[i].innerHTML = count_arr[0]+" "+res_arr[0]+" "+count_arr[2];
+							}
+						}
+						for(i=0;i<ob_result.length;i++)
+						{
+							ob_result[i].style.display = 'block';
+							var mid_arr = Array();
+							mid_arr = res_arr[i+1].split(":");
+							if( choose_egg == i+1 )
+							{
+								word = "砸蛋成功,获得"+mid_arr[1]+mid_arr[2]+"个";
+							}
+							ob_result[i].innerHTML = mid_arr[1]+mid_arr[2]+"个";
+							
+						}
+						document.getElementById("lock").style.display="block";
+						
+						MyMar = setInterval("display("+choose_egg+")",5);		
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('../function/eggs_server.php?usecz='+egg_type+'&choose_egg='+choose_egg, opt);
+	}
+	else
+	{
+		window.parent.Alert("操作太快，请耐心看完动画");
+		return false;
+	}
+	
+}
+document.getElementById("lock").style.display="none";
+</script>
+</html>

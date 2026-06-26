@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta   http-equiv="Expires"   CONTENT="0" />
+<meta   http-equiv="Cache-Control"   CONTENT="no-cache" />
+<meta   http-equiv="Pragma"   CONTENT="no-cache" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+body {
+	margin-left: 8px;
+	margin-top: 8px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+</style></head>
+<script language="javascript">
+//document.onkeydown=function(){return   false}   
+var bid=0;
+var price=0;
+var bbr = '';
+var gwr = '';
+var endtips = '';
+var using = false;
+var readH = '';
+var fc	  = 0; //回合数。
+var bb=#bbinfo#; // 
+var gg=#gwinfo#; // 
+var bbjn=[#bbjn#]; // 
+var bbfzp=[#bbfzp#]; // 
+var catcharr=[#catcharr#];
+var bbhpmax = bb[12];
+var bbmpmax = bb[13];
+var gwhpmax = gg[5];
+var gwmpmax = gg[6];
+var initYFont = 0;
+var useprops = 0;
+var petsid='#petsid#';
+var bbcur = bb[5];
+var bbmcur=bb[6];
+var gwcur = 0;
+var catchs= 0;
+var gimg='g';
+var inmap=#inmap#;
+var fuser="#fuser#"; // empty or username
+
+function preloader() { 
+	var imageObj = new Image(); 
+	var images = ['ui/hp.gif','ui/mp.gif','ui/exp.gif','ui/opcatch.gif','ui/ophp.gif','ui/opmp.gif','ui/opout.gif'];
+	for(var i=0; i<images.length; i++)
+	{imageObj.src='../images/'+images[i];} 
+}
+</script>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+
+<body>
+<div style="width:778px;height:311px; background-image:url(../images/map/t50/50.jpg)" id="fm">
+
+
+
+<!-- jn tools-->
+<div style="position:absolute;left:8px;top:251px; background-image:url(../images/ui/newmap/zdzsk.gif);
+width:778px;height:71px;" id="tooldiv">
+  <div id="tauto" style="position:absolute; width:37px; height:34px; left: 218px; top: 7px; cursor:pointer;"  onclick="loadtool(1);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tset" style="position:absolute; width:37px; height:34px; left: 259px; top: 7px; cursor:pointer;"  onclick="loadtool(2);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tack" style="position:absolute; width:37px; height:34px; left: 299px; top: 10px; cursor:pointer;"  onclick="loadtool(3);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tskill" style="position:absolute; width:37px; height:34px; left: 340px; top: 10px; cursor:pointer;"  onclick="loadtool(4);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="thelp" style="position:absolute; width:37px; height:34px; left: 384px; top: 10px; cursor:pointer;"  onclick="loadtool(5);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tcatch" style="position:absolute; width:37px; height:34px; left: 428px; top: 10px; cursor:pointer;"  onclick="loadtool(6);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tprops" style="position:absolute; width:37px; height:34px; left: 472px; top: 10px; cursor:pointer;"  onclick="loadtool(7);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="texit" style="position:absolute; width:37px; height:34px; left: 513px; top: 10px; cursor:pointer;" onclick="loadtool(8);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+</div>
+<!-- -->
+
+<!--player info-->
+<!--player info-->
+<div id="team0" style="position:absolute;left:8px;top:8px;border:0px; z-index:98">
+<!--宠物名-->
+ <div id="pname" style="padding-top:3px;text-align:center;position:absolute; z-index:101;left:8px;top:2px;border:0px; height:19px; width:147px; background:url(../images/ui/newmap/zd01.gif)">
+ #nickname#
+</div>
+<!--头像-->
+ <div style="position:absolute; z-index:101;left:5px;top:21px;border:0px; height:47px; width:90px;background:url(../images/ui/newmap/zd02.gif)">
+ <div style="position:absolute; z-index:101;left:23px;top:1px;border:0px; height:36px; width:36px;">
+ <img src="../images/bb/#head0#" width="36" height="36">
+</div>
+</div>
+<!--hp,mp,exp-->
+<div style="position:absolute; z-index:99;left:70px;top:23px;border:0px; height:48px; width:160px;">
+<img src="../images/ui/newmap/zd04.gif" style="opacity: 0.4; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=40,finishOpacity=100);" />
+</div>
+<!--hp-->
+<div style="position:absolute; z-index:100;left:70px;top:24px;border:0px; height:16px; width:160px;">
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><img src="../images/ui/newmap/xthong01.gif" width="156" border="0" height="16" id="php"/></td>
+    <td width="4"><img src="../images/ui/newmap/xthong00.gif" width="4" border="0" height="16"/></td>
+  </tr>
+</table>
+</div>
+<!--mp-->
+<div style="position:absolute; z-index:100;left:70px;top:41px;border:0px; height:16px; width:160px;">
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><img src="../images/ui/newmap/xtlan01.gif" width="155" border="0" height="16" id="pmp"/></td>
+    <td width="5"><img src="../images/ui/newmap/xtlan00.gif" width="5" border="0" height="16"/></td>
+  </tr>
+</table>
+</div>
+<!--exp-->
+<div style="position:absolute; z-index:100;left:70px;top:59px;border:0px; height:11; width:160px;">
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><img src="../images/ui/newmap/xthuang01.gif" width="156" border="0" height="11" id="pexp"/></td>
+    <td width="4"><img src="../images/ui/newmap/xthuang00.gif" width="4" border="0" height="11"/></td>
+  </tr>
+</table>
+</div>
+<div id="med_buff" style="position:absolute;z-index:100; left:110px; top:75px;width:100px; height:15px;">
+</div>
+<!--宠物名-->
+<div id='petname' style="position:absolute; z-index:100;left:4px;top:66px;border:0px; height:48px; width:99px; background:url(../images/ui/newmap/zd03.gif)">
+
+</div>
+</div>
+
+
+<div id="timev" style="width:81px;height:52px; background-image:url(../images/ui/newmap/db.gif);
+position:absolute;left:361px;top:10px;padding-top:25px; text-align:center;font-weight:bold;color:#6A2F06;font-size:25px; font-family:黑体"></div>
+
+<div id="result" style="position:absolute; background:#025B26; left: 270px; top: 87px;color:#fff; line-height:1.7;width:246px;;filter:alpha(opacity=60); -moz-opacity:0.6;display:none; padding:10px;z-index:10000"></div>
+
+<div style="position:absolute;left:547px;top:150px;font-weight:bold;width:233px;height:30px;z-index:1000000;font-family:华文新魏;font-size:16px;color:yellow" id="pfont"></div>
+</div>
+</body>
+</html>
+<script language="javascript" src="../javascript/battle.js"></script>
+#test#

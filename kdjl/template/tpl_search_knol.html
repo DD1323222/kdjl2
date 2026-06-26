@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>口袋百科</title>
+<script type="text/javascript" src="../javascript/lib/jquery.js"></script>
+<script type='text/javascript' src='../javascript/lib/jquery.bgiframe.min.js'></script>
+<script type='text/javascript' src='../javascript/lib/jquery.ajaxQueue.js'></script>
+<script type='text/javascript' src='../javascript/lib/thickbox-compressed.js'></script>
+<script type='text/javascript' src='../javascript/lib/jquery.autocomplete.js'></script>
+<link rel="stylesheet" type="text/css" href="../javascript/lib/jquery.autocomplete.css" />
+<link rel="stylesheet" type="text/css" href="../javascript/lib/thickbox.css" />
+<style>
+<!--
+body
+{
+	margin:0; padding:0; font-size:12px; font-family:Arial, Helvetica, sans-serif; background: #FFF;background-repeat: repeat-x;
+}
+li.tag {cursor:pointer;float:left;margin:1px;width:80px;text-align:center;background-color:#DCDCDC;}
+a img{border:none}
+a:link {color:#03F;text-decoration:none;}
+a:visited {color:#03F;text-decoration:none;}
+a:hover {color:#F30;text-decoration:normal;}
+a:active {color:#F00;}
+.clear{clear:both; font-size:0; line-height:0}
+.box{ width:100%;}
+.bk1{ width:100%; background:#F4F7CA;}
+ .bk1_l{ width:115px; height:50px; float:left}
+ .bkl_r{ float:left;}
+   .bk1_r_t{ text-indent:20px;font-size:20px; color:#222111; font-weight:bold; height:30px; line-height:30px; padding-top:5px}
+   .bk1_r_b{font-size:12px; color:#000;height:19px;line-height:19px;}
+ .bk2{ width:100%; padding:10px;}
+ .bk3{ width:100%; padding:10px;}
+ 	.bk3_t{}
+		.bk3_t_l{ width:36px; height:36px; float:left}
+		.bk3_t_r{float:left;height:16px; margin-top:20px}
+	.bk3_b{ display:none}
+		.bk3_b input{overflow:hidden;}
+
+.btn1 {
+BORDER-RIGHT: #7F9DB9 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7F9DB9 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#CAE4B6); BORDER-LEFT: #7F9DB9 1px solid; CURSOR: pointer; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7F9DB9 1px solid
+}
+.font1{ color:#003; font-size:24px; font-weight:bold;}
+-->
+</style>
+<script type="text/javascript">
+String.prototype.trim = function() {
+    return this.replace(/(^\s*)|(\s*$)/g, "");
+}
+function textShow()
+{
+	document.getElementById('errorsubtext').style.display='block';
+}
+function proofText()
+{
+    var content = document.getElementById('content').value.trim();
+	if(content)
+	{
+        if (content.length > 100) {
+            alert('你输入的内容不能超过100个字!');
+            $('#content').focus();
+            return;
+        }
+        var search_key = $('#search_key').val().trim();
+        var search_id  = $('#search_id').val();
+        var location_host = window.location.host;
+        var player_name   = $('#player_name').val();
+        var player_nick   = $('#player_nick').val();
+        $.post(window.location.pathname, {knol_title:search_key, knol_id:search_id, knol_content:content, host:location_host, player:player_name, nickname:player_nick}, function(data) { submit_bug(data); });
+        $('#errorsub').attr('disabled', true); 
+	}else
+	{
+		alert("报错内容不能为空!");
+        document.getElementById('content').value = '';
+		return false;
+	}
+}
+function submit_bug(data) {
+    var ret = eval('(' + data + ')');
+    if (ret['code']) {
+        if (ret['code'] == 1) {
+            alert(ret['msg']);
+            $('#bug_area').hide();
+        } else if (ret['code'] == 2) {
+            alert(ret['msg']);
+            window.close();
+        }
+    } else {
+        alert(data);
+        $('#errorsub').attr('disabled', false); 
+    }
+}
+function goto_knol(id) {
+    if (id > 0) {
+        var url = window.location.pathname + '?id=' + id;
+        window.location = url;
+    }
+}
+
+function goto_tag(id) {
+    if (id > 0) {
+        var url = window.location.pathname + '?check=tag&id=' + id;
+        window.location = url;
+    }
+}
+
+  function searchPocketBaike() {
+    var searchKey = $.trim($("#baike_input").val());
+    if (searchKey) {
+        var url = '../function/search_knol.php?key=' + searchKey;
+        window.location=url;
+    } else {
+      alert('请输入有效信息!');
+      $("#baike_input").val(searchKey);
+    }
+  }
+
+$().ready(function() {
+        $('#baike_input').autocomplete("../function/search_knol.php?acKey=searchTitle", {
+            max:8,
+            highlight:false,
+            croll:true,
+            scrollHeight: 300
+        });
+});
+</script>
+</head>
+<body>
+<div class="box">
+    <div class="bk1">
+        <div class="bk1_l"><img src="../images/help/logo1.gif" alt="口袋精灵LOGO" border="0" /></div>
+        <div class="bk1_r">
+            <div class="bk1_r_t" style="cursor:pointer;" onclick="goto_knol(1);return false;">口袋百科</div>
+            <div class="bk1_r_b">&nbsp;</div>
+        </div>
+    </div>
+    <div class="bk2">
+       <input type="text" id="baike_input" style="color:#47AE8; height:18px" size="30" maxlength="20" title="请输入你想要查询的口袋词条信息比如:口袋百科" />
+       <input type="button"  value="搜索" title="搜索口袋百科" border="0"  onclick="searchPocketBaike();return false;" />
+    </div>
+    <div class="bk2">
+#knol#
+    </div>
+<div id="bug_area" class="bk3" style="display:none;">
+	<div class="bk3_t">
+		<div class="bk3_t_l">
+            <!--
+        	<img src="../images/baike/jubao.gif" border="0" />
+            -->
+            <img src="../images/help/jubao.gif" border="0" />
+        </div>
+        <div class="bk3_t_r">
+        <a href="#" onclick="textShow()">我要报错</a>
+        </div>
+    </div>
+    <div class="clear"></div>
+    <div class="bk3_b" id='errorsubtext'>
+        <form action="" method="post">
+              <textarea name="content" id="content" cols="80" rows="7"></textarea>
+              <br/>
+              <input type="hidden" id="search_key" name="search_key" value="#search_key#" />
+              <input type="hidden" id="search_id" name="search_id"  value="#search_id#" />
+              <input type="hidden" id="player_name" name="player_name" value="#player_name#" />
+              <input type="hidden" id="player_nick" name="player_nick" value="#player_nick#" />
+              <input type="submit" id="errorsub" name="errorsub" value="提交"  class="btn1" onclick="if(!proofText()){return false;textShow();}" />
+        </form>
+    </div>
+</div>
+<script type="text/javascript">
+<!--
+//if (document.getElementById('knol_content_area')) {
+if ($('#knol_content_area').length > 0) {
+    $('#bug_area').show();
+}
+if (location.search.search('check=tag') > -1) {
+    $('#bug_area').hide();
+}
+-->
+</script>
+</body>
+</html>

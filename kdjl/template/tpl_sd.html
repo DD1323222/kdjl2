@@ -1,0 +1,1263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>宠物神殿</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/sd01.jpg);}
+.task_right{width:650px; height:319px;float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {
+	position:absolute;
+	width:39px;
+	height:17px;
+	z-index:1;
+	left: 89px;
+	top: 281px;
+	background-image: url(../new_images/ui/cangku04.jpg);
+}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+ol,ul {list-style:none} 
+
+.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.task_nav{width:640px;height:29px;}
+.task_nav li{float:left;height:29px;}
+.task_nav li a{width:90px;display:block;}
+.a01{background:url(../images/sd03.jpg) no-repeat;height:29px;}
+.task_nav li.on .a01{background:url(../images/sd03.jpg) no-repeat 0 -29px;height:29px;}
+.a02{background:url(../images/sd03.jpg) no-repeat -90px 0;height:29px;}
+.task_nav li.on .a02{background:url(../images/sd03.jpg) no-repeat -90px -29px;height:29px;}
+.a03{background:url(../images/sd03.jpg) no-repeat -179px 0;height:29px;}
+.task_nav li.on .a03{background:url(../images/sd03.jpg) no-repeat -179px -29px;height:29px;}
+
+.a04{background:url(../images/sd03.jpg) no-repeat  -268px 0;height:29px;}
+.task_nav li.on .a04{background:url(../images/sd03.jpg) no-repeat -268px -29px;height:29px;}
+.a05{background:                url(../images/sd03.jpg) no-repeat -357px 0;height:29px;}
+.task_nav li.on .a05{background:url(../images/sd03.jpg) no-repeat -357px -29px;height:29px;}
+
+.con{display:none;}
+#apDiv1 {
+	position:absolute;
+	width:305px;
+	height:20px;
+	z-index:2;
+	left: 414px;
+	top: 5px;
+}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+
+.sd_hc_l{width:300px; height:281px; float:left; padding-left:20px;}
+.sd_hc_01{width:263px; height:212px; background-image:url(../new_images/ui/sd06.jpg); float:left; margin:2px 0 0 0;}
+.sd_hc_02{width:263px; height:50px; float:left;}
+.sd_hc_r{width:300px; height:261px; float:left; line-height:22px; color:#630; padding:20px 20px 0 0;}
+.hc_pet_01{width:71px;height:107px; margin:20px 0 0 30px; float:left;}
+.hc_pet_02{width:71px;height:107px; margin:20px 30px 0 0; float:right;}
+#Layer2 {
+	position:absolute;
+	width:305px;
+	height:185px;
+	z-index:11;
+	left: 213px;
+	top: 102px;
+}
+
+.con{display:none;}
+#apDiv1 {
+	position:absolute;
+	width:305px;
+	height:20px;
+	z-index:2;
+	left: 414px;
+	top: 5px;
+}
+.plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+
+.sd_l{width:360px;height:281px;float:left; background-image:url(../new_images/ui/sd03.jpg);}
+.sd_l p{color:#333;line-height:18px;padding:50px 90px 20px 20px;}
+.sd_item{width:320px;margin-left:35px;margin-right:auto;}
+.sd_pet{width:67px;height:84px;float:left;}
+.r00{margin-right:10px;}
+.sd_r{height:281px;float:left}
+.sd_step {
+	clear:both;
+	height:140px;
+	position:relative;
+	width:290px;
+}
+.sd_step p{color:#bf7d1a;line-height:20px;padding-top:20px}
+.sd_step p img{
+	float:right;
+	position:absolute;
+	right:22px;
+	top:23px;
+}
+
+
+.sd_bg1{background-image:url(../images/sdbg01.jpg); width:650px; height:290px; float:left;}
+.sd_bg2{background-image:url(../images/sdbg02.jpg); width:650px; height:290px; float:left;}
+
+.sd_l01{width:300px;height:281px;float:left;}
+.sd_r01{height:281px;float:left; width:330px;}
+.sd_item01{width:260px;margin-left:35px;margin-right:auto; margin-top:55px; float:left;}
+.sd_item02{width:210px; height:110px; float:left;margin-left:35px;margin-right:auto; margin-top:20px; color:#653E17; line-height:20px;}
+.sd_item03{width:330px; height:110px; float:left; margin-top:45px;color:#653E17; line-height:20px;}
+.sd_item04{width:330px; height:85px; float:left; margin-top:35px;color:#653E17; line-height:20px;}
+.sd_item05{width:330px; height:110px; float:left; margin-top:25px;color:#653E17; line-height:20px;}
+.sd_item06{width:330px;margin-left:0px; margin-top:55px;}
+
+.sd_hc_l{width:300px; height:281px; float:left; padding-left:20px;}
+.sd_hc_01{width:263px; height:212px; background-image:url(../new_images/ui/sd06.jpg); float:left; margin:2px 0 0 0;}
+.sd_hc_02{width:263px; height:50px; float:left;}
+.sd_hc_r{width:300px; height:261px; float:left; line-height:22px; color:#630; padding:20px 20px 0 0;}
+.hc_pet_01{width:71px;height:107px; margin:20px 0 0 30px; float:left;}
+.hc_pet_02{width:71px;height:107px; margin:20px 30px 0 0; float:right;}
+</style>
+
+<script type="text/javascript">
+function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+}
+</script>
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript">
+var bball = [#bballid#];
+var sszsbbid=0;
+</script>
+<body>
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php?op=2'">
+        <label></label>
+</div>
+<div class="task">
+	<div class="task_left"></div>
+          
+    <div class="task_right">
+    
+   	  <ul class="task_nav">
+    <li id="tab1" onclick="setTab('tab',1,5);" class="on"><a class="a01" href="javascript:void(0)"></a></li>
+    <li id="tab2" onclick="setTab('tab',2,5);"><a class="a02" href="javascript:void(0)"></a></li>
+    <li id="tab3" onclick="setTab('tab',3,5);"><a class="a03" href="javascript:void(0)"></a></li>
+	<li id="tab4" onclick="setTab('tab',4,5);"><a class="a04" href="javascript:void(0)"></a></li>
+	<li id="tab5" onclick="setTab('tab',5,5);"><a class="a05" href="javascript:void(0)"></a></li>
+    </ul>    
+<div class="dt_task" id="con_tab_1">
+<div class="sd_l">
+    <p> 说明：进化需要满足条件，进化材料可以通过怪物掉落、开启进化箱、进化宝石兑换获得。
+</p>
+    <div class="sd_item">
+    <div class="sd_pet r00" id="p1">#one#</div><div class="sd_pet r00" id="p2">#two#</div><div class="sd_pet" id="p3">#three#</div>
+	<br />
+	<select name="sd_150" id="sd_150">
+	<option value="0">选择保护成长道具</option>
+	#keepCzl#
+	</select>
+    </div>
+    </div>
+    <div class="sd_r">
+    <div class="sd_step">
+    <p>
+进化需求等级： #alevel#<br />
+当前等级： #aclevel#<br />
+进化所需金币： #amoney#<br />
+进化所需材料： #aprops#<br />
+      进化后宠物： #agbname#<br />
+        <a href="#"><img src="../new_images/ui/sd04.jpg" alt="进化" border="0" onclick="JinHua(1,#id#,#pids1#)" /></a>
+    </p>
+    </div>
+    <div class="sd_step">
+        <p>
+进化需求等级： #blevel#<br />
+当前等级： #bclevel#<br />
+进化所需金币： #bmoney#<br />
+进化所需材料： #bprops#<br />
+进化后宠物： #bgbname#<br />
+<a href="#"><img src="../new_images/ui/sd05.jpg" alt="进化" border="0" onclick="JinHua(2,#id#,#pids2#)" /></a>
+</p>
+    </div>
+    </div>
+                
+    </div>
+    
+    <div class="dt_task con" id="con_tab_2">
+       
+		<div class="sd_hc_l">
+			<div class="sd_hc_01">
+            	<div class="hc_pet_01" id="comp1">#comone#</div>
+                <div class="hc_pet_02" id="comp2">#comtwo#</div>
+            </div>
+            <div class="sd_hc_02"><table width="260" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td align="center"><select name="comapets" id="comapets"  style="margin-top:3px;" onchange="moneysum();">
+			<option value=''>请选择主宠物</option>
+			#bpetslist#
+		</select></td>
+    <td align="center"><select name="combpets" id="combpets"  style="margin-top:3px;" onchange="moneysum();">
+			<option value=''>请选择副宠物</option>
+			#bpetslist#
+		</select></td>
+  </tr>
+  <tr>
+    <td height="30" colspan="2" align="center">合成宠物需要金币：<span id="smoney"></span></td>
+    </tr>
+</table>
+			</div>
+	  </div>
+			<div class="sd_hc_r">
+			<b>合成等级限制：</b>主副宠物均需要40级<br />
+<b>合成失败惩罚：</b>副宠消失<br />
+<b>说明：</b><br />
+1）添加的道具可以通过神秘商店、副本等获得<br />
+2）合成时请先取下宠物装备，否则宠物消失时装备也会一起消失。<br />
+3）合成冷却为60秒，需等待冷却后才能继续合成。<br />
+添加<span style="color:red;">守护</span>材料：<select name="wp1" id="wp1"  onchange="moneysum();">
+				<option value=''>选择材料一</option>
+				#wupinone#
+			</select><br />
+添加<span style="color:red;">加成</span>材料：<select name="wp2" id="wp2"  onchange="moneysum();">
+				<option value=''>选择材料二</option>
+				#wupintwo#
+			</select><br />
+      
+<table width="300" border="0" cellspacing="0" cellpadding="0" style="margin-top:10px;">
+  <tr>
+    <td rowspan="2"><a href="#"><img src="../images/sdbtn.gif" alt="开始合成" border="0" id="snb" onclick="Pcompose();"  /></a></td>
+    <td>合成幸运星：#xingyunxin#</td>
+  </tr>
+  <tr>
+    <td><a href="#"><img src="../images/gm15.gif" alt="合成幸运星说明" border="0" onclick="javascript:$('help').style.display='';" /></a>	</td>
+  </tr>
+</table>
+ 		   </div>      
+           <div id="help" style="position:absolute; left:493px; top:30px; width:282px; height:150px; z-index:10;padding-top:3px;display:none">
+<table width="286" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="14"><img src="../images/help/bbz01.gif" width="14" height="29"></td>
+        <td background="../images/help/bbz02.gif"><b><font color="green" style="font-size:12px;">合成幸运星：</font></b></td>
+        <td width="31"><img src="../images/help/bbz03.gif" width="31" height="29"></td>
+      </tr>
+    </table></td>
+  </tr>
+  <tr>
+    <td height="100" valign="top" align="left" background="../images/help/bbz04.gif" style="font-size:12px;padding:10px;padding-top:0px;line-height:1.7;">
+	<span style="margin-left:230px;color:#1c4ec1"><a href="javascript:$('help').style.display='none';void(0);">关闭</a></span>
+	<span id='helptarget' style="color:#333333;"><br/>
+		1.每合成失败一次，合成幸运星+1。<br/>
+		2.合成幸运星越多，合成成功率就越高。<br/>
+		3.当幸运星达到10颗时，合成率为100%。<br/>
+		4.每合成成功一次，合成幸运星数量归0。<br/>
+		5.合成成功率比以往已经大幅度提升。<br/>
+	</span>
+	</td>
+  </tr>
+  <tr>
+    <td height="12"><img src="../images/help/bbz05.gif" width="286" height="12"></td>
+  </tr>
+</table>
+</div>
+      </div> 
+    
+  <div class="dt_task con" id="con_tab_3">
+       <div class="sd_hc_l">
+			<div class="sd_hc_01">
+            	<div class="hc_pet_01" id="zsp1">#zsone#</div>
+                <div class="hc_pet_02" id="zsp2">#zstwo#</div>
+            </div>
+            <div class="sd_hc_02"><table width="260" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td align="center"><select name="zsapets" id="zsapets" style="margin-top:3px;" onchange="zsmoneysum();">
+          <option value=''>请选择主宠物</option>
+          
+			#zsbpetslist#
+		
+        </select></td>
+    <td align="center"><select name="zsbpets" id="zsbpets" style="margin-top:3px;" onchange="zsmoneysum();">
+          <option value=''>请选择副宠物</option>
+          
+			#zsbpetslist#
+		
+        </select></td>
+  </tr>
+  <tr>
+    <td height="30" colspan="2" align="center">请选择涅磐兽： <select name="select" id="zs">
+	   <option value=''>请选择涅磐兽</option>
+	  #zsoptions#
+      </select></td>
+    </tr>
+</table>
+</div>
+	  </div>
+			<div class="sd_hc_r">
+			<b>涅磐限制：</b>主副宠,涅磐兽均需为神宠，60级以上<br />
+<b>涅磐失败惩罚：</b>涅磐兽消失
+<br />
+<b>说明：</b><br />
+1）添加的道具可以通过神秘商店、副本等获得<br />
+2）合成时请先取下宠物装备，否则宠物消失时装备也会一起消失。<br />
+3）合成冷却为60秒，需等待冷却后才能继续合成。<br />
+添加材料一：<select name="zswp1" id="zswp1">
+				<option value=''>选择材料一</option>
+				#zswupinone#
+			</select><br />
+添加材料二：<select name="zswp2" id="zswp2"><option value=''>涅槃加成材料</option>#zswupintwo#</select><br />
+      
+<table width="300" border="0" cellspacing="0" cellpadding="0" style="margin-top:10px;">
+  <tr>
+    <td><a href="#"><img id="npbtn" src="../images/sdbtn02.gif" alt="神宠涅磐" border="0" onclick="zsPcompose();" /></a></td>
+    <td>每次涅槃消耗金币：50W</td>
+  </tr>
+  </table>
+    </div>
+  </div>
+  
+ <div class="dt_task con" id="con_tab_4">
+  	<div class=" sd_bg1">
+      <div class="sd_l01">
+			<div class="sd_item01">
+				<div class="sd_pet r00" id="p1">#petsSS1#</div><div class="sd_pet r00" id="p2">#petsSS2#</div><div class="sd_pet" id="p3">#petsSS3#</div>   				
+   			</div>
+            <div class="sd_item02" id="jhxq">
+			<table width="210" border="0" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+    <td width="125">进化需要等级：</td>
+    <td width="85">当前等级：</td>
+    </tr>
+  <tr>
+    <td colspan="2">进化所需材料：</td>
+    </tr>
+  <tr>
+    <td colspan="2">进化所需金币：</td>
+    </tr>
+  <tr>
+    <td colspan="2">当前进化次数：</td>
+  </tr>
+  <tr>
+    <td><img width="79" height="24" src="../images/sd_cion01.jpg" style="cursor:pointer" onclick="displayInfo(0)"></td>
+    <td><img width="79" height="24" src="../images/sd_cion02.jpg" style="cursor:pointer" onclick="ssJinHua()"></td>
+  </tr>
+</tbody></table>
+			</div>
+	  </div>
+	<div class="sd_r01">
+    	<div class="sd_item03"><table width="330" border="0" cellspacing="0" cellpadding="0">
+ 			 <tr>
+    <td width="244" height="30">选择道具一：
+      <label>
+        <select name="zjcqbldj1" id="zjcqbldj1">
+          <option>增加抽取比例道具</option>
+		  #incZhl#
+        </select>
+      </label></td>
+    <td width="86" rowspan="3" align="right"><img src="../images/sd_cion03.jpg" width="106" height="70" style="cursor:pointer" onclick="chouqu()"/></td>
+  </tr>
+  <tr>
+    <td height="30">选择道具二：
+      <select name="zjcqbldj2" id="zjcqbldj2">
+        <option>增加抽取比例道具</option>
+		#incZhl#
+      </select></td>
+    </tr>
+  <tr>
+    <td height="30">本次抽取需要金币：<span id="cqjb"></span></td>
+    </tr>
+  <tr>
+    <td height="20" colspan="2"><img src="../images/sd_cion05.jpg" width="99" height="17" style="cursor:pointer" onclick="displayInfo(1)" />　<!--img src="../images/sd_cion06.jpg" width="99" height="17" /--></td>
+    </tr>
+</table>
+		</div>
+		<div class="sd_item04">
+    <table width="330" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="225" height="30">当前拥有成长值：<span id="hascz">#yyczl#</span></td>
+    <td width="105" rowspan="3" align="right"><img src="../images/sd_cion04.jpg" width="106" height="70" style="cursor:pointer" onclick="zhuanhua()"/></td>
+  </tr>
+  <tr>
+    <td height="30">输入你要转化的成长值：
+      <label>
+        <input name="zhvalue" type="text" id="zhvalue" size="8" />
+      </label></td>
+    </tr>
+  <tr>
+    <td height="25"><img src="../images/sd_cion07.jpg" width="99" height="17"  style="cursor:pointer" onclick="displayInfo(2)"/></td>
+    </tr>
+</table>
+		</div>
+    </div>
+    </div>
+  </div> 
+	<div class="dt_task con" id="con_tab_5">
+       <div class="sd_bg2">
+      <div class="sd_l01">
+			<div class="sd_item01">
+   				<div class="sd_pet r00" id="p1">#petsZS1#</div><div class="sd_pet r00" id="p2">#petsZS2#</div><div class="sd_pet" id="p3">#petsZS3#</div>
+   			</div>
+            <div class="sd_item02">
+			#bbsszsinfo#
+			</div>
+	  </div>
+	<div class="sd_r01">
+<div class="sd_item06" id="sszsimg" align="center">
+   				
+   			</div>
+    	<div class="sd_item05"><span id="sszsstr1"><table width="330" border="0" cellspacing="0" cellpadding="0">
+ 			 <tr>
+    <td width="177" rowspan="4" id="sszsstr"></td>
+	
+    <td width="153" align="left">选择道具一：</td>
+  </tr>
+  <tr>
+    <td width="153" height="30" align="left"><label>
+      <select id="sszswp1" name="select4" id="select3">
+        <option value="">增加道具</option>
+		#sszswp#
+      </select>
+    </label></td>
+    </tr>
+  <tr>
+    <td width="153" align="left">选择道具二：</td>
+    </tr>
+  <tr>
+    <td height="20" align="left"><select id="sszswp2" name="select5" id="select4">
+      <option value="">增加道具</option>
+	  #sszswp#
+    </select></td>
+    </tr>
+</table></span>
+		</div>
+	</div>
+    </div>
+</div>
+
+</div></div><div id="Layer2" style="display:none"></div>
+
+<div style="position: absolute; left: 250px; top: 20px; z-index: 10; width: 300px; height: 280px; border: 2px solid rgb(17, 17, 68); background-color: rgb(205, 172, 61); display:none; line-height:24px; color:#653E17; padding:5px" id="infotext">
+
+</div>
+</body>
+</html>
+<script language="javascript">
+// Display id.
+var styles = "#style#";
+if(styles == 'compose'){
+	setTab('tab',2,3);
+}else if(styles == 'zs'){
+	setTab('tab',3,3);
+}
+var setBBId=0;
+function Display(obj,id)
+{
+	obj = obj.style;
+	sel(obj);
+	window.parent.$('gw').src='./function/Sd_Mod.php?pid='+id;
+}
+
+function Display1(obj,id,level,czl,type)
+{
+	setBBId=id;
+	sszsbbid = 0;
+	obj = obj.style;
+	sel(obj);
+	if(level > 0 && type == 1){
+		$('bblevel').innerHTML=level;
+		$('bbczl').innerHTML=czl;
+	}else if(type ==2){
+		$('bblevel').innerHTML='';
+		$('bbczl').innerHTML='';
+	}
+}
+
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+// Jinhua function.
+function JinHua(n,id,pids)
+{
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+					var ret = parseInt(t.responseText);
+					if (ret==0) window.parent.Alert('进化失败！');
+					else if (ret==2)
+					{
+						window.parent.Alert('缺少进化必须品！');return;
+					}
+					else if (ret==3)
+					{
+						window.parent.Alert('宝宝的等级太低，还不能进化！');return;
+					}
+					else if (ret==1)
+					{
+						window.parent.Alert('恭喜您，宝贝进化成功!!');
+						window.location.reload();
+					}
+					else if(ret==4)
+					{
+						window.parent.Alert('宝贝暂时还不能进化到更高级');
+					}
+					else if(ret==5)
+					{
+						window.parent.Alert('您没有足够金币进行进化！');
+					}
+					else if(ret==6)
+					{
+						window.parent.Alert('您已经达到最大的进化次数了！');
+					}
+					else
+					{
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	//alert('../function/jhGate.php?n='+n+'&id='+id+'&pids='+pids);
+	var ajax=new Ajax.Request('../function/jhGate.php?n='+n+'&id='+id+'&pids='+pids+'&bhid='+$('sd_150').value, opt);	
+}
+
+
+
+function sel(obj)
+{
+	for(var i=1;i<4;i++)
+	{	
+		try{
+			if(document.all){
+				$('i'+i).style.filter = "alpha(opacity=50)";
+				$('s'+i).style.filter = "alpha(opacity=50)";
+				$('z'+i).style.filter = "alpha(opacity=50)";
+			}else{
+				$('i'+i).style.opacity= 0.5;
+				$('s'+i).style.opacity= 0.5;
+				$('z'+i).style.opacity= 0.5;
+			}
+		}catch(e){
+			var x=e;
+			continue;
+		}
+	}
+	if(document.all){
+		obj.filter="alpha(opacity=100)";
+	}else{
+		obj.opacity= 1;
+	}
+}
+
+
+
+function Pcompose(n,id)
+{
+	var ap = $('comapets').options[$('comapets').selectedIndex].value;
+	var bp = $('combpets').options[$('combpets').selectedIndex].value;
+	var p1 = $('wp1').options[$('wp1').selectedIndex].value;
+	var p2 = $('wp2').options[$('wp2').selectedIndex].value;
+
+    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	$('snb').disabled=true;
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+				var v = parseInt(t.responseText);
+					if(v == '1000'){
+						if(!confirm('您的宠物身上有装备，合成后装备将会消失，是否确定继续合成？')){
+							return false;
+						}
+						var opt = {
+						method: 'get',
+						onSuccess: function(b) {
+								var a = parseInt(b.responseText);
+									switch(a)
+									{
+										case 0: window.parent.Alert('合成失败！！');break;
+										case 1: window.parent.Alert('您没有相应的宠物！');break;
+										case 2: window.parent.Alert('这两个宠物好像不能合成噢!');break;
+										case 3: window.parent.Alert('您的金币不足，不能合成!');break;
+										case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+										case 6: playF(0,'compose');break;
+										case 5: playF(1,'compose');break;
+										case 10:window.parent.Alert('数据读取失败!');break;
+										case 11:window.parent.Alert('冷却时间未到！');break;
+										case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+										default:window.parent.Alert('合成失败！！\n'+b.responseText);				
+									}
+									$('snb').disabled=false;
+									//window.location.reload();
+									//window.status=t.responseText;
+								},
+						asynchronous:true        
+					}
+					//alert('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2);return;
+					var ajax=new Ajax.Request('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&type=do', opt);
+					}else if(v == '200'){
+					//是否选了护宠仙石
+							if(confirm('你没有添加合成保护宝宝类道具，合成失败会造成副宠消失。确定要继续合成吗？'))
+							{
+							var opt = {
+							method: 'get',
+							onSuccess: function(m) {
+									var d = parseInt(m.responseText);
+									
+									
+									if(d == '1000'){
+									if(!confirm('您的宠物身上有装备，合成后装备将会消失，是否确定继续合成？')){
+										return false;
+									}
+									var opt = {
+									method: 'get',
+									onSuccess: function(b1) {
+											var a1 = parseInt(b1.responseText);
+												switch(a1)
+												{
+													case 0: window.parent.Alert('合成失败！！');break;
+													case 1: window.parent.Alert('您没有相应的宠物！');break;
+													case 2: window.parent.Alert('这两个宠物好像不能合成噢!');break;
+													case 3: window.parent.Alert('您的金币不足，不能合成!');break;
+													case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+													case 6: playF(0,'compose');break;
+													case 5: playF(1,'compose');break;
+													case 10:window.parent.Alert('数据读取失败!');break;
+													case 11:window.parent.Alert('冷却时间未到！');break;
+													case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+													default:window.parent.Alert('合成失败！！!\n'+b1.responseText);					
+												}
+												$('snb').disabled=false;
+												//window.location.reload();
+												//window.status=t.responseText;
+											},
+									asynchronous:true        
+								}
+								//alert('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2);return;
+								var ajax=new Ajax.Request('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&type=do&type1=check', opt);
+								}else{
+									
+									
+										switch(d)
+										{
+											case 0: window.parent.Alert('合成失败！！');break;
+											case 1: window.parent.Alert('您没有相应的宠物！');break;
+											case 2: window.parent.Alert('这两个宠物好像不能合成噢!');break;
+											case 3: window.parent.Alert('您的金币不足，不能合成!');break;
+											case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+											case 6: playF(0,'compose');break;
+											case 5: playF(1,'compose');break;
+											case 10:window.parent.Alert('数据读取失败!');break;
+											case 11:window.parent.Alert('冷却时间未到！');break;
+											case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+											case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+											default:window.parent.Alert('合成失败！！!\n'+m.responseText);					
+										}}
+										$('snb').disabled=true;
+										//window.location.reload();
+										//window.status=t.responseText;
+									},
+							asynchronous:true        
+						}
+						var ajax=new Ajax.Request('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&type1=check', opt);
+						}
+						else
+						{
+							$('snb').disabled=false;
+						}
+					}else{
+						switch(v)
+						{
+							case 0: window.parent.Alert('合成失败！！');break;
+							case 1: window.parent.Alert('您没有相应的宠物');break;
+							case 2: window.parent.Alert('这两个宠物好像不能合成噢!');break;
+							case 3: window.parent.Alert('您的金币不足，不能合成!');break;
+							case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+							case 6: playF(0,'compose');break;
+							case 5: playF(1,'compose');break;
+							case 10:window.parent.Alert('数据读取失败!');break;
+							case 11:window.parent.Alert('冷却时间未到！');break;
+							case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
+							default:window.parent.Alert('合成失败！！!\n'+t.responseText);					
+						}
+						$('snb').disabled=false;
+					}
+					//window.location.reload();
+					//window.status=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	//alert('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2);return;
+	var ajax=new Ajax.Request('../function/cmpGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2, opt);
+}
+
+function moneysum()
+{
+	var ap = $('comapets').options[$('comapets').selectedIndex].text.split('-')[1];
+	var bp = $('combpets').options[$('combpets').selectedIndex].text.split('-')[1];
+    var apid = $('comapets').options[$('comapets').selectedIndex].value;
+	var bpid = $('combpets').options[$('combpets').selectedIndex].value;
+
+    if(typeof apid != 'undefined' || apid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == apid)
+			{
+				$('cp1').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp1').style.display='';
+			}
+		}
+	}
+	if(typeof bpid != 'undefined' || bpid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == bpid)
+			{
+				$('cp2').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('cp2').style.display='';
+			}
+		}
+	}
+    
+	var p1 = $('wp1').options[$('wp1').selectedIndex].text.split('-')[1];
+	var p2 = $('wp2').options[$('wp2').selectedIndex].text.split('-')[1];
+	if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	var money=parseInt(parseInt(ap)+parseInt(bp))*1000+parseInt(p1)+parseInt(p2);
+	$('smoney').innerHTML= 50000+'金币！';
+}
+
+function playF(tf,style)
+{
+	var oPopup = window.createPopup();
+	var fname = '';
+	if (tf==1) fname='hcdh'; //ok
+	else fname='hcdh0';
+	var obj = document.getElementById('Layer2');
+	with (obj) 
+	{
+		style.backgroundColor="#dfd495";
+		style.display='block';
+		//style.border="solid black 1px";
+		innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" '
+				   +'codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,19,0" width="305" height="185">'
+				   +'<param name="movie" value="../images/ui/compose/'+fname+'.swf" />'
+				   +'<param name="quality" value="high" />'
+				   +'<param name="wmode" value="transparent" />'
+				   +'<embed src="'+IMAGE_SRC_URL+'/ui/compose/'+fname+'.swf" quality="high" ' +'pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="305" height="185"></embed></object>';
+	}
+	
+	window.setTimeout(function(){ document.getElementById('Layer2').style.display='none';},5000);
+	//window.parent.$('gw').src='./function/City_Mod.php';
+}
+
+function zsPcompose(n,id)
+{
+	document.getElementById('npbtn').onclick = function()
+	{
+		window.parent.Alert('冷却中');
+	};
+	setTimeout(function()
+	{
+		document.getElementById('npbtn').onclick = function()
+		{
+			zsPcompose();
+		}
+	},10000);
+	var ap = $('zsapets').options[$('zsapets').selectedIndex].value;
+	var bp = $('zsbpets').options[$('zsbpets').selectedIndex].value;
+	var zs = $('zs').options[$('zs').selectedIndex].value;
+	var p1 = $('zswp1').options[$('zswp1').selectedIndex].value;
+	var p2 = $('zswp2').options[$('zswp2').selectedIndex].value;
+    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	$('snb').disabled=true;
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {
+					var v = t.responseText;
+					if(v == '1000'){
+						if(!confirm('您宠物身上有装备，转生后装备会消失，是否确定转生？')){
+							return false;
+						}
+						var opt = {
+							method: 'get',
+							onSuccess: function(a) {
+										var b = a.responseText;
+										switch(parseInt(b))
+										{
+											case 0: playF(0,'zs');window.parent.Alert('转生失败！！');break;
+											case 1: window.parent.Alert('您没有相应的宠物！');break;
+											case 2: window.parent.Alert('这两个宠物好像不能转生噢1!');break;
+											case 3: window.parent.Alert('您的金币不足，不能转生!');break;
+											case 7: window.parent.Alert('请选择涅磐兽!');break;
+											case 6: playF(0,'zs');break;
+											case 5: playF(1,'zs');break;
+											case 10:window.parent.Alert('数据读取失败!');break;
+											case 11:window.parent.Alert('冷却时间未到！');break;
+											default:window.parent.Alert("("+b+")");					
+										}
+										$('snb').disabled=false;
+										//window.location.reload();
+										//window.status=t.responseText;
+									},
+							asynchronous:true        
+						}
+						//alert('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs);return;
+						var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&zs='+zs+'&type=do', opt);
+					}else if(v == '200'){
+					//是否选了护宠仙石
+							if(confirm('你没有添加转生保护宝宝类道具，转生失败会造成副宠消失。确定要继续转生吗？'))
+							{
+							var opt = {
+							method: 'get',
+							onSuccess: function(f) {
+									var e = parseInt(f.responseText);
+									
+									
+									
+									if(e == '1000'){
+									if(!confirm('您宠物身上有装备，转生后装备会消失，是否确定转生？')){
+										return false;
+									}
+									var opt = {
+										method: 'get',
+										onSuccess: function(a) {
+													var b = a.responseText;
+													switch(parseInt(b))
+													{
+														case 0: playF(0,'zs');window.parent.Alert('转生失败！！');break;
+														case 1: window.parent.Alert('您没有相应的宠物！');break;
+														case 2: window.parent.Alert('这两个宠物好像不能转生噢1!');break;
+														case 3: window.parent.Alert('您的金币不足，不能转生!');break;
+														case 7: window.parent.Alert('请选择涅磐兽!');break;
+														case 6: playF(0,'zs');break;
+														case 5: playF(1,'zs');break;
+														case 10:window.parent.Alert('数据读取失败!');break;
+														case 11:window.parent.Alert('冷却时间未到！');break;
+														default:window.parent.Alert("("+b+")");					
+													}
+													$('snb').disabled=false;
+													//window.location.reload();
+													//window.status=t.responseText;
+												},
+										asynchronous:true        
+									}
+									//alert('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs);return;
+									var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&zs='+zs+'&type=do&type1=check', opt);
+								}else{
+									
+									
+									
+										switch(e)
+										{
+											case 0: window.parent.Alert('转生失败！！');break;
+											case 1: window.parent.Alert('您没有相应的宠物！');break;
+											case 2: window.parent.Alert('这两个宠物好像不能转生噢!');break;
+											case 3: window.parent.Alert('您的金币不足，不能转生!');break;
+											case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
+											case 6: playF(0,'compose');break;
+											case 5: playF(1,'compose');break;
+											case 10:window.parent.Alert('数据读取失败!');break;
+											case 11:window.parent.Alert('冷却时间未到！');break;
+											case 15:window.parent.Alert('宠物成长未达到转生条件哦！');break;
+											default:window.parent.Alert('转生失败！！\n'+f.responseText);					
+										}}
+										$('snb').disabled=true;
+										//window.location.reload();
+										//window.status=t.responseText;
+									},
+							asynchronous:true        
+						}
+						var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&zs='+zs+'&type1=check', opt);
+						}
+						else
+						{
+							$('snb').disabled=false;
+						}
+					}else{
+						switch(parseInt(v))
+						{
+							case 0: playF(0,'zs');window.parent.Alert('转生失败！！');break;
+							case 1: window.parent.Alert('您没有相应的宠物！');break;
+							case 2: window.parent.Alert('这两个宠物好像不能转生噢2!');break;
+							case 3: window.parent.Alert('您的金币不足，不能转生!');break;
+							case 7: window.parent.Alert('请选择涅磐兽!');break;
+							case 6: playF(0,'zs');break;
+							case 5: playF(1,'zs');break;
+							case 10:window.parent.Alert('数据读取失败!');break;
+							case 11:window.parent.Alert('冷却时间未到！');break;
+							default:window.parent.Alert("("+v+")");					
+						}
+						$('snb').disabled=false;
+					}
+					//window.location.reload();
+					//window.status=t.responseText;
+    		 	},
+     	asynchronous:true        
+	}
+	//alert('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs);return;
+	var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&zs='+zs, opt);
+}
+
+function zsmoneysum()
+{
+	var ap = $('zsapets').options[$('zsapets').selectedIndex].text.split('-')[1];
+	var bp = $('zsbpets').options[$('zsbpets').selectedIndex].text.split('-')[1];
+    var apid = $('zsapets').options[$('zsapets').selectedIndex].value;
+	var bpid = $('zsbpets').options[$('zsbpets').selectedIndex].value;
+
+    if(typeof apid != 'undefined' || apid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == apid)
+			{
+				$('zscp1').src=""+IMAGE_SRC_URL+"/bb/"+img1;
+				$('zscp1').style.display='';
+			}
+		}
+	}
+	if(typeof bpid != 'undefined' || bpid!='')
+	{
+		for(var i=0;i<bball.length;i++)
+		{
+			var img1 = bball[i].split('-')[1];
+			if (bball[i].split('-')[0] == bpid)
+			{
+				$('zscp2').src=""+IMAGE_SRC_URL+"/bb/"+img1;	
+				$('zscp2').style.display='';
+			}
+		}
+	}
+    
+	var p1 = $('zswp1').options[$('zswp1').selectedIndex].text.split('-')[1];
+	var p2 = $('zswp2').options[$('zswp2').selectedIndex].text.split('-')[1];
+	if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (p1 == '' || typeof p1=='undefined') p1 = 0;
+	if (p2 == '' || typeof p2=='undefined') p2 = 0;
+	var money=parseInt(parseInt(ap)+parseInt(bp))*1000+parseInt(p1)+parseInt(p2);
+}
+
+// Jinhua function.
+function ssJinHua()
+{
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {					
+					if (t.responseText=='OK'){
+						window.parent.Alert('进化成功');						
+						rd();
+					}
+					else
+					{
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var str=bbjs[setBBId];
+	var strs=str.split('|');
+	if(strs[6]!=7){
+		parent.Alert("请确认您的宠物是否为神圣宠物!");
+		return;
+	}
+	if(parseInt(strs[7])<=parseInt(strs[5])){
+		if(!confirm('您的宠物已经达到成长上限，进化不会产生任何变化，但会消耗材料及游戏币。')){
+			return;
+		}
+	}
+	var ajax=new Ajax.Request('../function/superJhGate.php?pid='+setBBId+'&zjsxdj='+$('zjsxdj').value, opt);
+}
+
+#bbjs#
+
+function showJHInfo(bid)
+{
+	var str=bbjs[bid];
+	var strs=str.split('|');
+	var html='<table width="210" cellspacing="0" cellpadding="0" border="0">\
+			  <tbody><tr>\
+				<td width="125">进化需要等级：'+strs[0]+'</td>\
+				<td width="85">当前等级：'+(strs[6]<7?'N/A':strs[1])+'</td>\
+				</tr>\
+			  <tr>\
+				<td colspan="2">进化所需材料：'+strs[2]+'</td>\
+				</tr>\
+			  <tr>\
+				<td colspan="2">进化所需金币：'+strs[3]+'</td>\
+				</tr>\
+			  <tr>\
+				<td colspan="2">当前进化次数：'+(strs[6]<7?'N/A':strs[4])+' <select name="zjsxdj" id="zjsxdj"><option>增加属性道具</option>'+#zjsxdj#+'</select></td>\
+			  </tr>\
+			  <tr>\
+				<td><img width="79" height="24" src="../images/sd_cion01.jpg" style="cursor:pointer" onclick="displayInfo(0)" ></td>\
+				<td><img width="79" height="24" src="../images/sd_cion02.jpg"  style="cursor:pointer" onclick="ssJinHua()"></td>\
+			  </tr>\
+			</tbody></table>';
+	$('jhxq').innerHTML=html;
+	var nm='不可抽取';
+	
+	if(strs[6]<7)
+	{
+		if(strs[5]>600)
+		{
+			nm=600*10000;
+		}else{
+			nm=strs[5]*10000;
+		}
+	}
+	
+	$('cqjb').innerHTML=parseInt(nm);
+	
+	/*if(strs[6]==7) $('hascz').innerHTML=strs[5];
+	else $('hascz').innerHTML='不可转化';*/
+}
+
+var infs=[
+'1.每一个神圣宠物最多能进化10次；<br/>\
+2.神圣宠物的进化必须满足进化等级要求；<br/>\
+3.进化成功之后，宠物等级变为1级；<br/>\
+4.当宠物成长已经达到该阶段成长上限时，进化不会再增加其成长。<br/>\
+',
+'1.	只有神宠能使用成长抽取功能；<br/>\
+2.	神宠的成长抽取按照不同阶段抽取的比例不同，成长越高，抽取的比例越高；<br/>\
+3.	所抽取的成长最大不能超过600，超过600时只按600计算；<br/>\
+4.	可以通过添加道具的方式增加成长抽取比例（可以在副本中获得道具碎片，也可以在神秘商店中直接购买道具）；<br/>\
+5.	抽取完成后宠物将会消失。<br/>\
+',
+'1.只有神圣宠物才能接受成长的直接转化；<br/>\
+2.转化成长，需要手动输入转化数字，只能输入整数；<br/>\
+3.当转化成长率超过该神圣宠物当前上限时，多出的成长将消失。<br/>\
+',
+'1.神圣宠物通过转生可以提高其成长上限及等级上限；<br />\
+2.转生需要满足转生等级及成长要求，同时还需要有对应的转生道具；<br />\
+3.转生并不是百分之百成功，一旦失败，转生材料将会消失；<br />\
+4.可以通过购买的增加成功率道具来增加转生的成功几率。<br />\
+'
+];
+
+function displayInfo(id)
+{
+	$('infotext').innerHTML=''+infs[id]+'<br/><input type="button" value="关闭" onclick="$(\'infotext\').style.display=\'none\'" style="position:absolute;left:135px">';
+	$('infotext').style.display='block';
+}
+
+
+function chouqu()
+{
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {					
+					if (t.responseText.substr(0,2)=='OK')
+					{
+						window.parent.Alert('抽取成功,抽取获得了:'+t.responseText.substr(2,6)+'成长');
+						//rd();
+						window.location='/function/Sd_Mod.php';
+					}
+					else
+					{
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var str=bbjs[setBBId];
+	var strs=str.split('|');
+	/*
+	if(strs[6]!=6){
+		if(strs[5]<40){
+			parent.Alert("五系宠物成长小于40不能抽取!");
+			return;
+		}	
+	}	
+	*/
+	
+	if(strs[5]<30){
+		parent.Alert("成长小于30不能抽取!");
+		return;
+	}
+	if(strs[6]!=6){
+		if(!confirm('抽取成长在5%-15%之间随机一个数值\n\n确认宠物装备是否脱下，否则抽取完装备将会消失\n\n抽取完成之后宠物将消失。\n\n确定么?')) return;
+	}else{
+		if(strs[5]<65)
+		{
+			swapRate="10%-20%之间随机一个数值";
+		}
+		else if(strs[5]<85)
+		{
+			swapRate="30%-50%之间随机一个数值";
+		}
+		else if(strs[5]<100)
+		{
+			swapRate="50%-65%之间随机一个数值";
+		}
+		else if(strs[5]<110)
+		{
+			swapRate="65%";
+		}
+		else if(strs[5]<115)
+		{
+			swapRate="70%";
+		}
+		else if(strs[5]<120)
+		{
+			swapRate="75%";
+		}
+		else
+		{
+			swapRate="80%";
+		}
+		if(!confirm('抽取成长比例：'+swapRate+'(不包含道具的效果)\n\n抽取完成后，宠物不会消失，成长变为1\n\n已经抽取过成长的神宠不能进行涅槃，不能进行传承。,\n\n确定么?')) return;
+	}
+	var ajax=new Ajax.Request('../function/cqGate.php?act=cq&pid='+setBBId+"&pid1="+$('zjcqbldj1').value+"&pid2="+$('zjcqbldj2').value, opt);
+}
+
+function zhuanhua()
+{
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	var opt = {
+     	method: 'get',
+		onSuccess: function(t) {					
+					if (t.responseText=='OK'){
+						window.parent.Alert('转化成功');
+						rd();
+					}
+					else
+					{
+						window.parent.Alert(t.responseText);
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var str=bbjs[setBBId];
+	var strs=str.split('|');
+	if(strs[6]!=7){
+		parent.Alert("该宠物不能进行转化!");
+		return;
+	}
+	if(parseInt($('zhvalue').value)<1||isNaN(parseInt($('zhvalue').value)))
+	{
+		parent.Alert("请输入你要转化的点数,只允许数字!");
+		return;
+	}else{
+		$('zhvalue').value=parseInt($('zhvalue').value);
+	}
+	if(parseInt(strs[7])<parseInt($('zhvalue').value)+parseInt(strs[5])){
+		if(!confirm('抽取的成长加原有成长超出最大成长上限'+(parseInt($('zhvalue').value)+parseInt(strs[5])-parseInt(strs[7]))+'点，多出的成长将会消失,确定要转化？')){
+			return;
+		}
+	}
+	
+	var ajax=new Ajax.Request('../function/zhGate.php?act=zh&pid='+setBBId+"&v="+$('zhvalue').value, opt);
+}
+
+function sszsshow(bid){
+	if(bid == 0){
+		$('sszsimg').innerHTML = '';
+		return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var res = t.responseText;
+					$('sszsimg').innerHTML = res;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/sszsInfo.php?id='+bid+'&op=img', opt);
+}
+
+function sszsstr(bid,sid,obj){
+	if(bid == 0 && sid == 0){
+		$('sszsstr').innerHTML = '';
+		$('sszsstr1').style.display = 'none';
+		return;
+	}
+	
+	for(var i=1;i<10;i++)
+	{
+		try{
+			if(bid!=i) seta($('p_p'+i).getElementsByTagName('img')[0].style,0.5);
+			else seta($('p_p'+i).getElementsByTagName('img')[0].style,1);
+		}catch(e){}
+	}
+	seta(obj.style,1);
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var res = t.responseText;
+					$('sszsstr').innerHTML = res;
+					$('sszsstr1').style.display = 'block';
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true
+			}
+	var ajax=new Ajax.Request('../function/sszsInfo.php?id='+bid+'&sid='+sid+'&op=str', opt);
+}
+
+function sszs(){
+	var wp1 = $('sszswp1').options[$('sszswp1').selectedIndex].value;
+	var wp2 = $('sszswp2').options[$('sszswp2').selectedIndex].value;
+	if(wp1 == "" && wp2==""){
+		if(!confirm('未放入成功率道具，可能会导致失败材料消失，\n\n如果您宠物身上有装备，转生后装备会消失，\n\n您确定要转生吗？')){
+			return;
+		}
+	}else if(!confirm('如果您宠物身上有装备，转生后装备会消失，是否确定转生？')){
+			return;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	var res = t.responseText;
+					if(res == 5){
+						playF(1,'sszs');
+					}else if(res == 6){
+						playF(0,'sszs');
+					}else{
+						window.parent.Alert(res);
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true
+			}
+	var ajax=new Ajax.Request('../function/sszsInfo.php?old='+setBBId+'&newid='+sszsbbid+'&wp1='+wp1+'&wp2='+wp2+'&op=zs', opt);
+}
+function rd()
+{
+	parent.$('gw').contentWindow.location.reload();
+}
+function seta(sty,v){
+	if(document.all){
+		sty.filter = "alpha(opacity="+v*100+")";
+	}else{
+		sty.opacity= v;
+	}
+}
+#js#
+</script>

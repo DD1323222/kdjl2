@@ -1,0 +1,458 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>仓库</title>
+<link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+<style type="text/css">
+
+.task{width:788px;height:319px;background:#f2ebc5;}
+.task_left{width:138px; height:319px; float:left; background-image:url(../new_images/ui/cangku01.jpg);}
+.task_right{width:650px; height:319px; float:left; background-image:url(../new_images/ui/cangku02.jpg);}
+#Layer1 {position:absolute;	width:39px;	height:17px;z-index:1;left: 86px;top: 281px;background-image: url(../new_images/ui/cangku04.jpg);}
+.task_dh{width:650px; height:29px; float:left;}
+.task_dh01{width:90px; height:29px; float:left; margin-left:10px; background-image:url(../new_images/ui/cangku03.jpg);}
+.task_dh02{width:300px; height:20px; float:left; margin:8px 0 0 100px;}
+.cion{height:18px; float:left; padding-left:10px;}
+.cion01{height:16px; float:left; padding:5px 0 0 5px;}
+.box{width:650px; height:290px; float:left;}
+.box01{width:292px; float:left; padding-left:14px;}
+.box02{width:292px; float:left; height:28px;}
+.box03{width:290px; float:left; border:#D9BD7A 1px solid; height:235px; background-color:#FFF;}
+.box04{width:292px; float:left; height:20px; color:#B06A01; padding-top:4px;}
+.bb01{ height:24px; float:left; padding-top:3px;}
+.bb02{ height:24px; float:right; padding-top:5px;}
+.txt01{color:#FF0000; font-weight:bold; font-size:12px;}
+.dt_list{overflow-x:hidden;overflow-y:scroll;background:#fff;height:210px;width:290px;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff; color:#BF7D1A; border-top-width: 1px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: solid;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-top-color: #D9BD7A;}
+.dt_list li {line-height:24px;height:24px;overflow:hidden;}
+.dt_list li a{overflow:hidden;padding-left:5px}
+.dt_list li span{padding-right:5px;float:right;color:#060}
+.tit01 {border-collapse:collapse;width:100%;font-size:12px; color:#BF7D1A;}
+</style>
+<script type="text/javascript" src="../js/js.js"></script>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/JavaScript">
+<!--
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+  eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+  if (restore) selObj.selectedIndex=0;
+}
+
+/* added by Zheng.Ping */
+function hiddenContent() {
+    $('props_types').style.display = 'none';
+}
+
+function showContent() {
+    $('props_types').style.display = '';
+}
+/* addded by Zheng.Ping */
+//-->
+</script>
+</head>
+<script language="javascript">
+var bid=0;
+var selid=0;
+var types=-1;
+</script>
+</head>
+
+<body>
+<div id="Layer1" style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php'">
+      <label></label>
+    </div>
+<div class="task">
+	<div class="task_left"></div>
+    
+    <div class="task_right">
+		<div class="task_dh">
+			<div class="task_dh01"></div>
+			<div class="task_dh02">
+			<div class="cion"><img src="../new_images/ui/icon01.jpg" width="20" height="18" /></div><div class="cion01" style="font-size:12px">元宝:#yb#</div>
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01" style="font-size:12px">金币#money#</div>
+			</div>
+		</div>
+		<div class="box">
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon03.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+					  <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+                    #baseoption#
+                  </select>
+				    </div>
+				</div>
+				<div class="box03">
+				  <table border="0" cellspacing="0" class="tit01">
+                    <tr>
+                      <td height="24" style="width:35px; text-align:left"></td>
+                      <td style="width:100px; text-align:left">名称</td>
+                      <td style="width:60px; text-align:left">价格</td>
+                      <td style="text-align:left">数量</td>
+                    </tr>
+                  </table>
+				<div class="dt_list clearfix">
+				  <table class="tit01" id="shoplist">
+				    #base#
+			      </table>
+				  <div style=" display:none;width:100%;text-align:left;font-size:12px; line-height:1.5;height:205px;overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;cursor:default;color:#BF7D1A;margin-left:3px;" id="abc">新建密码：<input type="password" name="pwd" id="pwd" /><br /><br />
+				重复密码：<input type="password" name="repwd" id="repwd" /><br /><br />
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" name="Submit" onclick="jiami()" value="提交" hidefocus />&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="button" name="Submit2" value="取消" onclick="pwd2()" hidefocus />
+				
+		  </div>
+				</div>  
+				</div>
+				<div class="box04" style="font-size:12px">
+				仓库空间：#baselimit# 数量：
+          <input type="text" class="txt02"  id="num" size="5"  />
+		  <input id="button_fetch_props" name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;" disabled  onclick="gets();" value="取出" />
+            <input id="button_put_props" name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;" disabled onclick="saves();" value="存放" />
+				</div>
+			</div>
+			<div class="box01">
+				<div class="box02">
+					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
+					<div class="bb02"><span class="txt01">分类查看</span>
+				    <select id="sel01" name="menu2" onchange="MM_jumpMenu('self',this,0)">
+                    #bagoption#
+                  </select></div>
+				</div>
+				<div class="box03">
+					<table border="0" cellspacing="0" class="tit01">
+                 	   <tr>
+                 	     <td height="24" style="width:35px; text-align:left"></td>
+                 	     <td style="width:100px; text-align:left">名称</td>
+                 	     <td style="width:60px; text-align:left">价格</td>
+                 	     <td style="text-align:left">数量</td>
+                  	  </tr>
+                	  </table>
+				 	 <div class="dt_list clearfix">
+      				  <table class="tit01" id="shoplist">#mybag#</table>
+					</div>
+				</div>
+				<div class="box04" style="font-size:12px"><label>背包空间：#baglimit#  </label>
+          <a href="#" onclick="pwd()"><img src="../new_images/ui/add01.gif" border="0" /></a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>
+<script language="javascript">
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+	//var obj = document.getElementById("num");
+	try
+	{
+		var pro = $(obj.id.replace("t","s")).innerHTML;
+		$('num').value= parseInt(pro);
+	}
+	catch(e)
+	{
+		$('num').value = "";
+	}
+}
+
+function gets(){
+	var nums = $('num').value; 
+	if (bid == 0) {window.parent.Alert('请先选择要取出的物品。');return;}
+	else if (!validInt(nums)){window.parent.Alert('数量必须为整数。');return;} 
+	else{
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n==0) {window.location.reload();   }
+					else if(n==5) window.parent.Alert('您的背包空间不足！');
+					else if(n==10) window.parent.Alert('您的仓库中没有足够的物品可以取出！');
+					else window.parent.Alert('取出失败!');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/baseGate.php?bid='+bid+'&n='+nums+'&op=g', opt);
+		}
+}
+
+// added by Zheng.Ping
+function ready_fetch() {
+    $('button_fetch_props').disabled=false;
+    $('button_put_props').disabled=true;
+}
+
+function ready_put() {
+    $('button_fetch_props').disabled=true;
+    $('button_put_props').disabled=false;
+}
+
+// added by Zheng.ping
+
+function saves(){
+	var nums = $('num').value; 
+	
+	if(bid == 0 ){window.parent.Alert('请先选择要存放的物品。');return;}
+	else{
+		var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=t.responseText;
+					if(n==0) {window.location.reload();   }
+					else if(n==4) window.parent.Alert('您的仓库空间不足！');
+					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以存放！');
+					else window.parent.Alert('存放失败!');
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/baseGate.php?bid='+bid+'&n='+nums+'&op=s', opt);
+		}
+}
+var equipInfos = {};
+var LastKey = "";
+if(!document.all){
+	var Event;
+	window.onmousemove = function(){
+							Event = window.parent.event;
+					}
+}
+
+function showTip(id,bid,sign,type)
+{
+	var x = 500;
+	var y = 100;
+	equipInfos = window.parent.equipInfos;
+	var key = id+"_"+bid+"_"+sign+"_"+type;
+	if(typeof(equipInfos[key])!='undefined'){
+		window.parent.showTips(equipInfos[key],x,y);
+		return;
+	}
+	if(LastKey==key){
+		return;
+	}
+	LastKey=key;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t){
+				 	equipInfos[key] = t.responseText;
+					window.parent.showTips(t.responseText,x,y);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPropsInfo.php?id='+id+'&bid='+bid+'&sign='+sign+'&type='+type, opt);
+}
+
+function pwd()
+{
+	$('abc').style.display="";
+	$('shoplist').style.display="none";
+}
+
+function pwd2()
+{
+	$('abc').style.display="none";
+	$('shoplist').style.display="";
+}
+
+function jiami()
+{
+	var pwd = $('pwd').value;
+	var repwd = $('repwd').value;
+	if(pwd == "")
+	{
+		window.parent.Alert("请先填写密码！");
+		return false;
+	}
+	if(repwd == "")
+	{
+		window.parent.Alert("请先填写重复密码！");
+		return false;
+	}
+	if(repwd != pwd)
+	{
+		window.parent.Alert("两次密码不一致！");
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("请先填写密码！");
+						return false;
+					}
+					else if(n == 1)
+					{
+						window.parent.Alert("请先填写重复密码！");
+						return false;
+					}
+					else if(n == 2)
+					{
+						window.parent.Alert("两次密码不一致！");
+						return false;
+					}
+					else if(n == 3)
+					{
+						window.parent.Alert("您的仓库已经设置密码,如要修改，请先输入旧密码！");
+						return false;
+					}
+					else if(n == 4)
+					{
+						window.parent.Alert("您输入的密码长度不正确！");
+						return false;
+					}
+					else if(n == 10)
+					{
+						if(!confirm("请牢记您的密码！！如若遗忘，后果自负！您确定要设置密码吗？"))
+						{
+							return false;
+						}
+						dos(pwd);
+					}
+					else
+					{
+						window.parent.Alert("设置密码失败！");
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true
+			}
+			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&repwd='+repwd+'&action=reg',opt);
+}
+
+//设置密码
+function dos(pwd)
+{
+	if(pwd == "")
+	{
+		window.parent.Alert("信息有误！");
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("住处有误");
+						return false;
+					}
+					else if(n == 10)
+					{
+						window.location.href='../function/Base_Mod.php';
+						window.parent.Alert("密码设置成功！");
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=do',opt);
+}
+
+//登陆
+function login()
+{
+	var pwd = $('login').value;
+	if(pwd == "")
+	{
+		window.parent.Alert("请先填写密码！");
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("请先填写密码！");
+						return false;
+					}
+					else if(n == 1)
+					{
+						window.parent.Alert("密码错误！");
+					}
+					else if(n == 10)
+					{
+						window.location.href='../function/Base_Mod.php';
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=login',opt);
+}
+
+//修改密码
+function update()
+{
+	var pwd = $('login').value;
+	if(pwd == "")
+	{
+		window.parent.Alert("请先填写旧密码！");
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+			 		var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("请先填写旧密码！");
+						return false;
+					}
+					else if(n == 1)
+					{
+						window.parent.Alert("密码错误！");
+					}
+					else if(n == 10)
+					{
+						$('abc').style.display="";
+						$('shoplist').style.display="none";
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=login',opt);
+}
+</script>

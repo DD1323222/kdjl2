@@ -1,0 +1,64 @@
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none}
+table {border-collapse:collapse; border-spacing:0}
+fieldset,img {border:0}
+address,caption,cite,code,dfn,em,th,var {font-weight:normal; font-style:normal}
+ol,ul {list-style:none}
+caption,th {text-align:left}
+h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%}
+q:before,q:after {content:""}
+abbr,acronym {border:0}
+.clearfix:after {display:block; content:"."; height:0; clear:both; visibility:hidden} 
+.clearfix{zoom:1} 
+.clear {clear:both; height:0; overflow:hidden}
+.left {float:left}
+.right {float:right}
+body {font:12px/normal 'ו',sans-serif; color:#000}
+a,a:visited,a:hover {color:#666; text-decoration:none; blr:expression(this.onFocus=this.blur());outline:none;}
+
+.tarot {position:relative; width:788px; height:311px; overflow:hidden}
+.bg {position:absolute; z-index:10; background:#000; filter:alpha(opacity=50); -moz-opacity:0.5; opacity:0.5}
+.card,.card_lister {width:478px; height:286px; right:26px; top:12px}
+.card_lister {position:absolute; z-index:20; color:#fff; line-height:22px}
+.card_lister ul {position:relative; width:440px; margin:13px 0 0 19px}
+.card_lister li {position:absolute; width:78px; height:121px}
+.card_lister li.card2 {top:0; left:181px;}
+.card_lister li.card3 {top:0; left:362px;}
+.card_lister li.card4 {top:88px; left:90px;}
+.card_lister li.card5 {top:88px; left:272px;}
+.card_lister li.card6 {top:139px; left:0;}
+.card_lister li.card7 {top:139px; left:181px;}
+.card_lister li.card8 {top:139px; left:362px;}
+.card_lister li img {width:78px; height:121px; display:block; cursor:pointer}
+
+
+.teams {position:absolute; width:220px; z-index:20; left:13px; top:8px; color:#582500}
+.leader {position:relative; width:220px; height:58px; margin-bottom:6px; background:url(../images/tarot/leader.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/leader.png');}
+.team {position:relative; width:220px; height:54px; margin-bottom:6px; background:url(../images/tarot/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/team.png');}
+.name {position:absolute; left:85px; top:5px; width:102px; height:16px; line-height:16px; text-align:center}
+.avatar {position:absolute; width:48px; height:48px; left:30px; top:2px;}
+.avatar img {position:absolute; width:48px; height:48px; display:block}
+.red {position:absolute; left:79px; top:28px; width:118px; height:10px}
+.red p {height:10px; overflow:hidden; background:url(../images/tarot/red.gif)}
+.blue {position:absolute; left:73px; top:41px; width:123px; height:6px}
+.blue p {height:6px; overflow:hidden; background:url(../images/tarot/blue.gif)}
+.level {position:absolute; left:20px; top:29px;}
+.team .name {left:83px; top:3px}
+.team .avatar {left:28px; top:0}
+.team .level {left:18px; top:27px}
+.team .red {left:76px; top:26px;}
+.team .blue {left:70px; top:39px;}
+
+.more,.card_list {width:764px; height:286px; left:12px; top:7px}
+
+.card_list {position:absolute; z-index:20; color:#fff; line-height:22px}
+.list {height:120px; margin:11px 0 10px 0}
+.list p {float:left; width:230px; padding-left:15px}
+.list ul {float:right; width:500px; overflow:hidden}
+.list li {float:left; width:81px; height:120px; margin-right:19px; overflow:hidden; line-height:18px}
+.list li span {display:block}
+.list li span.text {width:69px; height:108px; padding:5px; border:1px solid #85ac3f; background:#fff3bb; color:#6d4000}
+.list li span.text2 {width:69px; height:108px; padding:5px; border:1px solid #785f94; background:#b7b6f0; color:#4f397b}
+.list li img {width:79px; height:118px; display:block; border:1px solid #6b9ec1; cursor:pointer}
+.line {height:1px; overflow:hidden; background:url(../images/tarot/line.gif) center top no-repeat}
+.time,.time_cont {width:97px; height:18px; right:12px; top:293px}
+.time_cont {position:absolute; z-index:20; line-height:18px; color:#fff; text-align:center}

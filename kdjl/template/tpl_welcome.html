@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>欢迎页</title>
+<style>
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none} 
+fieldset,img {border:0} 
+strong {font-weight:bold}
+ol,ul {list-style:none} 
+h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%} 
+input {font-size:12px; color:#333; font-family:Arial, Helvetica, sans-serif}
+.l {float:left}
+.r {float:right}
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
+.clearfix{zoom:1;}  
+.clear {clear:both; height:0; overflow:hidden}
+body {font:12px/normal "宋体"; background:#fdfde3 url(../images/welcome/bg.gif) repeat-x; color:#666; overflow-x:hidden;}
+a,a:visited {color:#513a11; text-decoration:none}
+a {blr:expression(this.onFocus=this.blur());outline:none;}
+area{blr:expression(this.onFocus=this.blur());outline:none;}
+a:hover {text-decoration:underline}
+.box {position:relative; width:781px; height:311px; top:10px; overflow:hidden; border:2px solid #f9e061}
+.box dl {float:left; margin:10px 0 0 10px; display:inline}
+.box dl dt {padding-left:10px; font-weight:bold; color:#9a3803}
+.box dl dd.info {padding:10px; line-height:22x; color:#414141}
+.newpet {position:absolute; left:10px; bottom:0; width:344px; height:209px; overflow:hidden}
+.r {position:relative; width:388px; height:310px; background:url(../images/welcome/r.jpg) right bottom no-repeat}
+.r h2 {height:37px; margin-top:8px; text-indent:-9999px; overflow:hidden; background:url(../images/welcome/ann.gif) no-repeat}
+.r ul {padding-top:3px}
+.r ul li {height:26px; line-height:26px}
+.r p {margin-top:5px; width:350px; height:180px; line-height:22px; overflow:auto; color:#513a11; scrollbar-arrow-color:#ffffff; scrollbar-face-color:#c8c886; scrollbar-darkshadow-color:#c8c886; scrollbar-base-color:#e7eaca; scrollbar-highlight-color:#e7eaca; scrollbar-shadow-color:#e7eaca; scrollbar-track-color:#e7eaca; scrollbar-3dlight-color:#c8c886}
+.r .gocity {position:absolute; display:block; right:160px; bottom:5px; width:174px; height:76px; cursor:pointer}
+</style>
+</head>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript">
+var autosum=#autosum#;
+
+function msg()
+{
+	if(autosum != "")
+	{
+		//if(confirm("是否领取每日800次自动战斗奖励？"))
+		//{
+			var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						window.parent.recvMsg("CT|<font color='#ff0000'><strong>"+t.responseText+'</strong></font>');
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+			//window.status=		'../function/get.sjSkill.php?id='+sid+'&pid='+pid;
+			var ajax=new Ajax.Request('../function/ext_King.php?op=getauto', opt);
+		/*}
+		else
+		{
+			return false;
+		}*/
+	}
+}
+</script>
+<body onload="msg()">
+#imgs#
+<div class="box">
+<dl>
+<dt>新宠名称</dt>
+<dd class="info">简介：#content#</dd>
+<dd class="newpet"><img src="#img#" /></dd>
+</dl>
+<div class="r" style="line-height:1.8">
+<a href="../function/City_Mod.php"><div style=" cursor:pointer;top:201px; left:253px; width:134px; height:108px; position:absolute; z-index:-1"></div>
+</a>
+	<h2>最新公告</h2>
+	
+	<ul>
+
+    	<li>★注意安全，防盗防骗</li>
+    	<li>★注意安全，防盗防骗</li>
+    	<li>★注意安全，防盗防骗</li>
+    	<li>★注意安全，防盗防骗</li>
+    	<li>★注意安全，防盗防骗</li>
+    	</ul>
+
+	<p>#welcomeword#</p>
+    <a onclick="window.parent.document.getElementById('gw').src='./function/City_Mod.php';" class="gocity"><img src="../images/welcome/gocity.gif" /></a>
+</div>
+
+</div>
+
+</body>
+</html>

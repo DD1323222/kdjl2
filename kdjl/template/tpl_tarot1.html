@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>塔罗牌</title>
+<link href="/css/tarot.css" rel="stylesheet" type="text/css" />
+</head>
+<script type="text/javascript" src="/javascript/prototype.js"></script>
+<script type="text/javascript">//第三关只有队长能操作
+var lastusetime = 0;
+
+
+function tarot(id){
+	var now = (new Date()).getTime();
+	if(now-lastusetime<4000){
+		parent.recvMsg('SM|需要间隔4秒后再翻！');
+		return;
+	}
+	lastusetime = now;
+	if(isNaN(id)){
+		return;
+	}
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				var n = t.responseText;
+				if(n == 'error')
+				{
+					window.location = '../function/Expore_Mod.php';
+					window.parent.Alert('非法操作，队伍强制解散');
+					return;
+				}
+				if(!isNaN(n)){
+					if(n == 6){
+						window.parent.Alert('没有足够的水晶！');
+					}else if(n == 3){
+						window.parent.Alert('您不是队长，不能翻牌！');
+					}else window.parent.Alert('无效的请求！');
+				}else{
+					var arr = n.split('===>');
+					if(arr[0].indexOf('hit_one')!=-1){//随机一人踢出战斗
+						//var ar = ar[0].split('->');
+						//window.parent.Alert(ar[1]+'被踢出战斗！');
+					}else if(arr[0] == 'fight'){//触发战斗
+						//window.parent.Alert('战斗即将开始！');
+					}else if(arr[0] == 'hit_all'){
+						//window.parent.Alert('全体被踢出副本，战斗结束！');
+					}
+					//tarotshow(id,arr[1]);
+				}
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/tarotGate.php?id='+id, opt);
+}
+
+function tarotshow(i,img){
+	var j ="a"+i;
+	$(j).innerHTML = '<img src="../images/tarot/'+img+'" />';
+}
+
+
+
+function getTeamFightMod()
+{
+	setTimeout("window.location='/function/Fight_Mod.php';",2000);
+}
+
+function hpshow(){
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				var n = t.responseText;
+				$('head').innerHTML = n;
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/tarotGate.php?op=show', opt);
+}
+
+
+#js#
+function js(){
+	for(i=0;i<openstr.length;i++){
+		tarotshow(openstr[i][0],openstr[i][1]);
+	}
+}
+</script>
+<body onload="hpshow();js();">
+<div class="tarot">
+<iframe src="/function/team.php?checkOnly=1&rd=" style="position:absolute;z-index:0;top:1000px;" width="30" height="30"  class="wgframe"></iframe>
+	<div class="tarot_bg"><img src="../images/tarot/bg1.jpg" /></div>
+    <div class="teams">
+    <div id="head">
+    </div>
+    </div>
+    <div class="bg card"></div>
+    <div class="card_lister">
+    	<ul class="clearfix">
+			<li class="card1" id="a1"><img style="cursor:pointer;" onclick="tarot(1)" src="../images/tarot/card.gif" /></li>
+			<li class="card2" id="a2"><img style="cursor:pointer;" onclick="tarot(2)" src="../images/tarot/card.gif" /></li>
+            <li class="card3" id="a3"><img style="cursor:pointer;" onclick="tarot(3)" src="../images/tarot/card.gif" /></li>
+            <li class="card4" id="a4"><img style="cursor:pointer;" onclick="tarot(4)" src="../images/tarot/card.gif" /></li>
+            <li class="card5" id="a5"><img style="cursor:pointer;" onclick="tarot(5)" src="../images/tarot/card.gif" /></li>
+            <li class="card6" id="a6"><img style="cursor:pointer;" onclick="tarot(6)" src="../images/tarot/card.gif" /></li>
+            <li class="card7" id="a7"><img style="cursor:pointer;" onclick="tarot(7)" src="../images/tarot/card.gif" /></li>
+            <li class="card8" id="a8"><img style="cursor:pointer;" onclick="tarot(8)" src="../images/tarot/card.gif" /></li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

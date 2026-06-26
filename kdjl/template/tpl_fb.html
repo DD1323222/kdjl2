@@ -1,0 +1,432 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title></title>
+<script language="javascript" src="../javascript/prototype.js"></script>
+<style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
+.task{width:768px;height:299px;color:#B06A01; font-size:12px; background-image:url(images/fbbg.jpg); padding:8px;}
+
+
+</style>
+</head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<script language="javascript">
+var bid=#bid#;
+window.parent.autoack = false;
+</script>
+<body style="background-image:url(../new_images/ui/fbbg.jpg)">
+<div class="task">
+  <table width="770" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+      <td width="686" valign="top"><table width="94%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td><img src="#img#"/><img src="../images/fuben/fbdt03.jpg" width="262" height="58" /><img src="../images/fuben/fbdt04.jpg" width="101" height="58" /></td>
+        </tr>
+        <tr>
+          <td height="80" background="../images/fuben/fbdt05.jpg" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="6%">&nbsp;</td>
+              <td width="88%" style="line-height:1.7; font-size:12px">&nbsp;&nbsp;&nbsp;&nbsp;#introduce#</td>
+              <td width="6%">&nbsp;</td>
+            </tr>
+          </table></td>
+        </tr>
+        <tr>
+          <td><img src="../images/fuben/fbdt06.jpg" width="525" height="20" /></td>
+        </tr>
+      </table>
+        <table width="95%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="50%" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td height="29" style="padding-left:10px;"><img src="../images/ui/team/fb01.jpg" width="95" height="22" /></td>
+              </tr>
+              <tr>
+                <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td width="50%"><table width="240" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="25">&nbsp;</td>
+                        <td width="111">#one#</td>
+                        <td width="111">#two#</td>
+                        <td width="156">#three#</td>
+                        <td width="10">&nbsp;</td>
+                      </tr>
+                    </table></td>
+                    <td>&nbsp;</td>
+                  </tr>
+                </table></td>
+              </tr>
+            </table></td>
+            <td valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td height="29"><img src="../images/ui/team/fb02.jpg" width="95" height="22" /></td>
+              </tr>
+              <tr>
+                <td><table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size:12px">
+                  #info#
+                </table></td>
+              </tr>
+            </table></td>
+          </tr>
+        </table></td>
+      <td width="2" valign="top"><table width="1" height="300" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <td height="6" background="../images/ui/team/zdy06.jpg"></td>
+        </tr>
+        <tr>
+          <td width="1" background="../images/ui/team/zdy06.jpg"></td>
+        </tr>
+      </table></td>
+      <td width="241" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0" style="color:#066B00;">
+        <tr>
+          <td height="50"><img src="../images/ui/team/fb03.jpg" width="198" height="27" /></td>
+        </tr>
+        <tr>
+          <td height="217" valign="top" id='tmember'></td>
+        </tr>
+        <tr>
+          <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td  align="center"><img src="../images/ui/team/fb04.jpg" width="78" height="29" style="padding-right:5px;cursor:pointer;" onclick="pk('#mapid#');" /></td>
+              <td align="center"><img src="../images/ui/team/fb05.jpg" width="78" height="29" onclick="goOut();" style='cursor:pointer;' /></td>
+              </tr>
+          </table></td>
+        </tr>
+      </table></td>
+      <td width="2" valign="top">&nbsp;</td>
+    </tr>
+  </table>
+  
+</div>
+
+<script language="javascript">
+var cUser='';
+var _self='#_self#';
+var tLock=false;
+function player_team()
+{
+	if (cUser!='')
+	{
+		if(tLock==false)
+		{
+			tLock=true;MasterTeam(cUser);
+		}
+	}
+	//window.parent.Alert('组队功能正式版开放!');
+}
+
+//邀请组队.参数：被邀请的玩家。
+function MasterTeam(user)
+{
+	if(user=='') return false;
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==1)
+					{
+						tstr= '邀请'+user+'组队成功！';
+						// 加入显示玩家到当前页面中。addPlayer();
+						window.parent.addPlayer();
+					}
+					tLock=false;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+		var ajax=new Ajax.Request('../function/Team_createMod.php?op=1&u='+user, opt);
+}
+
+function goOut()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==10)
+					{
+						tstr= '成功离开队伍！';
+						window.parent.addPlayer();
+					}
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/Team_createMod.php?op=2', opt);
+}
+// 侦查玩家信息
+function detect()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					var arrIrisStyles = ['DIAMOND','CIRCLE','CROSS','PLUS','SQUARE','STAR'];
+					var index=parseInt(Math.random()*5+1);
+					// ui view start
+						var oPopup = window.createPopup();
+						//oPopup.document.body.onmouseout = function(){oPopup.hide();} 
+						with (oPopup.document.body) 
+						{
+							style.border='#033e00 1px solid';
+							style.fontSize='12px';
+							style.padding='2px';
+							style.backgroundColor='#000000';
+							style.filter="progid:DXImageTransform.Microsoft.Iris(duration=3);";
+							innerHTML=tstr;
+						}
+						oPopup.show(600, 448, 405, 255);
+						oPopup.document.body.filters[0].irisstyle=arrIrisStyles[index];
+						oPopup.document.body.filters[0].Apply();
+						oPopup.document.body.style.backgroundColor="#CCEFEF";
+						oPopup.document.body.filters[0].Play();
+						oPopup.document.body.pause();
+					// ui view end.
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPlayerinfo.php?op=g&u='+cUser, opt);
+}
+
+
+
+
+function TeamChoose(user)
+{
+	cUser=user;
+}
+
+function msgTips(msg)
+{
+	var oPopup = window.createPopup();
+	with (oPopup.document.body) 
+	{
+		style.border='#033e00 1px solid';
+		style.fontSize='12px';
+		style.padding='5px';
+		style.backgroundColor="#9bc650";
+		innerHTML=msg;
+	}
+	oPopup.show(370, 270, 305, 185);
+}
+
+//--
+function player_look()
+{
+	window.parent.Alert('侦察功能正式版开放!');
+}
+// 玩家调整。
+function player_fight()
+{
+	if (cUser=='')
+	{
+		window.parent.Alert('请选择一个你要挑战的玩家!');return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = parseInt(t.responseText);
+					
+					if (tstr==0) // 
+					{
+						window.parent.Alert('您不能挑战 '+cUser+' 的宠物!!');
+					}
+					else if(tstr==1)
+					{
+						window.parent.Alert(cUser+'处于新手保护状态,无法挑战');
+					}
+					else // 开始挑战。
+					{
+						window.parent.$('gw').src='./function/Challenge_Mod.php?p='+bid+'&cp='+tstr;
+					}
+					//msgTips(tstr);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Challenge.php?u='+cUser, opt);
+}
+
+function pk(mapid)
+{
+	if (bid<1)  
+	{
+		window.parent.Alert('请选择一只要战斗的宠物!');
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 var n=parseInt(t.responseText);
+				 if(n == 0)
+				 {
+				 	window.parent.Alert("副本地图出错!");
+					return false;
+				 }
+				 else if(n == 1)
+				 {
+				 	window.parent.Alert('请选择一只要战斗的宠物!');
+				 }
+				 else if(n == 2)
+
+				 {
+				 	window.parent.Alert('信息出错!');
+				 }
+				 else if(n == 3)
+				 {
+				 	window.parent.Alert('您当前所选宠物没有达到相应的级数!');
+				 }
+				 else if(n == 4)
+				 {
+				 	if(!confirm('副本刷新时间未到,您需要使用道具或者水晶将此副本地图开启吗？'))
+					{
+						return false;
+					}
+					
+				 	var opt = {
+						method: 'get',
+						onSuccess: function(f) {
+						//window.parent.Alert(t.responseText);
+							var v = f.responseText;
+							if(v == 1)
+							{
+								window.parent.Alert("您没有相关的道具,也没有水晶！");
+								return false;
+								//window.parent.$('gw').src='./function/Team_Mod.php?n='+mapid;
+							}
+							if(!confirm(v))
+							{
+								return false;
+							}
+							var opt = {
+							method: 'get',
+							onSuccess: function(e) {
+							//window.parent.Alert(t.responseText);
+								var v = parseInt(e.responseText);
+								if(v == 11)
+								{
+									window.parent.Alert("成功开启地图！");
+									window.setTimeout("url('"+mapid+"');",1000);
+								}
+							},
+								on404: function(f) {
+								},
+								onFailure: function(f) {
+								},
+								asynchronous:true        
+							}
+							//window.status = '../function/mapGate.php?type=4&n='+mapid;return false;
+							var ajax=new Ajax.Request('../function/mapGate.php?type=4&n='+mapid,opt);
+						},
+							on404: function(e) {
+							},
+							onFailure: function(e) {
+							},
+							asynchronous:true        
+						}
+						//window.status = '../function/mapGate.php?type=3&n='+mapid;return false;
+						var ajax=new Ajax.Request('../function/mapGate.php?type=3&n='+mapid, opt);
+				 }
+				 else if(n == 10)//所有信息正确进入副本地图
+				 {
+				 	//window.setTimeout("window.parent.($'gw').src = './function/fbfight_Mod.php?mapid='+mapid+'&p='+bid;",1000);
+					window.setTimeout("url('"+mapid+"');",1000);
+					//window.parent.$('gw').src='./function/fbfight_Mod.php?mapid='+mapid+'&p='+bid;
+				 }
+			 }
+		 }
+	 var ajax=new Ajax.Request('../function/getmap.php?mapid='+mapid+'&bid='+bid,opt);
+}
+function url(mapid)
+{
+	window.parent.$('gw').src='./function/fbfight_Mod.php?mapid='+mapid+'&p='+bid;
+}
+function startFatting(bbid,obj){
+	Setbbs(bbid,obj);
+}
+function startFatting1(bbid,obj){
+	// In here, update bb fatting tag.
+	obj = obj.style;
+	sel(obj);
+	bid = bbid;
+}
+
+function Setbbs(bbid,obj)	// Get pets.
+{
+	var mbid;
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						mbid = parseInt(t.responseText);
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+			}
+	var ajax=new Ajax.Request('/function/mapGate.php?type=6', opt);
+	if(bbid == mbid)
+	{
+		return;
+	}
+	var opt = {
+	method: 'get',
+	onSuccess: function(t) {
+					var tt = t.responseText;
+					if(tt == 10){
+						if(!confirm("您当前接有不可切换主宠的任务，如果您要切换主宠任务将消失，您确定要切换吗？")){
+							return false;
+						}
+						var opt = {
+							method: 'get',
+							onSuccess: function(n) {
+										if(n.responseText!='') {window.parent.Alert(n.responseText);}
+										startFatting1(bbid,obj);
+										//window.location.reload();
+									},
+							asynchronous:true        
+						}
+						var ajax=new Ajax.Request('../function/mcGate.php?op=change&id='+bbid, opt);
+					}else if(tt != "" && tt != 10){
+						window.parent.Alert(tt);
+						startFatting1(bbid,obj);
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/mcGate.php?op=z&id='+bbid, opt);
+}
+function sel(obj)
+{
+	for(var i=1;i<4;i++)
+	{	
+		try{
+			$('i'+i).style.filter="alpha(opacity=50)";
+		}catch(e){continue;}
+	}
+	obj.filter="alpha(opacity=100)";
+}
+</script>
+</body>
+</html>

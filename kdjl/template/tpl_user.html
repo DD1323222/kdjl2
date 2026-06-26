@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>口袋精灵</title>
+<link href="../css/global.css" rel="stylesheet" type="text/css" />
+<link href="../css/style.css" rel="stylesheet" type="text/css" />
+<script src="../js/global.js" type="text/javascript"></script>
+<script language="javascript" src="../javascript/prototype.js"></script><strong></strong>
+<script type="text/javascript">
+	function setTab(name,cursel,n){
+	for(i=1;i<=n;i++){
+	  var menu=document.getElementById(name+i);
+	  var con=document.getElementById("con_"+name+"_"+i);
+	  menu.className=i==cursel?"on":"";
+	  con.style.display=i==cursel?"block":"none";
+	}
+	}
+	
+function friend(op)
+{
+	var name = $('nickname').value;
+	if(name=='' || name.length<2) 
+	{
+		window.parent.Alert('请正确输入玩家的角色名！'); 
+		return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	if(t.responseText.substr(0,1) =='#')
+					{
+						window.parent.friendlistu(t.responseText.substr(1,t.responseText.length));
+						window.parent.Alert('操作成功！');
+			 			$('flist').innerHTML=t.responseText.substr(1,t.responseText.length);
+					}else window.parent.Alert(t.responseText);
+					//$('f'+op).disabled=false;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+name, opt);
+			//$('f'+op).disabled=true;
+}
+function black(op)
+{
+	var name = $('nicknames').value;
+	if(name=='') window.parent.Alert('请正确输入玩家的角色名！');
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+				 	var n = t.responseText;
+				 	if(n == '10')
+					{
+						window.parent.blacklistu('');
+						window.parent.Alert('操作成功！');
+						$('flists').innerHTML='您还没有加任何黑名单！';
+					}
+					else if(t.responseText.substr(0,1) =='#')
+					{
+						window.parent.blacklistu(t.responseText.substr(1,t.responseText.length));
+						window.parent.Alert('操作成功！');
+			 			$('flists').innerHTML=t.responseText.substr(1,t.responseText.length);
+					}
+					else window.parent.Alert(t.responseText);
+					//$('f'+op).disabled=false;
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+			
+			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+name, opt);
+			//$('f'+op).disabled=true;
+}
+function chat(name)
+{
+	$('nickname').value=name;
+	if (name=='') return false;
+	window.parent.$('cmsg').value='//'+name+' ';
+}
+
+function blacks(name)
+{
+	$('nicknames').value=name;
+	if (name=='') return false;
+	//window.parent.$('cmsg').value='/'+name+' ';
+}
+</script>
+
+</head>
+<body>
+<div class="box">
+  <div class="self_l l">
+  <div  class="self_name"><strong>玩家名称：#nickname#</strong></div>
+  <div class="self_role"><img src="../images/head/#userbigimg#.gif" /></div>
+  </div>
+  <div class="self_r r">
+    <ul class="selftab">
+      <li onclick="setTab('self',1,3)" id="self1" class="on">
+        <p class="p1">属性</p>
+      </li>
+      <li onclick="setTab('self',2,3)" id="self2">
+        <p class="p2">好友</p>
+      </li>
+     
+    </ul>
+    <div class="self_cont clearfix" id="con_self_1" style="display:block">
+      <div class="mi_box">
+	    <ul class="top  clearfix">
+	      <li>玩家昵称：#nickname#</li>
+		  <li>威望：#prestige#</li>
+	      <li>水晶：#sj#</li>
+		  <li>贵族威望：#jprestige#</li>
+	      <li>性别：#sex#</li>
+		  
+	      <li>宠物：#pets#</li>
+		  <li>积分：#jifen#</li>
+	      <li>胜率：#success#</li>
+		  <li>当月VIP反馈积分：#vip#</li>
+	      <li>金币：#money#</li>
+		  <li title="(VIP反馈积分可以在酒馆处换取反馈道具)">上月VIP反馈积分：#viplast#</li>
+	      <li>元宝：#yb#</li>
+		  
+		  <li>#merge#</li>
+	      <li>双倍经验剩余时间：#dbltime# 秒</li>
+		  <li>双倍经验倍数：#dbl# </li>
+		  <li>组队自动战斗次数：#teamauto# 次</li>
+		</ul>
+		<ul class="bot">
+	      <li class="v">金币版自动战斗次数： #auto#</li>
+	      <li class="v">元宝版自动战斗次数： #auto1#</li>
+		  <li class="v">是否允许别人挑战自己： #tiaozhan#</li>	  
+	    </ul>
+	  </div>
+	</div>
+    <div class="self_cont clearfix" id="con_self_2">
+	  <div class="mf_box">
+	    <h2>好友列表：</h2>
+	    <div class="mf_box_cont" id="flist">#friendlist#
+
+	    </div>
+	    <div class="mf_box_inp">
+          玩家名称：<input type="text" class="inp" name="nickname" id="nickname" /><br/>
+		  <input type="button" class="btn" value="添加" onclick="friend('add')" id="badd" /> <input type="button" class="btn" value="删除" onclick="friend('del')" id="bdel" />
+	    </div>
+	  </div>
+	  <div class="mf_box" >
+	    <h2>黑名单列表(能屏蔽黑名单玩家聊天)：</h2>
+	    <div class="mf_box_cont" id="flists">
+        #blacklist#
+	    </div>
+	    <div class="mf_box_inp">
+          玩家名称：<input type="text" class="inp" name="nicknames" id="nicknames" /><br/>
+		  <input type="button" class="btn" value="添加" onclick="black('addblacklist')" id="faddblacklist" /> <input type="button" class="btn" value="删除" onclick="black('deleteblacklist')" id="fdel" />
+	    </div>
+	  </div>
+	</div>
+   
+</div>
+</div>
+</body>
+</html>
+<script type="text/javascript">
+var listtype = #list#;
+if(listtype == 1){
+	setTab('self',2,3)
+}
+</script>

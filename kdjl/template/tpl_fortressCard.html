@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>女神要塞</title>
+<style type="text/css"> 
+<!--
+body { width: auto; height: auto; margin: 0px auto; font-size: 12px; background:#eeeeee;}
+*{ margin: 0px; padding: 0px; }
+pre { margin: 0px; padding: 0px; float: left; }
+img { margin: 0px; padding: 0px; float: left; border: 0px; }
+ul { margin: 0px; padding: 0px; }
+li { display: inline; list-style-type: none; }
+.nav_box { width:788px; height:319px; float:left; background:url(../images/ys/wait_bg.jpg);}
+.nav01{width:788px; float:left; padding-top:30px;}
+.nav01_left{width:200px; float:left; padding:5px 0 0 30px;}
+.nav01_center{width:233px; float:left; height:43px; text-align:center; padding-top:20px;}
+.nav01_right{width:300px; float:left; background:url(../images/ys/jl_bg.jpg); height:63px;}
+
+.team {position:relative; width:200px; height:54px;background:url(../images/ys/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/team.png');}
+.name {position:absolute; left:85px; top:5px; width:102px; height:16px; line-height:16px; text-align:center}
+.avatar {position:absolute; width:48px; height:48px; left:30px; top:2px;}
+.avatar img {position:absolute; width:48px; height:48px; display:block}
+.red {position:absolute; left:79px; top:28px; width:118px; height:10px}
+.red p {height:10px; overflow:hidden; background:url(../images/ys/red.gif)}
+.blue {position:absolute; left:73px; top:41px; width:123px; height:6px}
+.blue p {height:6px; overflow:hidden; background:url(../images/ys/blue.gif)}
+.level {position:absolute; left:20px; top:29px;}
+.team .name {left:83px; top:3px}
+.team .avatar {left:28px; top:0}
+.team .level {left:18px; top:27px}
+.team .red {left:76px; top:26px;}
+.team .blue {left:70px; top:39px;}
+.teams {position:absolute; width:220px; z-index:20; left:13px; top:8px; color:#582500}
+.leader {position:relative; width:220px; height:58px; margin-bottom:6px; background:url(../images/ys/leader.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ys/leader.png');}
+
+.nav02{width:725px; float:left; height:192px; margin:0px 20px 0 35px;overflow-x:hidden;overflow-y:scroll;background:#fff;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;}
+.text02{font-size:12px; color:#6d3100; line-height:20px;}
+.text03{font-size:18px; color:#273600; line-height:22px; font-family:"黑体";}
+-->
+</style>
+</head>
+<script type="text/javascript" src="/javascript/prototype.js"></script>
+<script type="text/javascript">//第三关只有队长能操作
+var lastusetime = 0;
+var ctime = '#ctime#';
+var touqu = '#touqu#';
+var fortressFight = true;
+function tarot(id){
+	var now = (new Date()).getTime();
+	if(now-lastusetime<4000){
+		parent.recvMsg('SM|需要间隔4秒后再翻！');
+		return;
+	}
+	lastusetime = now;
+	if(isNaN(id)){
+		return;
+	}
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				var n = t.responseText;
+				if(n==1){
+					window.parent.Alert('此时翻牌功能不能操作！');
+				}else{
+					if(n.indexOf("<!--quit-->") != -1){
+						//window.location="/function/Expore_Mod.php";
+						parent.Alert("您所在的阶段人数不够，已被t出！");
+						window.location="/function/Expore_Mod.php";
+					}else if(n.indexOf("<!--quitmen-->") != -1){
+						//window.location="/function/Expore_Mod.php";
+						parent.Alert("您所在阶段人数不够！");
+						window.location="/function/Expore_Mod.php";
+					}
+					else{
+						tarotshow(id,n);
+					}
+				}
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/fortressCard.php?op=fortress&id='+id, opt);
+}
+
+function tarotshow(i,img){
+	var j ="a"+i;
+	$(j).style.cssText = 'background:url(../images/ys/hui.jpg);background-repeat:no-repeat; background-position:0 3 0 0;';
+	$(j).onclick=function(){};
+	$(j).innerHTML = img;
+}
+
+
+
+function getTeamFightMod()
+{
+	setTimeout("window.location='/function/Fight_Mod.php';",2000);
+}
+
+
+#js#
+function js(){
+	for(i=0;i<openstr.length;i++){
+		tarotshow(openstr[i][0],openstr[i][1]);
+	}
+}
+</script>
+<script language="javascript">
+function tlimit1()
+{
+	$('ctime').innerHTML = ctime;
+	if(ctime > 0){
+		ctime--;
+		setTimeout("tlimit1()",1000);
+	}else{
+		$('ctimemsg').innerHTML = '离战斗结束倒计时';
+	}
+}
+function tlimit2()
+{
+	if(touqu > 0){
+		if(ctime <= 0){
+			$('ctime').innerHTML = touqu;
+		}
+		touqu--;
+		setTimeout("tlimit2()",1000);
+	}else{
+		window.location='/function/fortress_stolen_Mod.php';
+	}
+}
+</script>
+<body onload="tlimit1();tlimit2();js();">
+<div class="nav_box">
+	<div class="nav01">
+		<div class="nav01_left">
+		#playerinfo#
+		</div>
+		<div class="nav01_center text03"><span id="ctimemsg">离战场开始倒计时</span>：<span id="ctime"></span>秒</div>
+		<div class="nav01_right">
+		#finfo# 
+		</div>
+	</div>
+	<div class="nav02">
+	  <table width="715" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td height="100" align="center" width="62" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(1)" id="a1"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0; cursor:pointer" onclick="tarot(2)" id="a2"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(3)" id="a3"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(4)" id="a4"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(5)" id="a5"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(6)" id="a6"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(7)" id="a7"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(8)" id="a8"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(9)" id="a9"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(10)" id="a10"></td>
+        </tr>
+        <tr>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(11)" id="a11"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(12)" id="a12"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(13)" id="a13"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(14)" id="a14"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(15)" id="a15"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(16)" id="a16"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(17)" id="a17"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(18)" id="a18"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(19)" id="a19"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(20)" id="a20"></td>
+        </tr>
+		 <tr>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(21)" id="a21"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(22)" id="a22"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(23)" id="a23"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(24)" id="a24"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(25)" id="a25"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(26)" id="a26"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(27)" id="a27"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(28)" id="a28"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(29)" id="a29"></td>
+          <td align="center" width="62" height="94" background="../images/ys/paper.jpg" style="background-repeat:no-repeat; background-position:0 3 0 0;cursor:pointer" onclick="tarot(30)" id="a30"></td>
+        </tr>
+      </table>
+	</div>
+</div>
+</body>
+</html>

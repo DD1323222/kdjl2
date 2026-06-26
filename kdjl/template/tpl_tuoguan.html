@@ -1,0 +1,551 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<title></title>
+<style type="text/css">
+<!--
+body {
+	margin-left: 3px;
+	margin-top: 3px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+.STYLE1 {
+	color: #000000;
+	font-weight: bold;
+}
+-->
+</style>
+</head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<body>
+<table width="778" height="311" border="0" cellpadding="0" cellspacing="0" bgcolor="#F3EDC9">
+  <tr>
+    <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="../images/ui/muchang/mc01.gif" width="140" height="149"></td>
+      </tr>
+      <tr>
+        <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif">
+			<div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+				#word#
+			</div>
+		</td>
+      </tr>
+    </table></td>
+    <td valign="top" >
+		<div id="tag1" style="position:absolute;left:219px;top:15px;z-index:3; color:#F1EABA;font-weight:bold">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm03.gif" width="12" height="25" /></td>
+              <td align="center" valign="middle" background="../images/ui/shop/gm05.gif" style="color:#3F3706;cursor:pointer;" onclick="copyWord('宠物托管');window.parent.$('gw').src='./function/Tuoguan_Mod.php?op=cmp';"><b>宠物托管</b></td>
+              <td width="12"><img src="../images/ui/shop/gm04.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+	  </div>
+		
+		<div id="tag2" style="position:absolute;left:141px;top:15px;z-index:1;">
+          <table width="100" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="12"><img src="../images/ui/shop/gm07.gif" width="12" height="25" /></td>
+              <td align="center" valign="middle" background="../images/ui/shop/gm08.gif" style="cursor:pointer;color:#F1EABA;"  onclick="copyWord('宝贝');window.parent.$('gw').src='./function/Muchang_Mod.php?op=cmp';" ><b>宝贝</b></td>
+              <td width="12"><img src="../images/ui/shop/gm06.gif" width="12" height="25" /></td>
+            </tr>
+          </table>
+		</div>
+		
+		
+		
+	  <div style="width:635px; height:288px; background-color:#DFD496; position:absolute; top: 38px; left: 143px;">
+		  <div style="width:614px; height:275px; position:absolute; left: 10px;"><br/>
+			<div style='position:absolute; text-align:left; font-size:12px; line-height:1.5; width:613px; height:235px; color:#BF7D1A; border:1px solid #C6B764; background-color:#fff; top: 27px;'>
+			  <table width="97%" border="0" align="center" cellpadding="0" cellspacing="0" style="margin-top:5px">
+                <tr>
+                  <td><span class="STYLE1">托管说明：托管开启时间为：22：00--10：00，托管后会扣除玩家托管时间在托管期间勿取回宠物，否则需要再消耗托管时间进行托管(只有放置在牧场且等级到达10级以上的宠物才可以托管)。</span><br />
+                    <strong>托管内容说明：<br />
+                    休息：获得正常经验，无法获得道具，每托管1小时消耗1小时托管时间。<br />
+                    武力修炼：获得2倍托管经验，无法获得道具，每托管1小时消耗2小时托管时间。<br />
+                  冒险修炼：获得2.5倍托管经验，每5分钟随机获得道具1个，每托管1小时消耗3小时托管时间。<br /></strong>
+                        <span class="STYLE1">
+						<label>
+                        
+<input type="radio" name="type" value="1" id="1" /> 
+宠物</label>
+                        
+                          
+						#petsoption1#
+                        
+                        
+                        </span><span class="STYLE1">
+<label>&nbsp;托管时间
+#time1#
+&nbsp;托管内容
+#mes1#
+&nbsp;状态：<span id="flag1">#flag1#</span></label>
+<br />
+                        </span>
+                    <br />
+					          <span class="STYLE1">
+						<label>
+                        <input type="radio" name="type" value="2" id="2" />
+                        宠物</label>
+						
+						#petsoption2#
+			            </span><span class="STYLE1">
+					          <label>&nbsp;
+					          
+					          托管时间
+                              #time2#
+&nbsp;托管内容
+#mes2#
+&nbsp;状态：<span id="flag2">#flag2#</span> <br />
+					          </label>
+                              </span>
+                    <br />
+					          <span class="STYLE1">
+						<label>
+                        
+<input type="radio" name="type" value="3" id="3" />                        
+宠物</label>
+			            </span><span class="STYLE1">
+					          <label>
+
+#petsoption3#
+&nbsp;托管时间
+                             #time3#
+&nbsp;托管内容
+#mes3#
+&nbsp;状态：<span id="flag3">#flag3#</span></label>
+                              </span>
+                  <br />                  </td>
+                </tr>
+              </table>
+			</div>
+		  </div>
+		
+		<!-- self -->
+		<!-- self end-->
+        <!-- left option.-->
+<div style="position:absolute;left:10px;width:518px;height:15px;top:267px;padding:2px;color:#AB833C; text-align:right" id="ltool"><strong>剩余托管时间：#time#小时&nbsp;&nbsp;目前能托管的最大数目：#num#
+		    <input type="button" value="托管" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;" onclick="tg();"/>
+</strong>
+			
+		  <input name="button2" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;" onclick="auto();" value="自动"/>
+		  <input type="button" value="取回" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;" onclick="offpets();"/>
+
+		  <input type="button" value="详情" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;" onclick="detail();"/>
+	    </div>
+		<!-- left option end.-->
+		
+		<!-- right option.-->
+		<!-- right option end.-->
+      </div></td>
+  </tr>
+</table>
+
+<div style="position:absolute; left: 20px; top: 308px; width: 44px;">
+	<input name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;"  onclick="window.parent.$('gw').src='./function/City_Mod.php';" value="离开"/>
+</div>
+</body>
+</html>
+<script language="javascript">
+var dtips = document.createElement('DIV');
+var bid=0;
+var selid=0;
+var types=-1;
+dtips.id='dtips';
+dtips.style.cssText='position:absolute;display:none;padding:5px;line-height:1.6;fong-size:12px;border:1px solid #fff;color:gray;z-index:1;background-color:#DFDABC;';
+document.body.appendChild(dtips);
+function vtips(obj)
+{
+	dtips.style.left=event.x+20+'px';
+	dtips.style.top=(event.y>225?event.y-70:event.y+10)+'px';
+	dtips.innerHTML = obj.title;
+	obj.title='';
+	dtips.style.display='';
+	obj.style.border='solid 1px #DFD496';
+}
+function ctips(obj)
+{
+	obj.title=dtips.innerHTML;
+	dtips.innerHTML = '';
+	dtips.style.display='none';
+	obj.style.border='0px';
+}
+function sel(obj)
+{
+	if(selid!=0) selid.style.backgroundColor='#fff';
+	selid=obj;
+	obj.style.backgroundColor='#DFD496';
+}
+function Display(bbid)
+{
+	bid = bbid;
+}
+
+//托管宠物
+function tg()
+{
+	//首先判断复选框是否被选中
+	var obj1 = $('1');
+	var obj2 = $('2');
+	var obj3 = $('3');
+	var pets = "";
+	var time = "";
+	var mes = "";
+	if(obj1.checked == true)
+	{	
+		pets = $('pets1').value;
+		time = $('time1').value;
+		mes = $('mes1').value;
+	}
+	if(obj2.checked == true)
+	{
+		pets = $('pets2').value;
+		time = $('time2').value;
+		mes = $('mes2').value;
+	}
+	if(obj3.checked == true)
+	{
+		pets = $('pets3').value;
+		time = $('time3').value;
+		mes = $('mes3').value;
+	}
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 	var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("只有22：00--10：00 才可以托管！");
+					}
+					else if(n == 1)
+					{
+						window.parent.Alert("请选择要托管的宠物！");
+					}
+					else if(n == 2)
+					{
+						window.parent.Alert("托管失败，您的托管时间不足！您可以购买“托管卷”来增加时间。");
+					}
+					else if(n == 3)
+					{
+						window.parent.Alert("您的该宠物正在托管中！");
+					}
+					else if(n == 4)
+					{
+						window.parent.Alert("当前宠物托管已完成，请先取回再托管!");
+					}
+					else if(n == 5)
+					{
+						window.parent.Alert("托管个数已达上限，不能再托管了!");
+					}
+					else if(n == 6)
+					{
+						window.parent.Alert("您的托管个数已经达到上限，请通过购买使用托管所扩充卷扩充您的托管所！");
+					}
+					else if(n == 7)
+					{
+						window.parent.Alert("超出托管结束时间,请重新选择时间！");
+					}
+					else if(n == 8)
+					{
+						window.parent.Alert("该宠物正在等待中！");
+					}
+					else if(n == 10)
+					{
+						window.parent.Alert("托管成功!");
+						window.location.reload();
+					}
+					else
+					{
+						window.parent.Alert("托管失败!");
+						window.location.reload();
+					}
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?pets='+pets+'&time='+time+'&mes='+mes+'&action=tuoguan',opt);
+}
+
+//得到托管状态
+function getflag(obj)
+{
+	var petsid = obj.value;
+	var id = obj.id;
+	var num = id.split("s");
+	var id1 = id.replace(id,"flag"+num[1]);
+	var org = $(id1);
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 	var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						org.innerHTML = "未托管";
+					}
+					else if(n == 1)
+					{
+						org.innerHTML = "托管中";
+					}
+					else if(n == 2)
+					{
+						org.innerHTML = "托管完成";
+					}
+					else if(n == 3)
+					{
+						org.innerHTML = "等待中";
+					}
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?id='+petsid+'&action=change',opt);
+}
+
+//取回宠物
+function offpets()
+{
+	var obj1 = $('1');
+	var obj2 = $('2');
+	var obj3 = $('3');
+	var pets = "";
+	if(obj1.checked == true)
+	{
+		pets = $('pets1').value;
+	}
+	else if(obj2.checked == true)
+	{
+		pets = $('pets2').value;
+	}
+	else if(obj3.checked == true)
+	{
+		pets = $('pets3').value;
+	}
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 	var n=parseInt(t.responseText);
+					if(n == 0)
+					{
+						window.parent.Alert("请选择您要取回的宠物！");
+					}
+					else if(n == 1)
+					{
+						window.parent.Alert("您还没有进行任何托管操作，不用取回宠物。");
+					}
+					else if(n == 2)
+					{
+						alert("托管已完成，您可以取回您的宠物了！");
+						off(pets);
+					}
+					else if(n == 3)
+					{
+						if(!confirm("提前取回宠物，您之前消耗托管时间将失效，确认取回吗？"))
+						{
+							return false;
+						}
+						off(pets);
+					}
+					else if(n == 4)
+					{
+						if(!confirm("还没有开始托管，如果取回但是时间不会退还哦~！"))
+						{
+							return false;
+						}
+						off(pets);
+					}
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?id='+pets+'&action=offpets',opt);
+}
+//宠物取回
+function off(id)
+{
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 	var n=parseInt(t.responseText);
+					if(n == 10)
+					{
+						window.parent.Alert("取回宠物成功！");
+						window.location.reload();
+					}
+					else if(n == 11)
+					{
+						window.parent.Alert("取回宠物失败！");
+						window.location.reload();
+					}
+					else if(n == 0)
+					{
+						window.parent.Alert("信息出错！");
+					}
+					else if(n == 12)
+					{
+						window.parent.Alert("包裹空间不够，请先清理包裹！");
+					}
+					else if(n == 13)
+					{
+						window.parent.Alert("牧场格子已经占满！");
+					}
+					else
+					{
+						window.parent.Alert("信息出错！");
+					}
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?id='+id+'&action=offpet',opt);
+}
+
+//查看详情
+function detail()
+{
+	var obj1 = $('1');
+	var obj2 = $('2');
+	var obj3 = $('3');
+	var pets = "";
+	if(obj1.checked == true)
+	{
+		pets = $('pets1').value;
+	}
+	else if(obj2.checked == true)
+	{
+		pets = $('pets2').value;
+	}
+	else if(obj3.checked == true)
+	{
+		pets = $('pets3').value;
+	}
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 var str=t.responseText;
+				 	alert(str);
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?id='+pets+'&action=show',opt);
+}
+
+
+//自动托管
+function auto()
+{
+	//首先判断复选框是否被选中
+	var obj1 = $('1');
+	var obj2 = $('2');
+	var obj3 = $('3');
+	var pets = "";
+	var time = "";
+	var mes = "";
+	if(obj1.checked == true)
+	{	
+		pets = $('pets1').value;
+		time = $('time1').value;
+		mes = $('mes1').value;
+	}
+	if(obj2.checked == true)
+	{
+		pets = $('pets2').value;
+		time = $('time2').value;
+		mes = $('mes2').value;
+	}
+	if(obj3.checked == true)
+	{
+		pets = $('pets3').value;
+		time = $('time3').value;
+		mes = $('mes3').value;
+	}
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t) {
+				 	var n=t.responseText;
+					if(n == 1)
+					{
+						window.parent.Alert("请选择要托管的宠物！");
+					}
+					else if(n == 2)
+					{
+						window.parent.Alert("托管失败，您的托管时间不足！您可以购买“托管卷”来增加时间。");
+					}
+					else if(n == 3)
+					{
+						window.parent.Alert("您的该宠物正在托管中！");
+					}
+					else if(n == 4)
+					{
+						window.parent.Alert("当前宠物托管已完成，请先取回再托管!");
+					}
+					else if(n == 5)
+					{
+						window.parent.Alert("托管个数已达上限，不能再托管了!");
+					}
+					else if(n == 6)
+					{
+						window.parent.Alert("您的托管个数已经达到上限，请通过购买使用托管所扩充卷扩充您的托管所！");
+					}
+					else if(n == 7)
+					{
+						window.parent.Alert("超出托管结束时间,请重新选择时间！");
+					}
+					else if(n == 10)
+					{
+						window.parent.Alert("自动托管成功!");
+						window.location.reload();
+					}
+					else if(n == 8)
+					{
+						window.parent.Alert("该宠物正在等待中！");
+					}
+					else
+					{
+						window.parent.Alert("自动托管失败!");
+						window.location.reload();
+					}
+				},
+				on404: function(t) {
+				},
+				onFailure: function(t) {
+				},
+				asynchronous:true        
+			}
+		//window.status = '../function/tuoGuanGate.php?pets='+pets+'&time='+time+'&mes='+mes+'&action=auto';return false;
+	var ajax=new Ajax.Request('../function/tuoGuanGate.php?pets='+pets+'&time='+time+'&mes='+mes+'&action=auto',opt);
+}
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+</script>

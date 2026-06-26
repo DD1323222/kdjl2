@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>口袋精灵二注册—选择角色</title>
+<style type="text/css">
+<!--
+body {
+	background-color: #2CA67F;
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+-->
+</style><script language="javascript" src="../javascript/prototype.js"></script></head>
+<script src="" id="gid"></script>
+
+<body>
+<table width="890" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><img src="image/zc01.jpg" width="890" height="134"></td>
+  </tr>
+</table>
+<table width="890" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="288"><img src="image/zc02.jpg" width="288" height="73"></td>
+    <td background="image/zc03.jpg" valign="top" align="left" style="padding:5px;font-weight:bold;color:#297200;font-size:12px; line-height:1.9">
+		角色名：<input type="text" id="bname" onChange="C(this,'cname');" onkeypress="C(this,'cname');"><span id="cname"></span>
+		<br/>
+		性别：  男 <input type="radio"  name='sex' value='1' id='sex' onclick="csex(this)"/> 
+				女 <input type="radio"  name='sex' value='2' id='sex' onclick="csex(this)"/> 
+	</td>
+    <td width="290"><img src="image/zc04.jpg" width="290" height="73"></td>
+  </tr>
+</table>
+<table width="890" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="87">&nbsp;</td>
+    <td width="221"><img src="image/zc05.jpg" width="221" height="29"></td>
+    <td width="393" bgcolor="#B6E0D2">&nbsp;</td>
+    <td><img src="image/zc06.jpg" width="189" height="29"></td>
+  </tr>
+</table>
+<table width="890" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="170" valign="top"><img src="image/zc07.jpg" width="170" height="346"></td>
+    <td width="531" valign="top" bgcolor="B7E1D3"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td height="45"><table width="100%" border="0" cellspacing="10" cellpadding="0">
+          <tr>
+            <td align="center" valign="middle"><input type="radio" id="head" value="1" name="head" onclick="chead(this)" /></td>
+            <td align="center" valign="middle"><input type="radio" id="head" value="2" name="head" onclick="chead(this)" /></td>
+            <td align="center" valign="middle"><input type="radio" id="head" value="3" name="head" onclick="chead(this)" /></td>
+            <td align="center" valign="middle"><input type="radio" id="head" value="4" name="head" onclick="chead(this)" /></td>
+            <td align="center" valign="middle"><input type="radio" id="head" value="5" name="head" onclick="chead(this)" /></td>
+            <td align="center" valign="middle"><input type="radio" id="head" value="6" name="head" onclick="chead(this)" /></td>
+          </tr>
+        </table></td>
+      </tr>
+      <tr>
+        <td><img src="image/zc08.jpg" width="531" height="301"></td>
+      </tr>
+    </table></td>
+    <td valign="top" background="image/zc06.jpg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td><img src="image/zc09.jpg" width="189" height="87" border="0" usemap="#Map"></td>
+      </tr>
+      <tr>
+        <td><img src="image/zc10.jpg" width="189" height="259"></td>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+
+
+<map name="Map" id="Map"><area shape="rect" coords="2,15,43,86" href="#"  onclick="nextstep()"/></map></body>
+</html>
+<script language="javascript">
+var _sex,_head,_bb;
+var opbak = '';
+function nextstep()
+{
+	var user = $('bname').value;
+	var sex  = _sex;
+	var head = _head;
+	
+	if (user.length<2 || user.length>15)
+	{
+		alert('昵称长度在4-18位（2-9个汉字）!');return;
+	}
+	if (typeof(sex)=="undefined") {alert('请选择人物性别!');return;}
+	if (typeof(head)=="undefined") {alert('请选择人物形象!');return;}
+	
+    opbak='bname='+user+'&sex='+sex+'&head='+head;
+	window.location.href='reg2.php?'+opbak;
+}
+function C(obj,id)
+{
+	var op='';
+	if(id=='cuser') op='u='+obj.value;
+    else op='n='+obj.value;
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				$(id).innerHTML=t.responseText;
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('./loginCheck.php?'+op, opt);
+}
+
+function csex(o)
+{
+	_sex = o.value;
+}
+
+function chead(o)
+{
+	_head=o.value;
+}
+function cbb(o)
+{
+	_bb=o.value;
+}
+</script>
+

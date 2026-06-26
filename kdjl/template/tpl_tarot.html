@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>塔罗牌</title>
+<link href="../css/tarot.css" rel="stylesheet" type="text/css" />
+</head>
+<script type="text/javascript" src="../javascript/prototype.js"></script>
+<script type="text/javascript">//第一二关自己翻自己的
+var id1 = '';
+var flag = 1;
+var flag1 = 0;
+function tarot(ids){
+	if(isNaN(ids)){
+		return;
+	}
+	if(ids > 5){
+		if(!confirm('翻这张牌将消耗您100水晶，您是否确定此操作？')){
+			return;
+		}
+	}
+	id1 = ids;
+	if(ids <= 5){
+		flag = 2;
+	}
+	
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				var n = t.responseText;
+				if(!isNaN(n)){
+					if(n == 6){
+						window.parent.Alert('没有足够的水晶！');
+					}else if(n == 2){
+						window.parent.Alert('您已经翻过了此类牌，等待下一轮吧！');
+					}else window.parent.Alert('无效的请求！['+n+']');
+				}else{
+					$('a'+id1).innerHTML=n;
+				}
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/tarotGate.php?id='+ids, opt);
+}
+
+
+function timelimit(t)
+{
+	$('mcount').innerHTML=t;
+	if(t <= 0 ){
+		if(flag == 1){
+			tarot(1);
+		}
+		if(flag1 == 0){
+			window.setTimeout('o();',3000);
+			window.setTimeout('timelimit1()',15000);
+			flag1=1;
+		}
+	}else{
+		t--;
+		if(flag1 == 0){
+			window.setTimeout('timelimit('+t+');',1000);
+		}
+	}
+}
+
+function o(){
+	//alert('o');
+	var opt = {
+    		 method: 'get',
+    		 onSuccess: function(t) {
+				var n = t.responseText;
+				js(n);
+    		 },
+    		 on404: function(t) {
+    		 },
+    		 onFailure: function(t) {
+    		 },
+    		 asynchronous:true        
+		}
+		var ajax=new Ajax.Request('../function/tarotGate.php?op=o', opt);
+}
+
+function timelimit1(t1)
+{
+	window.location='/function/Fight_Mod.php';
+}
+function js(openstr){//**|"1"~,~<span class="text"><span class="text">hrtr<br /><strong>说明：</strong><br />获得经验：300</span></span>**|1~,~<span class="text">获得金币：5000</span>**|1~,~<span class="text">获得 小礼包&nbsp;1 个</span>**|2~,~<span class="text2">获得经验：200000</span>**|2~,~<span class="text2">获得金币：500000</span>
+	
+	var arr = openstr.substr(3).split('**|');
+	//alert(arr.length);
+	for(i=0;i<arr.length;i++){
+		var tmp=arr[i].split('~,~');
+		for(j=1;j<11;j++){
+			if($('a'+j).innerHTML.indexOf('<img')!=-1||$('a'+j).innerHTML.indexOf('<IMG')!=-1){				
+				if(
+					(tmp[0]==1&&j<=5)
+					||
+					(tmp[0]==2&&j>5)
+				){
+					$('a'+j).innerHTML=tmp[1];
+					break;
+				}
+			}
+		}
+	}
+}
+</script>
+<body onload="timelimit(20);">
+<iframe src="/function/team.php?b2&checkOnly=1&rd=" style="position:absolute;z-index:0;top:1000px;" width="30" height="30"  class="wgframe"></iframe>
+<div class="tarot">
+	<div class="tarot_bg"><img src="../images/tarot/bg1.jpg" /></div>
+    <div class="user_list">    </div>
+    <div class="bg more"></div>
+    <div class="card_list">
+    	<div class="list clearfix">
+        	<p>●请在20秒内选择一张牌，点击此牌，你会有意想不到的收获哟。<br />
+        	  ●20秒内没有点击操作，系统将随机分配一张纸牌给你。<br />
+       	    ●翻开此列牌不消耗任何费用。</p>
+            <ul>
+            	<li id="a1"><img style="cursor:pointer" onclick="tarot(1)" src="../images/tarot/tarot1.jpg" /></li>
+                <li id="a2"><img style="cursor:pointer" onclick="tarot(2)" src="../images/tarot/tarot1.jpg" /></li>
+                <li id="a3"><img style="cursor:pointer" onclick="tarot(3)" src="../images/tarot/tarot1.jpg" /></li>
+                <li id="a4"><img style="cursor:pointer" onclick="tarot(4)" src="../images/tarot/tarot1.jpg" /></li>
+                <li id="a5"><!--span class="text"><strong>名称：</strong><br />打好大间房<br /><strong>说明：</strong><br />电视剧复合地基活动介绍发</span--><img style="cursor:pointer" onclick="tarot(5)" src="../images/tarot/tarot1.jpg" /></li>                
+            </ul>
+      </div>
+        <div class="line clearfix"></div>
+        <div class="list clearfix">
+        	<p>翻开此列纸牌需要消耗水晶，每张扣除100水晶，请在20秒内完成。如果水晶余额不足，则无法翻开此列纸牌。<br />
+        	</p>
+            <ul>
+            	<li id="a6"><img style="cursor:pointer" onclick="tarot(6)" src="../images/tarot/tarot2.jpg" /></li>
+                <li id="a7"><img style="cursor:pointer" onclick="tarot(7)" src="../images/tarot/tarot2.jpg" /></li>
+                <li id="a8"><img style="cursor:pointer" onclick="tarot(8)" src="../images/tarot/tarot2.jpg" /></li>                
+                <li id="a9"><!--span class="text2"><strong>名称：</strong><br />打好大间房<br /><strong>说明：</strong><br />电视剧复合地基活动介绍发</span--><img style="cursor:pointer" onclick="tarot(9)" src="../images/tarot/tarot2.jpg" /></li>
+                <li id="a10"><img style="cursor:pointer" onclick="tarot(10)" src="../images/tarot/tarot2.jpg" /></li>
+            </ul>
+      </div>
+    </div>
+    <div class="bg time"></div>
+    <div class="time_cont">倒计时：<span id="mcount">30</span>秒</div>
+</div>
+</body>
+</html>

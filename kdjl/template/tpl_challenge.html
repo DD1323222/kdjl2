@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta   http-equiv="Expires"   CONTENT="0" />
+<meta   http-equiv="Cache-Control"   CONTENT="no-cache" />
+<meta   http-equiv="Pragma"   CONTENT="no-cache" />
+<script language="javascript" src="../javascript/prototype.js"></script>
+<title></title>
+<link href="../css/iframe.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+body {
+	margin-left: 8px;
+	margin-top: 8px;
+	
+	margin-right: 0px;
+	margin-bottom: 0px;
+	font-size: 12px;
+}
+a {
+	font-size: 12px;
+}
+</style></head>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<script language="javascript">
+//document.onkeydown=function(){return   false}   
+var guildFight=#guildFight#;
+var bid=0;
+var price=0;
+var bbr = '';
+var gwr = '';
+var endtips = '';
+var using = false;
+var readH = '';
+var fc	  = 0; //回合数。
+var bb=#bbinfo#; // 宝贝数据 a,m =>3,4 h,m => 5,6
+var gg=#gwinfo#; // 怪物数据
+var bbjn=[#bbjn#]; // 宝贝技能.[],[]
+var bbfzp=[#bbfzp#]; // 宝贝辅助道具.name:num,name:num;
+var catcharr=[#catcharr#];
+var bbhpmax = bb[12];
+var bbmpmax = bb[13];
+var gwhpmax = gg[5];
+var gwmpmax = gg[6];
+var initYFont = 0;
+var useprops = 0;
+var petsid=#petsid#;
+var bbcur = bb[5];
+var bbmcur=bb[6];
+var gwcur = 0;
+var catchs= 0;
+var gimg='g';
+var inmap=#inmap#;
+var fuser="#fuser#"; // empty or username
+
+function preloader() { 
+	var imageObj = new Image(); 
+	var images = ['ui/hp.gif','ui/mp.gif','ui/exp.gif','ui/opcatch.gif','ui/ophp.gif','ui/opmp.gif','ui/opout.gif'];
+	for(var i=0; i<images.length; i++)
+	{imageObj.src='../images/'+images[i];} 
+}
+</script>
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+
+<body>
+<div style="width:778px;height:311px; background-image:url(../images/map/t#inmap#/#inmap#.gif)" id="fm">
+
+</div>
+#flash#
+<!-- jn tools-->
+<div style="position:absolute;left:8px;top:251px; background-image:url(../images/ui/fight/zdean01.gif);
+width:778px;height:71px;" id="tooldiv">
+  <div id="tauto" style="position:absolute; width:37px; height:34px; left: 218px; top: 7px; cursor:pointer;"  onclick="loadtool(1);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tset" style="position:absolute; width:37px; height:34px; left: 259px; top: 7px; cursor:pointer;"  onclick="loadtool(2);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tack" style="position:absolute; width:37px; height:34px; left: 299px; top: 10px; cursor:pointer;"  onclick="loadtool(3);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tskill" style="position:absolute; width:37px; height:34px; left: 340px; top: 10px; cursor:pointer;"  onclick="loadtool(4);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="thelp" style="position:absolute; width:37px; height:34px; left: 384px; top: 10px; cursor:pointer;"  onclick="loadtool(5);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tcatch" style="position:absolute; width:37px; height:34px; left: 428px; top: 10px; cursor:pointer;"  onclick="loadtool(6);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="tprops" style="position:absolute; width:37px; height:34px; left: 472px; top: 10px; cursor:pointer;"  onclick="loadtool(7);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+  <div id="texit" style="position:absolute; width:37px; height:34px; left: 513px; top: 10px; cursor:pointer;" onclick="loadtool(8);">&nbsp;&nbsp;<br/>
+  &nbsp;&nbsp;</div>
+  
+</div>
+<!-- -->
+
+<!--player info-->
+<div id="team0" style="position:absolute;left:8px;top:8px;border:0px;">
+<table width="117" height="44" border="0" cellpadding="0" cellspacing="0">
+     <tr>
+       <td height="4"><img src="../images/ui/fight/zdean07.gif" width="117" height="4"></td>
+     </tr>
+     <tr>
+       <td><table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="405978">
+         <tr>
+           <td width="3"><img src="../images/ui/fight/zdean09.gif" width="3" height="36"></td>
+           <td width="36" height="36" bgcolor="#FFF95B"><img src="../images/bb/#head0#" width="36" height="36"></td>
+           <td width="21"><img src="../images/ui/fight/zdean11.gif" width="21" height="36"></td>
+           <td><table width="100%" border="0" cellpadding="0" cellspacing="0">
+             <tr>
+               <td height="9"><table width="55" border="0" cellspacing="0" cellpadding="0">
+                 <tr>
+                   <td height="9" width="55">
+				   <img src="../images/ui/fight/zdean15.gif" width="55" border="0" height="9" id="php"/></td>
+                 </tr>
+               </table></td>
+             </tr>
+             <tr>
+               <td height="4" ></td>
+             </tr>
+             <tr>
+               <td height="9"><table width="40%" border="0" cellspacing="0" cellpadding="0">
+                 <tr>
+                   <td height="9" width="55">
+				   <img src="../images/ui/fight/zdean14.gif" width="55" border="0" height="9" id="pmp"/></td>
+                 </tr>
+               </table></td>
+             </tr>
+             <tr>
+               <td height="4"></td>
+             </tr>
+             <tr>
+               <td height="9"><table width="35%" border="0" cellspacing="0" cellpadding="0">
+                 <tr>
+                   <td height="9">
+				   		<img src="../images/ui/fight/zdean13.gif" width="55" border="0" height="9" id="pexp"/></td>
+                 </tr>
+               </table></td>
+             </tr>
+           </table></td>
+           <td width="1"><img src="../images/ui/fight/zdean10.gif" width="1" height="37"></td>
+         </tr>
+       </table></td>
+     </tr>
+     <tr>
+       <td height="4"><img src="../images/ui/fight/zdean08.gif" width="117" height="4"></td>
+     </tr>
+     <tr>
+       <td height="21" align="center" valign="middle"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+         <tr>
+           <td width="9"><img src="../images/ui/fight/zdean17.gif" width="9" height="18"></td>
+           <td background="../images/ui/fight/zdean18.gif" style="color:#694a06;">#nickname#</td>
+           <td width="9"><img src="../images/ui/fight/zdean19.gif" width="9" height="18"></td>
+         </tr>
+       </table></td>
+     </tr>
+  </table>
+</div>
+
+<div id="timev" style="width:60px;height:37px; background-image:url(../images/ui/fight/zdean06.gif);
+position:absolute;left:361px;top:10px;padding-top:35px; text-align:center;font-weight:bold;color:#025b26;font-size:18px;"></div>
+
+<div id="result" style="position:absolute; background:#025B26; left: 270px; top: 87px;color:#fff; line-height:1.7;width:246px;;filter:alpha(opacity=60); -moz-opacity:0.6;display:none; padding:10px;z-index:10000"></div>
+
+<div style="position:absolute;left:547px;top:150px;font-weight:bold;width:233px;height:30px;font-family:华文新魏;font-size:13px;color:yellow" id="pfont"></div>
+<div id="med_buff" style="position:absolute;z-index:100; left:100px; top:75px;width:100px; height:15px;">
+</div>
+</body>
+</html>
+<script language="javascript" src="../javascript/fightc.js"></script>
+#test#

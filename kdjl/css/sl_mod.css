@@ -1,0 +1,218 @@
+/* CSS Document */
+/*usages:扫雷模块层叠样式表*/
+div,body,head,ul,li,table,tr,td,span,html
+{
+	margin:0px;
+	border:0px;
+	padding:0px;
+}
+#panel table,#panel tr,#panel td,.gonggao
+{
+	text-align:center;
+	font-size:14px;
+}
+.panel
+{
+	width:480px;
+}
+.top
+{
+	text-align:center;
+}
+.body
+{
+	background:url(../images/ui/sl_mod/sl01.jpg);
+	width:480px;
+	height:430px;
+}
+.title
+{
+	position:absolute;
+	z-index:1;
+	left:165px;
+	top:35px;
+	
+}
+.info
+{
+	position:absolute;
+	width:290px;
+	height:360px;
+	background:url(../images/ui/sl_mod/sl17.gif);
+	top:110px;
+	left:10px;
+	
+}
+.info .infofont
+{
+	position:relative;
+	left:20px;
+	top:50px;
+}
+.info .infosure
+{
+	position:absolute;
+	top:310px;
+	left:120px;	
+}
+.close
+{
+	position:absolute;
+	z-index:1;
+	width:50px;
+	height:20px;
+	left: 420px;
+	top: 70px;
+	text-align:right;
+}
+.close img
+{
+	padding-right:3px;
+	cursor:pointer;
+}
+.left
+{
+	float:left;
+	width:290px;
+	margin-left:5px;
+	height:420px;
+}
+.right
+{
+	float:right;
+	margin-right:5px;
+}
+.gs
+{
+	background:url(../images/ui/sl_mod/sl03.gif);
+	width:135px;
+	height:50px;
+	position:relative;
+	top:50px;
+	left:80px;
+	text-align:center;
+	line-height:50px;
+	color:#f2d808;
+	font-family:Tahoma;
+}
+.leiqu_title
+{
+	margin-left:10px;
+	margin-top:50px;	
+}
+#leiqu
+{
+	background:url(../images/ui/sl_mod/sl06.gif);
+}
+.gonggao
+{
+	background:url(../images/ui/sl_mod/sl07.gif);
+	width:170px;
+	height:137px;
+	position:relative;
+	top:35px;
+	font-size:12px;
+}
+.gonggao .child
+{
+	margin-top:10px;
+}
+.prize
+{
+	background:url(../images/ui/sl_mod/sl08.gif);
+	width:172px;
+	height:259px;
+	top:30px;
+	position:relative;
+}
+#everybox
+{
+	position:relative;
+	top:35px;
+	left:15px;
+	font-family:"方正少儿简体";
+	color:#79420c;
+}
+#everybox tr,#everybox td
+{
+	border:1px #c18c3f solid;
+}
+#everybox .noborder
+{
+	border:0px;
+}
+.btn
+{
+	cursor:pointer;
+}
+.tishi
+{
+	width:290px;
+	height:150px;
+	background:url(../images/ui/sl_mod/sl10.gif);
+	position:absolute;
+	text-align:center;
+	
+}
+.font
+{
+	position:relative;
+	top:50px;
+	padding-left:30px;
+	padding-right:30px;
+	font-size:12px;
+}
+.sure
+{
+	float:left;
+}
+.chanel
+{
+	float:right;
+}
+.center
+{
+	
+}
+.tishi_btn
+{
+	margin-right:20px;
+	margin-top:10px;
+	margin-left:20px;
+}
+.sm
+{
+	position:relative;
+	top:20px;
+	height:100px;
+	width:165px;
+	overflow:auto;
+	left:5px;
+	right:5px;
+}
+.open,.open_lei
+{
+	background:url(../images/ui/sl_mod/sl03.jpg);
+	height:90px;
+	width:90px;
+}
+.open img
+{
+	position:relative;
+	top:30px;
+}
+
+.tdclose
+{
+	background:url(../images/ui/sl_mod/sl02.jpg);
+	height:90px;
+	width:90px;
+}
+.donghua
+{
+	width:280px;
+	height:280px;
+	position:absolute;
+	top:190px;
+	left:15px;
+}

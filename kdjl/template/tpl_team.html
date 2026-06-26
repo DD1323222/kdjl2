@@ -1,0 +1,450 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>野外探险</title>
+
+<style type="text/css"> 
+<!--
+body { width: auto; height: auto; margin: 0px auto; font-size: 12px; background:#eeeeee;}
+*{ margin: 0px; padding: 0px; }
+pre { margin: 0px; padding: 0px; float: left; }
+img { margin: 0px; padding: 0px; float: left; border: 0px; }
+ul { margin: 0px; padding: 0px; }
+li { display: inline; list-style-type: none; }
+ 
+.zdzd_box { width:788px; height:319px; float:left;}
+.box_left { width:301px; height:319px; float:left; background:url(../images/ui/team/zdzd_bj1.jpg);}
+.box_zhong { width:283px; height:319px; float:left; background:url(../images/ui/team/zdzd_bj2.jpg);}
+.box_right { width:204px; height:319px; float:left; background:url(../images/ui/team/zdzd_bj3.jpg);}
+.zdzd_jiesao { width:230px; height:90px; float:left; margin:70px 0px 0px 40px; -margin:70px 0px 0px 20px;float:left; line-height:22px; overflow:hidden;}
+.zdzd_cong { width:247px; height:84px; float:left; margin:50px 0px 0px 10px; line-height:22px;}
+.zhong_list { width:260px; height:#ifrteamh#px; float:left; margin:0px 0px 0px 5px;line-height:22px; margin-top:59px; color:#335e00; overflow:hidden;scrollbar-face-color:#a1d87c;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#cdefb9;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#cdefb9;scrollbar-track-color:#cdefb9;scrollbar-arrow-color:#ffffff;}
+.zhong_list a { text-decoration:none; color:#335e00;}
+.zhong_list a:hover { text-decoration:none; color:#335e00;}
+ 
+.zhong_list li { width:240px; height:26px; float:left;line-height:27px; display:inline;}
+.title { width:120px; height:22px; float:left;line-height:22px; overflow:hidden;}
+.title2 { width:35px; height:22px; float:left;line-height:22px;}
+.title3 { width:69px; height:17px; float:left;line-height:22px; text-align:center; margin-top:2px;}
+.anniu { width:265px; height:29px; float:left; margin:15px 0px 0px 5px; -margin:15px 0px 0px 0px;}
+.anniu1 { width:80px; height:29px; float:left; margin:0px 0px 0px 7px; -margin:0px 0px 0px 5px;}
+ 
+.zdzd_zxwj { width:170px; height:260px; float:left; margin:44px 0px 0px 10px; color:#335e00; overflow:auto; scrollbar-face-color:#a1d87c;scrollbar-highlight-
+
+color:#ffffff;scrollbar-3dlight-color:#cdefb9;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#cdefb9;scrollbar-track-color:#cdefb9;scrollbar-arrow-color:#ffffff; 
+
+line-height:26px;}
+.zdzd_zxwj a{ text-decoration:none; color:#335e00;}
+.zdzd_zxwj a:hover{ text-decoration:none; color:#335e00;}
+ 
+ 
+.zxwj_list  { width:30px; height:26px; line-height:26px; float:left;}
+.zxwj_list img { margin:5px 0px 0px 4px;}
+.zxwj_list2  { width:120px; height:26px; line-height:26px; float:left;}
+-->
+</style>
+
+<script language="javascript" src="/javascript/prototype.js"></script>
+<script language="javascript" src="/javascript/team.js"></script>
+
+<!--[if IE 6]>
+<script type="text/javascript">try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {}
+</script>
+<![endif]-->
+<script language="javascript">
+var bid=#bid#;
+var num = #num#;
+var mapid = #mapid#;
+var cUid=0;
+window.parent.autoack = false;
+
+</script>
+<script language="javascript">
+
+var cUser='';
+var _self='#_self#';
+var tLock=false;
+var cUid=0;
+var closeMenu;
+// Add by DuHao 2009-5-13
+function copyWord(words)
+{
+	window.parent.$('baike_input').value=words;
+}
+// 侦查玩家信息
+function detect()
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					var arrIrisStyles = ['DIAMOND','CIRCLE','CROSS','PLUS','SQUARE','STAR'];
+					var index=parseInt(Math.random()*5+1);
+					// ui view start
+						var oPopup = window.createPopup();
+						//oPopup.document.body.onmouseout = function(){oPopup.hide();} 
+						with (oPopup.document.body) 
+						{
+							style.border='#033e00 1px solid';
+							style.fontSize='12px';
+							style.padding='2px';
+							style.backgroundColor='#000000';
+							style.filter="progid:DXImageTransform.Microsoft.Iris(duration=3);";
+							innerHTML=tstr;
+						}
+						oPopup.show(600, 448, 405, 255);
+						oPopup.document.body.filters[0].irisstyle=arrIrisStyles[index];
+						oPopup.document.body.filters[0].Apply();
+						oPopup.document.body.style.backgroundColor="#CCEFEF";
+						oPopup.document.body.filters[0].Play();
+						oPopup.document.body.pause();
+					// ui view end.
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/getPlayerinfo.php?op=g&u='+cUser, opt);
+}
+function detectview()
+{
+  window.location.href='../function/Pets_Mod.php?uid='+cUser;
+}
+
+
+function TeamChoose(user,id,event)
+{
+	cUser=user;
+	cUid=id;
+	Event = event;
+
+	var MousePos=[event['clientX'],event['clientY']];
+	if(MousePos[0]>700) MousePos[0]=700;
+	if(MousePos[1]>190) MousePos[1]=190;
+	$('menu').style.display='block';
+	$('menu').style.left   =MousePos[0]+'px';
+	$('menu').style.top    =MousePos[1]+'px';
+	closeMenu = window.setTimeout('$("menu").style.display="none"',6000);
+}
+
+function msgTips(msg)
+{
+	var oPopup = window.createPopup();
+	with (oPopup.document.body) 
+	{
+		style.border='#033e00 1px solid';
+		style.fontSize='12px';
+		style.padding='5px';
+		style.backgroundColor="#9bc650";
+		innerHTML=msg;
+	}
+	oPopup.show(370, 270, 305, 185);
+}
+
+//--
+function player_look()
+{
+	window.parent.Alert('侦察功能正式版开放!');
+}
+// 玩家调整。
+function player_fight()
+{
+	if (cUser=='')
+	{
+		window.parent.Alert('请选择一个你要挑战的玩家!');return false;
+	}
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = parseInt(t.responseText);
+					
+					if (tstr==0) // 
+					{
+						window.parent.Alert('您不能挑战 '+cUser+' 的宠物!!');
+					}
+					else if(tstr==1)
+					{
+						window.parent.Alert(cUser+'处于新手保护状态,无法挑战');
+					}
+					else if(tstr==2)
+					{
+						window.parent.Alert(cUser+'拒绝挑战,无法挑战');
+					}
+					else // 开始挑战。
+					{
+						window.parent.$('gw').src='./function/Challenge_Mod.php?p='+bid+'&cp='+tstr;
+					}
+					//msgTips(tstr);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/ext_Challenge.php?u='+cUser, opt);
+}
+function pk()
+{
+	
+	if (bid<1)  {window.parent.Alert('请选择一只要战斗的宠物!');return false;}
+	//alert(mapid);
+	czl(mapid);
+	//window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';
+}
+
+//成长限制
+
+function czl(mapids)
+{
+	var opt = {
+    		 	method: 'get',
+				 onSuccess: function(t) {
+					var tstr = t.responseText;
+					if (tstr==1)
+					{
+						window.parent.Alert("数据有误！");
+					}
+					else if(tstr==2)
+					{
+						window.parent.Alert("成长不够进入此地图!");
+					}
+					else if(tstr==3)
+					{
+						window.parent.Alert("成长不够，且没有相应的道进入该地图。");
+					}
+					else if(tstr==100)
+					{
+						window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=1';
+					}
+					//msgTips(tstr);
+    		 	},
+    		 	on404: function(t) {
+    		 	},
+    		 	onFailure: function(t) {
+    		 	},
+    		 	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/mapGate.php?type=5&n='+mapids, opt);
+}
+var nadu=1;
+//一图多怪
+function pk1(id)
+{
+	if (bid<1)  {window.parent.Alert('请选择一只要战斗的宠物!');return false;}
+		var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						var tstr = parseInt(t.responseText);
+						if(t.responseText=='01')
+						{
+							parent.Alert('切换失败(组队副本有战斗进度时不允许)!');
+							return;
+						}
+						if(nadu == 1)
+						{
+							$('sign').innerHTML='普通';
+						}
+						else if(nadu == 2)
+						{
+							$('sign').innerHTML='困难';
+						}
+						else if(nadu == 3)
+						{
+							$('sign').innerHTML='冒险';
+						}
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+				}
+		var ajax=new Ajax.Request('/function/manymapgate.php?p='+bid+'&type='+id+'&mapid='+mapid, opt);
+		//window.parent.$('gw').src='./function/Fight_Mod.php?p='+bid+'&type=2';
+}
+function startFatting(bbid,level,lid,obj){
+	// In here, update bb fatting tag.
+	obj = obj.style;
+	sel(obj);
+	if(level<lid)
+	{window.parent.Alert('听说那里的妖怪太厉害了，偶当前的实力还不够啊！');}
+	
+	bid = bbid;
+}
+
+function Setbbs(bbid,level,lid,obj)	// Get pets.
+{
+	var mbid;
+	var opt = {
+					method: 'get',
+					 onSuccess: function(t) {
+						mbid = parseInt(t.responseText);
+					},
+					on404: function(t) {
+					},
+					onFailure: function(t) {
+					},
+					asynchronous:true        
+			}
+	var ajax=new Ajax.Request('/function/mapGate.php?type=6', opt);
+	if(bbid == mbid)
+	{
+		return;
+	}
+	var opt = {
+	method: 'get',
+	onSuccess: function(t) {
+					var tt = t.responseText;
+					if(tt == 10){
+						if(!confirm("您当前接有不可切换主宠的任务，如果您要切换主宠任务将消失，您确定要切换吗？")){
+							return false;
+						}
+						var opt = {
+							method: 'get',
+							onSuccess: function(n) {
+										if(n.responseText!='') {window.parent.Alert(n.responseText);}
+										startFatting(bbid,level,lid,obj);
+										//window.location.reload();
+									},
+							asynchronous:true        
+						}
+						var ajax=new Ajax.Request('../function/mcGate.php?op=change&id='+bbid, opt);
+					}else if(tt != "" && tt != 10){
+						window.parent.Alert(tt);
+						startFatting(bbid,level,lid,obj);
+						//window.location.reload();
+					}
+    		 	},
+     	asynchronous:true        
+	}
+	var ajax=new Ajax.Request('../function/mcGate.php?op=z&id='+bbid, opt);
+}
+
+function sel(obj)
+{
+	for(var i=1;i<4;i++)
+	{	
+		try{
+			$('i'+i).style.filter="alpha(opacity=50)";
+		}catch(e){continue;}
+	}
+	obj.filter="alpha(opacity=100)";
+}
+
+
+function friend()
+{
+	var name = cUser;
+	
+	var opt = {
+	method: 'get',
+	onSuccess: function(t) {
+		if(t.responseText.substr(0,1) =='#')
+		{
+			window.parent.Alert('操作成功！');
+		}else{
+			window.parent.Alert(t.responseText);
+		}
+	},
+	on404: function(t) {
+	},
+	onFailure: function(t) {
+	},
+	asynchronous:true
+	}
+	
+	var ajax=new Ajax.Request('/function/friendGate.php?op=add&name='+name, opt);
+} 
+
+function team()
+{
+	var name = cUser;
+	
+	var opt = {
+		method: 'get',
+		onSuccess: function(t) {
+			if(t.responseText.indexOf('OK')>-1)
+			{
+				window.parent.Alert('操作成功！');
+			}else {
+				window.parent.Alert('操作失败：'+t.responseText+'！');
+			}
+		},
+		on404: function(t) {
+		},
+		onFailure: function(t) {
+		},
+		asynchronous:true
+	}
+	
+	var ajax=new Ajax.Request('/function/team.php?act=invite&id='+cUid, opt);
+}
+</script>
+</head>
+ 
+<body>
+#ifr#
+<div class="zdzd_box">
+	<div class="box_left">
+   	  <div class="zdzd_jiesao">
+        	 探险 — #mapname# &nbsp;成长限制：#czl#<br/>
+			怪物的等级：#level# 级<br/>
+			出现怪物：#gw#
+      </div>
+        <div class="zdzd_cong">
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="25">&nbsp;</td>
+              <td>#one#</td>
+              <td>#two#</td>
+              <td>#three#</td>
+              <td width="20">&nbsp;</td>
+            </tr>
+          </table>
+        </div>
+    </div>
+  <div class="box_zhong">
+  	<div class="zhong_list">		
+		#team#
+    </div>
+	#table#
+	#team1#
+  </div>
+    <div class="box_right">
+    	<div class="zdzd_zxwj">
+        	<ul>
+				#otherlist#            	
+            </ul>
+        </div>
+    </div>
+    
+</div>
+<div id="menu" style="display:none; position:absolute; left:0;top:0; background-color:#FFFFFF; border:0px solid #006666; background:url(../images/ui/team/team_menu.png); background-repeat:no-repeat;height:123px; color:#FFFFFF">
+<table width="87" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td height="18" scope="col" align="right"><span style="cursor:pointer; line-height:18px" onclick="$('menu').style.display='none';window.clearTimeout(closeMenu);">&nbsp;&nbsp;</span></th>
+  </tr>
+  <tr>
+    <td height="18" align="center" onclick="team();$('menu').style.display='none';" style="cursor:pointer" onmouseover="this.style.color='#DCEAAA'" onmouseout="this.style.color='#ffffff'">邀请组队</td>
+  </tr>
+  <tr>
+    <td height="18" align="center" onclick="friend();$('menu').style.display='none';" style="cursor:pointer" onmouseover="this.style.color='#DCEAAA'" onmouseout="this.style.color='#ffffff'">加为好友</td>
+  </tr>
+  <tr>
+    <td height="21" align="center" onclick="player_fight();$('menu').style.display='none';" style="cursor:pointer" onmouseover="this.style.color='#DCEAAA'" onmouseout="this.style.color='#ffffff'">挑战</td>
+  </tr>
+  <tr>
+    <td height="19" align="center" onclick="detectview();$('menu').style.display='none';" style="cursor:pointer" onmouseover="this.style.color='#DCEAAA'" onmouseout="this.style.color='#ffffff'">侦察</td>
+  </tr>
+  <tr>
+    <td height="18" align="center" onclick="parent.$('cmsg').value='//'+cUser+' ';parent.$('cmsg').focus();$('menu').style.display='none';" style="cursor:pointer" onmouseover="this.style.color='#DCEAAA'" onmouseout="this.style.color='#ffffff'">私聊</td>
+  </tr>
+</table>
+
+</div>
+</body> 
+</html>

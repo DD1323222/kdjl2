@@ -1,0 +1,53 @@
+自己玩服务器2核2G应该也能用
+
+服务器密码（可变）：
+root
+sdsASDwDAS@2322!
+root
+32b30b47ec283cfc
+
+外网ipv4面板地址: http://119.91.114.58:8888/tencentcloud
+内网面板地址:     http://10.1.0.12:8888/tencentcloud
+username: 4c090ced
+password: 97f6c180cc92
+
+小版本可变
+nginx 1.20.2
+MySQL 5.7.44
+Redis 7.4.2
+memcached 1.6.6
+PHP 5.3.29-memcache扩展
+最后安装
+phpMyadmin 4.0
+-----------------------------------------------------------------
+kdjl文件夹上传到服务器/www/wwwroot目录下
+kdjl_mysql_data.sql、socket.sh也上传到服务器/www/wwwroot目录下
+-----------------------------------------------------------------
+添加站点
+添加数据库
+数据库名：kdjl
+用户名：kdjl
+密码：kdjl
+导入数据库
+-----------------------------------------------------------------
+/www/wwwroot/kdjl/socketChat/config.chat.php
+文件中$server_ip = '47.121.183.254';//聊天socket服务器的地址
+这行的IP改为你自己的服务器IP
+-----------------------------------------------------------------
+/www/server/php/53/etc/php-cli.ini
+末尾添加-如果有就不需要添加，没有会导致聊天系统出错。
+extension=memcache.so
+-----------------------------------------------------------------
+服务器运行
+chmod 777 -R /www/wwwroot/
+/www/wwwroot/socket.sh
+-----------------------------------------------------------------
+腾讯云防火墙放通TCP：80、1988
+-----------------------------------------------------------------
+启动或重启服务器后需要访问下网站，后续游玩不需要。
+http://119.91.114.58/vm1.php?db_task=db_task&skillsys=skillsys&db_bb=db_bb&db_gpc=db_gpc&db_merge=db_merge&db_zs=db_zs&db_map=db_map&db_wx=db_wx&db_welcome=db_welcome&db_timeconfig=db_timeconfig&db_exptolv=db_exptolv&db_aoyun=db_aoyun&db_blacklist=db_blacklist&db_gonggao=db_gonggao&db_props=db_props&db_t_ly_url_config=db_t_ly_url_config&Submit=%E6%8F%90%E4%BA%A4
+-----------------------------------------------------------------
+简易后台
+http://119.91.114.58/custom/adminIndex.php
+希望隐藏地址可以将/www/wwwroot/kdjl下的custom文件夹重命名为复杂字符
+-----------------------------------------------------------------
