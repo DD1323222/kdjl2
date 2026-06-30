@@ -2,219 +2,240 @@
 require_once('../config/config.game.php');
 require_once('../sec/dblock_fun.php');
 secStart($_pm['mem']);
-function logs($note,$vary=103)
+
+function cqFail($message)
 {
 	global $_pm;
-	$sql='insert into gamelog set seller='.$_SESSION['id'].',vary='.intval($vary).',pnote="'.$note.'",ptime='.time();
-	$_pm['mysql']->query($sql);
-}
-$petId=abs($_GET['pid']);
-getLock($_SESSION['id']);
-
-$cishu=$_pm['mysql']->getOneRecord("select chouqu_chongwu from player_ext where uid={$_SESSION['id']}");
-if(strpos($cishu['chouqu_chongwu'],','.$petId.',')!==false)
-{
-	realseLock();
-	die("这个宠物抽取过成长,不能再抽取!");
+	$_pm['mysql']->query('ROLLBACK');
+	die($message);
 }
 
-$bb = $_pm['mysql']->getOneRecord('select name,wx,level,czl,remaketimes from userbb where uid='.$_SESSION['id'].' and id='.$petId);
-if(!$bb)
+function cqLog($note, $vary=103)
 {
-	realseLock();
-	die('这个宠物不存在！');
-}
-if($bb['wx']>6)
-{
-	realseLock();
-	die('该宠物不能抽取!');
+	global $_pm;
+	$sql = 'INSERT INTO gamelog SET seller='.intval($_SESSION['id']).
+		',vary='.intval($vary).',pnote='.$_pm['mysql']->quote($note).',ptime='.time();
+	return $_pm['mysql']->query($sql);
 }
 
+$uid = intval($_SESSION['id']);
+$petId = isset($_GET['pid']) ? abs(intval($_GET['pid'])) : 0;
+$p1 = isset($_GET['pid1']) ? abs(intval($_GET['pid1'])) : 0;
+$p2 = isset($_GET['pid2']) ? abs(intval($_GET['pid2'])) : 0;
 
-/*
-if($bb['wx']!=6)
+if ($uid < 1 || $petId < 1)
 {
-	if($bb['czl']<40){
-		realseLock();
-		die('五系宠物成长小于40不能抽取!');
-	}
-}
-*/
-
-if($bb['czl']<30)
-{
-	realseLock();
-	die('成长小于30的不能抽取！');
+	die('数据错误！');
 }
 
-$p1=abs($_GET['pid1']);
-$p2=abs($_GET['pid2']);
+getLock($uid);
+$db = $_pm['mysql'];
 
-$sql = 'select p.effect,p.id pids,b.id,b.sums from userbag b,props p where (b.id='.$p1.' or b.id='.$p2.') and p.id=b.pid';
-$rows = $_pm['mysql']->getRecords($sql);
-if($bb['wx']!=6&&$rows[0]['pids']!=3383&&$rows[1]['pids']!=3383)
+$player = $db->getOneRecord('SELECT money FROM player WHERE id='.$uid.' FOR UPDATE');
+$bb = $db->getOneRecord(
+	'SELECT name,wx,level,czl,remaketimes FROM userbb WHERE uid='.$uid.' AND id='.$petId.' FOR UPDATE'
+);
+$playerExt = $db->getOneRecord(
+	'SELECT czl_ss,chouqu_chongwu FROM player_ext WHERE uid='.$uid.' FOR UPDATE'
+);
+
+if (!is_array($player) || !is_array($playerExt))
 {
-	realseLock();
-	die('缺少五系宠物抽取的必须道具！');
+	cqFail('玩家数据不存在！');
+}
+if (!is_array($bb))
+{
+	cqFail('这个宠物不存在！');
+}
+if (strpos($playerExt['chouqu_chongwu'], ','.$petId.',') !== false)
+{
+	cqFail('这个宠物抽取过成长,不能再抽取!');
+}
+if (intval($bb['wx']) > 6)
+{
+	cqFail('该宠物不能抽取!');
+}
+if (floatval($bb['czl']) < 30)
+{
+	cqFail('成长小于30的不能抽取！');
 }
 
-$swapRateInc=0;
-$swapRateIncFixed=0;
-$wpLog='';
-if(count($rows)>0)
+$selectedIds = array();
+if ($p1 > 0) $selectedIds[$p1] = $p1;
+if ($p2 > 0) $selectedIds[$p2] = $p2;
+
+$bagById = array();
+if (!empty($selectedIds))
 {
-	foreach($rows as $k=>$v)
+	$rows = $db->getRecords(
+		'SELECT b.id,b.pid,b.sums,p.effect FROM userbag AS b ' .
+		'INNER JOIN props AS p ON p.id=b.pid ' .
+		'WHERE b.uid='.$uid.' AND b.id IN ('.implode(',', $selectedIds).') FOR UPDATE'
+	);
+	if (is_array($rows))
 	{
-		if($p1==$p2&&$v["pids"]==3383)
+		foreach ($rows as $row)
 		{
-			$_pm['mysql']->query("rollback");
-			die('请不要使用两个五系宠物抽取石！');
-		}
-		if($bb['wx']>5&&$v["pids"]==3383)
-		{
-			$_pm['mysql']->query("rollback");
-			die('非五系宠物不能使用五系宠物抽取石！');
-		}
-		if($bb['wx']<6&&$v["pids"]!=3383)
-		{
-			$_pm['mysql']->query("rollback");
-			die('五系宠物不能使用增加比例道具！');
-		}
-		if(strpos($v["effect"],'inczhl:')!==false&&$v["sums"]>0)
-		{
-			$str = str_replace('inczhl:','',$v["effect"]);
-			if(strpos($str,'a')===false){
-				$swapRateInc+=abs($str);
-			}else{
-				$swapRateIncFixed+=abs($str);
-			}
-			$wpLog.=' ['.$v["pids"].'] ';
-			$sqlDel = 'update userbag set sums='.($v["sums"]-1).' where id='.$v["id"].' and sums>0';
-			$_pm['mysql']->query($sqlDel);
-			$v["sums"]-=1;
-			if($p1==$p2)//选择同一个物品
-			{
-				if(strpos($v["effect"],'inczhl:')!==false&&$v["sums"]>0)
-				{
-					$str = str_replace('inczhl:','',$v["effect"]);
-					if(strpos($str,'a')===false){
-						$swapRateInc+=abs($str);
-					}else{
-						$swapRateIncFixed+=abs($str);
-					}
-					
-					$wpLog.=' ['.$v["pids"].'] ';
-					$sqlDel = 'update userbag set sums='.($v["sums"]-1).' where id='.$v["id"].' and sums>0';
-					$_pm['mysql']->query($sqlDel);
-				}
-			}
+			$bagById[intval($row['id'])] = $row;
 		}
 	}
 }
 
-if($bb['czl']<65)
+$selected = array($p1, $p2);
+$useCounts = array();
+$stoneCount = 0;
+$swapRateInc = 0;
+$swapRateIncFixed = 0;
+$wpLog = '';
+
+foreach ($selected as $bagId)
 {
-	$swapRate=rand(10,20);
+	if ($bagId < 1) continue;
+	if (!isset($bagById[$bagId]))
+	{
+		cqFail('选择的抽取道具不存在或数量不足！');
+	}
+
+	$row = $bagById[$bagId];
+	$propsId = intval($row['pid']);
+	if (intval($bb['wx']) == 6 && $propsId == 3383)
+	{
+		cqFail('非五系宠物不能使用五系宠物抽取石！');
+	}
+	if (intval($bb['wx']) < 6 && $propsId != 3383)
+	{
+		cqFail('五系宠物不能使用增加比例道具！');
+	}
+	if ($propsId == 3383)
+	{
+		$stoneCount++;
+	}
+	if (strpos($row['effect'], 'inczhl:') === false)
+	{
+		cqFail('选择的道具不能用于成长抽取！');
+	}
+
+	if (!isset($useCounts[$bagId])) $useCounts[$bagId] = 0;
+	$useCounts[$bagId]++;
+	if ($useCounts[$bagId] > intval($row['sums']))
+	{
+		cqFail('选择的抽取道具数量不足！');
+	}
+
+	if (strpos($row['effect'], 'inczhl:') !== false)
+	{
+		$effect = str_replace('inczhl:', '', $row['effect']);
+		if (strpos($effect, 'a') === false)
+		{
+			$swapRateInc += abs(floatval($effect));
+		}
+		else
+		{
+			$swapRateIncFixed += abs(floatval(str_replace('a', '', $effect)));
+		}
+		$wpLog .= ' ['.$propsId.'] ';
+	}
 }
-else if($bb['czl']<85)
+
+if (intval($bb['wx']) < 6 && $stoneCount < 1)
 {
-	$swapRate=rand(30,50);
+	cqFail('缺少五系宠物抽取的必须道具！');
 }
-else if($bb['czl']<100)
+if ($stoneCount > 1)
 {
-	$swapRate=rand(50,65);
+	cqFail('请不要使用两个五系宠物抽取石！');
 }
-else if($bb['czl']<110)
+
+foreach ($useCounts as $bagId => $count)
 {
-	$swapRate=65;
+	$sql = 'UPDATE userbag SET sums=sums-'.intval($count).
+		' WHERE id='.intval($bagId).' AND uid='.$uid.' AND sums>='.intval($count);
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		cqFail('抽取道具扣除失败，请重试！');
+	}
 }
-else if($bb['czl']<115)
+
+$bbCzl = floatval($bb['czl']);
+if ($bbCzl < 65)
 {
-	$swapRate=70;
+	$swapRate = rand(10, 20);
 }
-else if($bb['czl']<120)
+else if ($bbCzl < 85)
 {
-	$swapRate=75;
+	$swapRate = rand(30, 50);
+}
+else if ($bbCzl < 100)
+{
+	$swapRate = rand(50, 65);
+}
+else if ($bbCzl < 110)
+{
+	$swapRate = 65;
+}
+else if ($bbCzl < 115)
+{
+	$swapRate = 70;
+}
+else if ($bbCzl < 120)
+{
+	$swapRate = 75;
 }
 else
 {
-	$swapRate=80;
+	$swapRate = 80;
 }
 
-if($bb['wx']!=6)
+if (intval($bb['wx']) != 6)
 {
-	$swapRate=rand(5,15);
+	$swapRate = rand(5, 15);
 }
 
-$swapRate+=$swapRateInc;
+$swapRate += $swapRateInc;
+if ($swapRate > 100) $swapRate = 100;
 
-if($bb['czl']*($swapRate/100)>600)
-{
-	$czl=600/$swapRate*100;
-}else{
-	$czl=$bb['czl'];
-}
-if($swapRate>100)
-{
-	$swapRate=100;
-}
+$czl = ceil($bbCzl * ($swapRate / 100));
+$czl += $swapRateIncFixed;
+if ($czl > 600) $czl = 600;
 
-if($bb['czl']<600)
+$money = intval(round(($bbCzl < 600 ? $bbCzl : 600) * 10000));
+if (intval($player['money']) < $money)
 {
-	$money=$bb['czl']*10000;
-}else{
-	$money=6000000;
+	cqFail('您的金币不足(需要:'.$money.')');
 }
 
-$czl=ceil($czl*($swapRate/100));//进行转换
-
-$czl+=$swapRateIncFixed;
-if($czl>600) $czl=600;
-$rowP=$_pm['mysql']->getOneRecord('select money from player where id='.$_SESSION['id'].' for update');
-if($rowP['money']<$money)
+$sql = 'UPDATE player SET money=money-'.$money.' WHERE id='.$uid.' AND money>='.$money;
+if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 {
-	$_pm['mysql']->query("rollback");
-	die("您的金币不足(需要:".$money.")");
+	cqFail('金币扣除失败，请重试！');
 }
 
-$sql = 'update player set money='.number_format($rowP['money']-$money,0,'.','').' where id='.$_SESSION['id'];
-$_pm['mysql']->query($sql);
-
-$couqu_res = $_pm['mysql'] -> getOneRecord("SELECT chouqu_chongwu FROM player_ext where uid= ".$_SESSION['id']);
-if(empty($couqu_res['chouqu_chongwu']) )
+$sql = 'UPDATE player_ext SET czl_ss=COALESCE(czl_ss,0)+'.abs($czl).',chouqu_chongwu='.
+	'CONCAT(TRIM(TRAILING "," FROM COALESCE(chouqu_chongwu,"")),",'.$petId.',") WHERE uid='.$uid;
+if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 {
-	$sql = 'update player_ext set czl_ss=czl_ss+'.abs($czl).',chouqu_chongwu="'.",".$petId.",".'" where uid='.$_SESSION['id'];
-	$_pm['mysql']->query($sql);
+	cqFail('成长抽取记录写入失败，请重试！');
+}
+
+if (intval($bb['wx']) < 6)
+{
+	$sql = 'UPDATE userbb SET name=CONCAT(name,"-",uid),uid=0 WHERE id='.$petId.' AND uid='.$uid;
 }
 else
 {
-	$sql = 'update player_ext set czl_ss=czl_ss+'.abs($czl).',chouqu_chongwu=concat(chouqu_chongwu,",","'.$petId.'",",") where uid='.$_SESSION['id'];
-	$_pm['mysql']->query($sql);
+	$sql = 'UPDATE userbb SET czl=1 WHERE id='.$petId.' AND uid='.$uid;
 }
-
-if($err=mysql_error())
+if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 {
-	if(strpos($err,'czl_ss')!==false||strpos($err,'chouqu_chongwu')!==false)
-	{
-		$_pm['mysql']->query('alter table player_ext add czl_ss int(11) null default 0;              ');
-		$_pm['mysql']->query('alter table player_ext add chouqu_chongwu varchar(255) null default "";');
-		$_pm['mysql']->query($sql);
-	}
+	cqFail('宠物成长状态更新失败，请重试！');
 }
 
-if($bb['wx']<6){
-	$_pm['mysql']->query('update userbb set name=concat(name,"-",uid),uid=0 where id='.$petId);
-}else{
-	$_pm['mysql']->query('update userbb set czl=1 where id='.$petId);
-}
-logs('被抽取的宠物id='.$petId.',抽取了:'.abs($czl).',使用物品'.($wpLog==''?'无':$wpLog));
-
-if($err=mysql_error())
+if (!$db->query('COMMIT'))
 {
-	$_pm['mysql']->query("rollback");
-	die($err);
+	$db->query('ROLLBACK');
+	die('成长抽取提交失败，请重试！');
 }
 
-realseLock();
+cqLog('被抽取的宠物id='.$petId.',抽取了:'.abs($czl).',使用物品'.($wpLog == '' ? '无' : $wpLog));
 die('OK'.$czl);
 ?>

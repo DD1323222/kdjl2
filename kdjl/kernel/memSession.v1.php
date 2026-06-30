@@ -18,8 +18,8 @@ if(!isset($_game['version'])){
 	$_game['template']  =	$_SERVER['DOCUMENT_ROOT'].'/template/';
 	$_game['sec']  		=	$_SERVER['DOCUMENT_ROOT'].'/sec/';
 	
-	$_mem['host']		=	'192.168.0.109';
-	$_mem['port']		=	'11214';
+	$_mem['host']		=	'127.0.0.1';
+	$_mem['port']		=	'11211';
 }
 
 define('SESS_LIFTTIME', 3600);

@@ -34,7 +34,7 @@ if($user===FALSE)
 
 if(isset($_GET['num'])&&intval($_GET['num'])>0){	
 	$price = intval($_GET['num']);
-	$paytype = intval($_GET['paytype']);
+	$paytype = isset($_GET['paytype']) ? intval($_GET['paytype']) : -1;
 	if($paytype!==0&&$paytype!==1)
 	{
 		die('alert("支付方式错误！")');
@@ -43,24 +43,32 @@ if(isset($_GET['num'])&&intval($_GET['num'])>0){
 	{
 		die('alert("每次最多购买5000个元宝！")');
 	}
-	$host = str_replace("PM51","",strtoupper(substr($_SERVER['HTTP_HOST'],0,strpos($_SERVER['HTTP_HOST'],'.'))));
+	$host = strtoupper(preg_replace('/[^a-z0-9]/i','',str_replace("PM51","",strtok($_SERVER['HTTP_HOST'],'.'))));
+	if($host === '') $host = 'LOCAL';
 	$msg = "口袋精灵".$host."区元宝".$price."个。";
 	/* 订单信息 */
-	$ordid=$_SESSION['id'].date("mdHis");
+	$ordid=substr($host,0,5).substr("000000000000".$_SESSION['id'],-8).substr(time(),-8).sprintf('%04d',mt_rand(0,9999));
 	$_SESSION['buyyb_info'][$ordid]=array($price,$paytype);
 	//if($paytype==1){
 	$db->query("CREATE TABLE if not exists `yb` (
 	  `Id` int(11) NOT NULL auto_increment,
 	  `payname` varchar(60) default '0',
 	  `paytime` varchar(14) default '0',
+	  `paymoney` varchar(20) default '0',
 	  `getyb` int(11) unsigned default '0',
 	  `orderid` varchar(25) default '0',
 	  `sn_platform` varchar(25) default '',
 	  `user_id` int(11) default '0',
 	  PRIMARY KEY  (`Id`)
-	) TYPE=MyISAM; 
+	) ENGINE=InnoDB; 
 	");
-	$db->query("insert into yb set payname='51".($paytype==0?'币':'银行')."购买元宝(User:".$_SESSION['name'].")',paytime='0',getyb=".$price.",orderid='".$ordid."',user_id=".$_SESSION['id']);
+	$db->addColumnIfMissing('yb','sn_platform',"varchar(25) NOT NULL DEFAULT ''");
+	$db->addColumnIfMissing('yb','user_id',"int(11) NOT NULL DEFAULT '0'");
+	$payName = $db->escape('51'.($paytype==0?'币':'银行').'购买元宝(User:'.$_SESSION['username'].')');
+	if($db->query("insert into yb set payname='{$payName}',paytime='0',getyb={$price},orderid='{$ordid}',user_id=".intval($_SESSION['id'])) === false)
+	{
+		die('alert("订单创建失败，请稍后重试！")');
+	}
 	//}
 	$order = 
 	array(

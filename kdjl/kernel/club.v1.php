@@ -38,6 +38,8 @@ class club{
 	*/
 	public function create($name)
 	{
+		$currentUid = intval($_SESSION['id']);
+		$name = $this->m_db->escape($name);
 		// 当前玩家是否拥有帮会。
 		$hadclub = $this->m_db->getOneRecord("SELECT id 
 		                                        FROM club_user 
@@ -63,8 +65,8 @@ class club{
 							   ");
 
 			$self = $this->m_db->getOneRecord("SELECT id
-												 FROM club
-												WHERE {$_SESSION['id'] in(masters)}");
+											 FROM club
+											WHERE FIND_IN_SET({$currentUid},masters)");
 			if (!is_array($self)) return false;
 
 			// 加入用户资料。
@@ -91,11 +93,13 @@ class club{
 	**/
 	public function addMember($uid)
 	{
-		if (intval($uid)<0) return false;
+		$uid = intval($uid);
+		$currentUid = intval($_SESSION['id']);
+		if ($uid<1) return false;
 		
 		$self = $this->m_db->getOneRecord("SELECT id
 											 FROM club
-											WHERE {$_SESSION['id'] in(masters)}");
+											WHERE FIND_IN_SET({$currentUid},masters)");
 		if (!is_array($self)) return false;
 		
 		$had = $this->m_db->getOneRecord("SELECT id
@@ -121,11 +125,14 @@ class club{
 	          $uid Int 玩家的用户ID。
 	*@Return: true of false
 	*/ 
-    public function setMember($levelName, $uid)
+	public function setMember($levelName, $uid)
 	{
+		$currentUid = intval($_SESSION['id']);
+		$uid = intval($uid);
+		$levelName = $this->m_db->escape($levelName);
 		$master = $this->m_db->getOneRecord("SELECT id
 											   FROM club
-											  WHERE $_SESSION['id'] in(masters)
+											  WHERE FIND_IN_SET({$currentUid},masters)
 											  LIMIT 0,1
 											");
 		if (is_array($master))
@@ -173,6 +180,7 @@ class club{
 		if (!is_array($info)) return false;
 		else
 		{
+			$currentUid = intval($_SESSION['id']);
 			$updatestr = '';
 			foreach ($info as $k => $rs)
 			{
@@ -180,11 +188,12 @@ class club{
 				else if ($k == 'masters') 
 					$updatestr = $updatestr==''?"masters='{$info['masters']}'":",masters='{$info['masters']}'";
 				else if ($k == 'levels')
-					$updatestr = $updatestr==''?"levels='{$levels}'":",levels='{$levels}'";
+					$updatestr = $updatestr==''?"levels='{$info['levels']}'":",levels='{$info['levels']}'";
 			}
+			if ($updatestr == '') return false;
 			$this->m_db->query("UPDATE club
-								   SET {$updatestr}
-							     WHERE {$_SESSION['id']} in (masters)
+									   SET {$updatestr}
+								     WHERE FIND_IN_SET({$currentUid},masters)
 							   ");	
 			return true;
 		}

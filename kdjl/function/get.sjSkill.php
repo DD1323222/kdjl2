@@ -1,180 +1,74 @@
 <?php
 /**
-*@Version: %version%
-*@Copyright: %copyright%
-*@Author: %author%
-
-*@Write Date: 2008.05.19
-*@Update Date: 2008.05.27
-*@Usage: sj skill of user bb.
-*@Memo:
-	1) Get jn
-	2) had study?
-	3) had sj props and require level is ok?
-	4) sj
-	5) clear sj props.
-	6) complete.
-*/
+ * Upgrade one learned pet skill by consuming one matching upgrade scroll.
+ */
 require_once('../config/config.game.php');
+require_once('../sec/dblock_fun.php');
+require_once(dirname(__FILE__).'/skill_common.php');
 secStart($_pm['mem']);
 
-$id = intval($_REQUEST['id']); // table: skillsys => id
-$bid =intval($_REQUEST['pid']); // pets id
+$uid = intval($_SESSION['id']);
+$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+$bid = isset($_REQUEST['pid']) ? intval($_REQUEST['pid']) : 0;
+if ($uid < 1 || $id < 1 || $bid < 1) die('0');
 
-if ($_pm['user']->check(array('int' => $id, 'int' => $bid)) === false) die('0');
-
-//$user	= $_pm['user']->mgetUserById();
-$sp 	= $_pm['user']->getUserPetSkillById($_SESSION['id']);
-$bag	= $_pm['user']->getUserBagById($_SESSION['id']);
-$bb		= $_pm['user']->getUserPetById($_SESSION['id']);
-
-// Get props id => pid
-
-$memskillsysid = unserialize($_pm['mem']->get('db_skillsysid'));
-$wp = $memskillsysid[$id];
-/*$wp= $_pm['mem']->dataGet(array('k' => MEM_SKILLSYS_KEY, 
-					   'v' => "if(\$rs['id'] == '{$id}') \$ret=\$rs;"
-				 ));*/
-if (is_array($wp))
+if (!is_array(getLock($uid))) skillFlowFail('0');
+$db = $_pm['mysql'];
+$pet = $db->getOneRecord(
+	'SELECT * FROM userbb WHERE uid='.$uid.' AND id='.$bid.' FOR UPDATE'
+);
+if (!is_array($pet) ||
+	(intval($pet['muchang']) != 0 && intval($pet['muchang']) != 1) || intval($pet['tgflag']) != 0)
 {
-	$pid = $wp['pid'];
-	// Check pets whether had study the skill.
-	$had = false;
-	foreach ($sp as $k => $v)
-	{
-		if ($v['uid'] == $_SESSION['id'] && $v['bid'] == $bid && $v['sid'] == $id)
-		{
-			$had = $v;
-			break;
-		}
-	}
-	if ($had === false) die('0');	
+	skillFlowFail('0');
+}
 
-	//############################################################
-	// have a bag.
-	// Check userbag whether have jnbook.
-	$book = false;
-	foreach ($bag as $k => $v)
-	{
-		if ($v['uid'] == $_SESSION['id'] && $v['pid'] == '733' && $v['sums']>0 && $wp['vary'] != 4)//非被动技能
-		{
-			$book = $v;
-			break;
-		}
-		else if($v['uid'] == $_SESSION['id'] && $v['pid'] == '1666' && $v['sums']>0 && $wp['vary'] == 4)
-		{
-			$book = $v;
-			break;
-		}
-	}
-    if (!is_array($book)) die('2');	
+$skillConfig = $db->getOneRecord('SELECT * FROM skillsys WHERE id='.$id);
+if (!is_array($skillConfig)) skillFlowFail('0');
 
-	// Check level of jnbook.
-	$level = false;
-	foreach ($bb as $k => $v)
-	{
-		if ($v['uid'] == $_SESSION['id'] && $v['id'] == $bid)
-		{
-			$level = $v;
-			break;
-		}
-	}
+$skillRows = $db->getRecords(
+	'SELECT * FROM skill WHERE bid='.$bid.' AND sid='.$id.' ORDER BY id LIMIT 2 FOR UPDATE'
+);
+if (!is_array($skillRows) || count($skillRows) != 1) skillFlowFail('0');
+$skill = $skillRows[0];
+$currentLevel = intval($skill['level']);
+if ($currentLevel >= 10) skillFlowFail('4');
+if ($currentLevel < 1) skillFlowFail('0');
 
-	$larr = split(',', $wp['requires']);
-	$ack  = split(',', $wp['ackvalue']);
-	$plus = split(',', $wp['plus']);
-	$uhp  = split(',', $wp['uhp']);
-	$ump  = split(',', $wp['ump']);
-	$img  = split(',', $wp['imgeft']);
+$requiredLevel = intval(skillFlowValue($skillConfig['requires'], $currentLevel));
+if (intval($pet['level']) < $requiredLevel) skillFlowFail('3');
 
-	// 升级：获得BB当前等级，技能等级。判断是否可以升级到下一级
-	################最多升级到10    10.09 ############################
-	if ($had['level']>=10) 
-	{
-		die('4');
-	}
+$bookPid = intval($skillConfig['vary']) == 4 ? 1666 : 733;
+$book = $db->getOneRecord(
+	'SELECT id FROM userbag WHERE uid='.$uid.' AND pid='.$bookPid.
+	' AND sums>0 AND zbing=0 AND bsum=0 AND psum=0 AND pyb=0 ORDER BY id LIMIT 1 FOR UPDATE'
+);
+if (!is_array($book)) skillFlowFail('2');
 
-	$cl = $had['level'];		// current level
-	$nl = $cl+1;				// next level.
-	$rl = $larr[$cl];			// require bb level
-	if ($level['level'] < $rl) die('3');
-	
-	
-	$had['level']	=	$nl;			// 提升等级。
-	$had['value']	=	$ack[$cl];		// 提升攻击。
-	$had['plus']	=	$plus[$cl];		// 提升附加效果。
-	$had['uhp']		=	$uhp[$cl];		//	消耗hp
-	$had['ump']		=	$ump[$cl];		// 消耗mp
-	$had['img']		=	$img[$cl];
-	
-	//效果持续时间（同装备）的技能7.29
-	$imgarr = explode(":",$had['img']);
-	if(!empty($imgarr[0]))
-	{
-		switch($imgarr[0])
-		{
-			case 'addmc':
-				$num = str_replace('%','',$imgarr[1]);
-				$addmc = round($level['mc'] * $num/100) + $level['mc'];
-				$sql = 'UPDATE userbb SET mc = '.$addmc.' WHERE id = '.$bid.'';
-				$_pm['mysql'] -> query($sql);
-				$had['img'] = 0;
-				break;
-			case 'addhits':
-                                $num = str_replace('%','',$imgarr[1]);
-                                $addhits = round($level['hits'] * $num/100) + $level['hits'];
-                                $sql = 'UPDATE userbb SET hits = '.$addhits.' WHERE id = '.$bid.'';
-                                $_pm['mysql'] -> query($sql);
-                                $had['img'] = 0;
-                                break;
-			case 'addac':
-				$num = str_replace('%','',$imgarr[1]);
-				$addac = round($level['ac'] * $num/100) + $level['ac'];
-				$sql = 'UPDATE userbb SET ac = '.$addac.' WHERE id = '.$bid.'';
-				$_pm['mysql'] -> query($sql);
-				$had['img'] = 0;
-				break;
-			case 'addhp':
-				$num = str_replace('%','',$imgarr[1]);
-				$addsrchp = round($level['srchp'] * $num/100) + $level['srchp'];
-				$sql = 'UPDATE userbb SET srchp = '.$addsrchp.' WHERE id = '.$bid.'';
-				$_pm['mysql'] -> query($sql);
-				$had['img'] = 0;
-				break;
-			case 'addmp':
-				$num = str_replace('%','',$imgarr[1]);
-				$addsrcmp = round($level['srcmp'] * $num/100) + $level['srcmp'];
-				$sql = 'UPDATE userbb SET srcmp = '.$addsrcmp.' WHERE id = '.$bid.'';
-				$_pm['mysql'] -> query($sql);
-				$had['img'] = 0;
-				break;
-			default:
-				$num = 0;
-				$addsrcmp = 0;
-				break;
-		}
-	}
-	
-	
-	$_pm['mysql']->query("UPDATE skill
-			       SET level='{$had['level']}',
-					   value='{$had['value']}',
-					   plus='{$had['plus']}',
-					   uhp='{$had['uhp']}',
-					   ump='{$had['ump']}',
-					   img='{$had['img']}'
-				 WHERE bid='{$bid}' and sid='{$id}'
-			  ");
-	// clear jnbook.
-	$_pm['mysql']->query("UPDATE userbag
-				   SET sums=abs(sums-1)
-				 WHERE uid='{$_SESSION['id']}' and id='{$book['id']}' and sums>0
-			  ");
-	
-	//$_pm['user']->updateMemUsersk($_SESSION['id']);
-	//$_pm['user']->updateMemUserbag($_SESSION['id']);
-	die('1');
-}else die('0');
-$_pm['mem']->memClose();
-unset($db);
+$storedEffect = skillFlowValue($skillConfig['imgeft'], $currentLevel);
+if (!skillFlowApplyPermanent($uid, $pet, $storedEffect, $storedEffect))
+{
+	skillFlowFail('0');
+}
+
+$sql = 'UPDATE skill SET level='.($currentLevel + 1).
+	',value='.$db->quote(skillFlowValue($skillConfig['ackvalue'], $currentLevel)).
+	',plus='.$db->quote(skillFlowValue($skillConfig['plus'], $currentLevel)).
+	',uhp='.intval(skillFlowValue($skillConfig['uhp'], $currentLevel)).
+	',ump='.intval(skillFlowValue($skillConfig['ump'], $currentLevel)).
+	',img='.$db->quote($storedEffect).
+	' WHERE id='.intval($skill['id']).' AND bid='.$bid.' AND sid='.$id.' AND level='.$currentLevel;
+if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+{
+	skillFlowFail('0');
+}
+
+$sql = 'UPDATE userbag SET sums=sums-1 WHERE uid='.$uid.' AND id='.intval($book['id']).' AND sums>=1';
+if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+{
+	skillFlowFail('2');
+}
+
+skillFlowCommit();
+die('1');
 ?>

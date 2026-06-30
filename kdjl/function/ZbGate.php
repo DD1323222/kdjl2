@@ -73,13 +73,23 @@ else
 	}
 	else
 	{   
-		if ($wp['vary']==2) //不能叠加
+		$_pm['mysql']->query('START TRANSACTION');
+		$_pm['mysql']->query("UPDATE player
+						   SET money=money-{$price}
+						 WHERE id={$_SESSION['id']} and money >= {$price}");
+		if (mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 		{
+			$_pm['mysql']->query('ROLLBACK');
+			$err = 10;
+		}
+		else if ($wp['vary']==2) //不能叠加
+		{
+			$purchaseOk = true;
 			for ($i=0; $i<$n; $i++) // Add to memory.
 			{
 			    //$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
 
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				if ($_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -88,7 +98,13 @@ else
 								   1,
 								   ".time()."
 								  )
-						  ");
+						  ") === false) $purchaseOk = false;
+			}
+			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
+			else
+			{
+				$_pm['mysql']->query('ROLLBACK');
+				$err = 3;
 			}
 		}
 		else
@@ -99,15 +115,15 @@ else
 									");
 			if (is_array($ret))
 			{
-				$_pm['mysql']->query("UPDATE userbag 
+				$purchaseOk = $_pm['mysql']->query("UPDATE userbag 
 							   SET sums=sums+{$n} 
 							 WHERE uid={$_SESSION['id']} and id={$ret['id']} and sums+{$n}>0
-						  ");
+						  ") !== false;
 			}
 			else //create new data
 			{		
 				//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				$purchaseOk = $_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -116,13 +132,15 @@ else
 								   {$n},
 								    ".time()."
 								  );
-						  ");				
+						  ") !== false;				
+			}
+			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
+			else
+			{
+				$_pm['mysql']->query('ROLLBACK');
+				$err = 3;
 			}
 		}
-		$_pm['mysql']->query("UPDATE player 
-					   SET money=money-{$price}
-					 WHERE id={$_SESSION['id']}
-				  ");
 	}	// end inner else
 }
 

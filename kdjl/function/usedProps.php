@@ -3,8 +3,10 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 $csForbiden = array(3160, 3121, 3120, 3119, 3118, 2766, 2763, 2714, 2713, 2712, 2711, 2710, 2709, 2708, 2707, 2706, 2705, 2704, 2703, 2702, 2701, 2700, 2699, 2698, 2697, 2696, 2695, 2694, 2693, 2692, 2691, 2690, 2689, 2688, 2687, 2686, 2685, 2684, 2683, 2682, 2628, 2624, 2623, 2622, 2621, 2620, 2614, 2613, 2612, 2611, 2610, 2609, 2572, 2571, 2570, 2569, 2568, 2567, 2566, 2565, 2564, 2563, 2562, 2560, 2481, 2456, 2413, 2408, 2407, 2406, 2389, 2388, 2387, 2386, 2385, 2313, 2235, 2213, 2207, 2206, 2205, 2204, 2179, 2162, 2147, 2146, 2145, 2144, 2143, 2142, 1972, 1963, 1962, 1961, 1719, 1697, 1696, 1653, 1647, 1574, 1573, 1572, 1571, 1438, 1437, 1424, 1423, 1414, 1326, 1324, 1217, 1163, 1142, 1141, 1137, 1136, 1105, 1104, 914, 913, 912);
 $user = $_pm['user']->getUserById($_SESSION['id']);
-$bags = $bag = $_pm['user']->getUserBagById($_SESSION['id']);
-$id = intval($_REQUEST['id']); // userbag id
+$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0; // userbag id
+
+// Expired items must be removed before the request takes its usable bag snapshot.
+del_bag_expire();
 
 if (isset($_GET['js']) && isset($_GET['pid'])) {
 	$__pid = intval($_GET['pid']);
@@ -15,10 +17,9 @@ if (isset($_GET['js']) && isset($_GET['pid'])) {
 	$id = $sidrow['id'];
 }
 
+$bags = $bag = $_pm['user']->getUserBagById($_SESSION['id']);
 if ($id < 1 || !is_array($bags)) die('物品不存在!');
-del_bag_expire();
 if (lockItem($id) === false) {
-	unLockItem($id);
 	die("已经在处理了");
 }
 
@@ -96,8 +97,8 @@ if ($rs['varyname'] == 9)    //装备系统。
                     ));*/
 			$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
 			$grs = $mempropsid[$rs['pid']];
-			$rs['postion'] = $prs['postion']; // Fix postion.
-			unset($prs);
+			$rs['postion'] = is_array($grs) ? $grs['postion'] : '';
+			unset($grs);
 		}
 
 		if (strlen($bb['zb']) < 2) {
@@ -717,6 +718,13 @@ else if ($rs['varyname'] == 4) {
 		die("没有内存数据！");
 	}
 	$res = rand_num($config);
+	if ($res === false) {
+		$_pm['mysql']->query("UPDATE userbag
+						  SET sums=sums+1
+						WHERE id={$id} and uid={$_SESSION['id']}");
+		unLockItem($id);
+		die('号码生成失败，彩票已经退还，请稍候再试！');
+	}
 	echo '使用成功，获得号码为 ' . $res . ' 详情请到公告牌查看';
 	unLockItem($id);
 }
@@ -759,24 +767,28 @@ else if ($rs['varyname'] == 12) // 宝箱类型。
 	$propsPatter = $rs['effect'];
 	$arr = explode(",", $propsPatter);
 	$task = new task();
+	if (!$_pm['mysql']->query('START TRANSACTION')) {
+		unLockItem($id);
+		die('服务器繁忙，请稍候再试！');
+	}
+	$rewardHandled = false;
 	foreach ($arr as $v) {
 		$newarr = explode(":", $v);
 		if ($newarr[0] == "needkey") {
-			if (is_array($bags)) {
-				foreach ($bags as $y) {
-					if ($y['pid'] == $newarr[1] && $y['sums'] > 0) {
-						$_pm['mysql']->query("UPDATE userbag
-										     SET sums=sums-1
-										   WHERE pid={$newarr[1]} and uid={$_SESSION['id']} and sums>0
-										");
-						$sign = 1;
-					}
-				}
-				if ($sign != 1) {
-					unLockItem($id);
-					die("您没有开启宝箱的钥匙!");
-				}
-			} else {
+			$keyPid = isset($newarr[1]) ? intval($newarr[1]) : 0;
+			$keyRow = $_pm['mysql']->getOneRecord("SELECT id FROM userbag
+												 WHERE uid={$_SESSION['id']} AND pid={$keyPid} AND sums>0
+												 ORDER BY id LIMIT 1 FOR UPDATE");
+			if (!is_array($keyRow)) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die("您没有开启宝箱的钥匙!");
+			}
+			$keyUsed = $_pm['mysql']->query("UPDATE userbag SET sums=sums-1
+												 WHERE id=".intval($keyRow['id'])." AND uid={$_SESSION['id']}
+												   AND pid={$keyPid} AND sums>0");
+			if (!$keyUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($id);
 				die("您没有开启宝箱的钥匙!");
 			}
@@ -789,14 +801,17 @@ else if ($rs['varyname'] == 12) // 宝箱类型。
 			$retstr = '';
 			if (is_array($propslist)) {
 				if ($snum < count($propslist)) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
 					die('背包空间不足！');
 				}
-				$_pm['mysql']->query("UPDATE userbag
+				$boxUsed = $_pm['mysql']->query("UPDATE userbag
 								  SET sums=sums-1
 							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0
 							 ");
 				$result = mysql_affected_rows($_pm['mysql']->getConn());
-				if ($result != 1) {
+				if (!$boxUsed || $result != 1) {
+					$_pm['mysql']->query('ROLLBACK');
 					unLockItem($id);
 					die("您没有相应的物品！");
 				}
@@ -818,7 +833,12 @@ else if ($rs['varyname'] == 12) // 宝箱类型。
 						//}
 					}
 				} // end foreach
-				// del props current bag.
+				if (!$_pm['mysql']->query('COMMIT')) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die('服务器繁忙，请稍候再试！');
+				}
+				$rewardHandled = true;
 				echo $retstr;
 			}
 		} elseif ($newarr[0] == "randitem") {
@@ -826,20 +846,22 @@ else if ($rs['varyname'] == 12) // 宝箱类型。
 			$propslist = explode('|', $patter);
 			$retstr = '';
 			if (is_array($propslist)) {
+				$boxUsed = $_pm['mysql']->query("UPDATE userbag
+								  SET sums=sums-1
+							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0");
+				if (!$boxUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die("您没有相应的物品！");
+				}
 				foreach ($propslist as $k => $v) {
 					$inarr = explode(':', $v);        //	0=> ID, 2=> rand number, 1=> sum props
+					if (count($inarr) < 3 || intval($inarr[0]) < 1 || intval($inarr[1]) < 1 || intval($inarr[2]) < 1) {
+						continue;
+					}
+					if (!isset($inarr[3])) $inarr[3] = 1;
 					if (rand(1, intval($inarr[2])) == 1)    //  rand hits
-					{// del props current bag.
-						$_pm['mysql']->query("UPDATE userbag
-								  SET sums=sums-1
-							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-							 ");
-						$result = mysql_affected_rows($_pm['mysql']->getConn());
-						if ($result != 1) {
-							unLockItem($id);
-							die("您没有相应的物品！");
-						}
-						unset($result);
+					{
 						$prs=getBasePropsInfoById($inarr[0]);
 						$task->saveGetPropsMore($inarr[0], $inarr[1], $rs['pid'],0,$prs);
 						$retstr = '获得道具 ' . $prs['name'] . ' ' . $inarr[1] . ' 个';
@@ -851,9 +873,21 @@ else if ($rs['varyname'] == 12) // 宝箱类型。
 						echo $retstr;
 						break;
 					}
-				} // end foreach
+					} // end foreach
+				if (!$_pm['mysql']->query('COMMIT')) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die('服务器繁忙，请稍候再试！');
+				}
+				$rewardHandled = true;
+				if ($retstr == '') {
+					echo '很遗憾，本次没有获得物品！';
+				}
 			}
 		}
+	}
+	if (!$rewardHandled) {
+		$_pm['mysql']->query('ROLLBACK');
 	}
 }
 else if ($rs['varyname'] == 22) // 宝箱类型。
@@ -880,6 +914,7 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 	}
 	$snum = $user['maxbag'] - $bagNum;
 	if ($snum < 3) {
+		unLockItem($id);
 		die('请留至少三个空格子！');
 	}
 	if ($bagNum >= $user['maxbag']) {
@@ -898,25 +933,28 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 	}
 	$propsPatter = $rs['effect'];
 	$arr = explode(",", $propsPatter);
-
+	if (!$_pm['mysql']->query('START TRANSACTION')) {
+		unLockItem($id);
+		die('服务器繁忙，请稍候再试！');
+	}
+	$rewardHandled = false;
 	foreach ($arr as $v) {
 		$newarr = explode(":", $v);
 		if ($newarr[0] == "needkey") {
-			if (is_array($bags)) {
-				foreach ($bags as $y) {
-					if ($y['pid'] == $newarr[1] && $y['sums'] > 0) {
-						$_pm['mysql']->query("UPDATE userbag
-										     SET sums=sums-1
-										   WHERE pid={$newarr[1]} and uid={$_SESSION['id']} and sums>0
-										");
-						$sign = 1;
-					}
-				}
-				if ($sign != 1) {
-					unLockItem($id);
-					die("您没有占卜的钥匙!");
-				}
-			} else {
+			$keyPid = isset($newarr[1]) ? intval($newarr[1]) : 0;
+			$keyRow = $_pm['mysql']->getOneRecord("SELECT id FROM userbag
+												 WHERE uid={$_SESSION['id']} AND pid={$keyPid} AND sums>0
+												 ORDER BY id LIMIT 1 FOR UPDATE");
+			if (!is_array($keyRow)) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die("您没有占卜的钥匙!");
+			}
+			$keyUsed = $_pm['mysql']->query("UPDATE userbag SET sums=sums-1
+												 WHERE id=".intval($keyRow['id'])." AND uid={$_SESSION['id']}
+												   AND pid={$keyPid} AND sums>0");
+			if (!$keyUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($id);
 				die("您没有占卜的钥匙!");
 			}
@@ -929,14 +967,17 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 			$retstr = '';
 			if (is_array($propslist)) {
 				if ($snum < count($propslist)) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
 					die('背包空间不足！');
 				}
-				$_pm['mysql']->query("UPDATE userbag
+				$stoneUsed = $_pm['mysql']->query("UPDATE userbag
 								  SET sums=sums-1
 							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0
 							 ");
 				$result = mysql_affected_rows($_pm['mysql']->getConn());
-				if ($result != 1) {
+				if (!$stoneUsed || $result != 1) {
+					$_pm['mysql']->query('ROLLBACK');
 					unLockItem($id);
 					die("无相关占卜石，无法满足占卜需要的魔力T_T下次再来吧。");
 				}
@@ -958,7 +999,12 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 						//}
 					}
 				} // end foreach
-				// del props current bag.
+				if (!$_pm['mysql']->query('COMMIT')) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die('服务器繁忙，请稍候再试！');
+				}
+				$rewardHandled = true;
 				echo $retstr;
 			}
 		} elseif ($newarr[0] == "randitem") {
@@ -967,20 +1013,22 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 			$retstr = '';
 			$task = new task();
 			if (is_array($propslist)) {
+				$stoneUsed = $_pm['mysql']->query("UPDATE userbag
+								  SET sums=sums-1
+							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0");
+				if (!$stoneUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die("您没有相应的物品！");
+				}
 				foreach ($propslist as $k => $v) {
 					$inarr = explode(':', $v);        //	0=> ID, 2=> rand number, 1=> sum props
+					if (count($inarr) < 3 || intval($inarr[0]) < 1 || intval($inarr[1]) < 1 || intval($inarr[2]) < 1) {
+						continue;
+					}
+					if (!isset($inarr[3])) $inarr[3] = 1;
 					if (rand(1, intval($inarr[2])) == 1)    //  rand hits
-					{// del props current bag.
-						$_pm['mysql']->query("UPDATE userbag
-								  SET sums=sums-1
-							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-							 ");
-						$result = mysql_affected_rows($_pm['mysql']->getConn());
-						if ($result != 1) {
-							unLockItem($id);
-							die("您没有相应的物品！");
-						}
-						unset($result);
+					{
 						$task->saveGetPropsMore($inarr[0], $inarr[1], $rs['pid']);
 						$prs = $_pm['mysql']->getOneRecord("SELECT name FROM props WHERE id={$inarr[0]}");
 						$retstr = '获得道具 ' . $prs['name'] . ' ' . $inarr[1] . ' 个';
@@ -994,9 +1042,21 @@ else if ($rs['varyname'] == 22) // 宝箱类型。
 						echo $retstr;
 						break;
 					}
-				} // end foreach
+					} // end foreach
+				if (!$_pm['mysql']->query('COMMIT')) {
+					$_pm['mysql']->query('ROLLBACK');
+					unLockItem($id);
+					die('服务器繁忙，请稍候再试！');
+				}
+				$rewardHandled = true;
+				if ($retstr == '') {
+					echo '很遗憾，本次没有获得物品！';
+				}
 			}
 		}
+	}
+	if (!$rewardHandled) {
+		$_pm['mysql']->query('ROLLBACK');
 	}
 }
 else if ($rs['varyname'] == 2) // 增益类
@@ -1004,7 +1064,7 @@ else if ($rs['varyname'] == 2) // 增益类
 	require_once('../sec/dblock_fun.php');
 	$a = getLock($_SESSION['id']);
 	if (!is_array($a)) {
-		realseLock();
+		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($id);
 		die('服务器繁忙，请稍候再试！');
 	}
@@ -1341,299 +1401,570 @@ else if ($rs['varyname'] == 16) // 图纸合成类
 	$arr = explode(':', $rs['effect'], 2);
 	if ($arr[0] == 'hecheng') // 图纸合成 格式：hecheng:(956:10|957:10|958:10|1025:1):1012:1|1013:1
 	{
+		if (!isset($arr[1])) {
+			unLockItem($id);
+			die('图纸配置错误！');
+		}
+		$rarr = explode('):', $arr[1], 2);
+		if (count($rarr) != 2) {
+			unLockItem($id);
+			die('图纸配置错误！');
+		}
+
+		$require = str_replace('(', '', $rarr[0]);
+		$needConfig = array();
+		foreach (explode('|', $require) as $v) {
+			$t = explode(':', $v);
+			if (count($t) != 2 || intval($t[0]) < 1 || intval($t[1]) < 1) {
+				unLockItem($id);
+				die('图纸材料配置错误！');
+			}
+			$needPid = intval($t[0]);
+			$needConfig[$needPid] = isset($needConfig[$needPid])
+				? $needConfig[$needPid] + intval($t[1])
+				: intval($t[1]);
+		}
+
+		$idlist = '';
+		foreach (explode('|', $rarr[1]) as $v) {
+			$gets = explode(':', $v);
+			if (count($gets) != 2 || intval($gets[0]) < 1 || intval($gets[1]) < 1) {
+				unLockItem($id);
+				die('图纸产物配置错误！');
+			}
+			$getPid = intval($gets[0]);
+			$getInfo = $_pm['mysql']->getOneRecord("SELECT id FROM props WHERE id={$getPid}");
+			if (!is_array($getInfo)) {
+				unLockItem($id);
+				die('图纸产物不存在！');
+			}
+			for ($i = 0; $i < intval($gets[1]); $i++) {
+				$idlist .= $idlist == '' ? $getPid : ',' . $getPid;
+			}
+		}
+
 		require_once('../sec/dblock_fun.php');
 		$a = getLock($_SESSION['id']);
 		if (!is_array($a)) {
-			realseLock();
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
 			die('服务器繁忙，请稍候再试！');
 		}
-		$sysl = $_pm['mysql']->getOneRecord(" SELECT sums FROM userbag WHERE sums > 0 AND uid = {$_SESSION['id']} AND  id={$rs['id']}");
-		if (!isset($sysl['sums']) || empty($sysl['sums'])) {
+		$sysl = $_pm['mysql']->getOneRecord("SELECT id,sums
+											 FROM userbag
+											WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0
+											  FOR UPDATE");
+		if (!is_array($sysl)) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die('你的材料不足，无法制作!');
 		}
-		$rarr = explode('):', $arr[1]);
-		$require = str_replace('(', '', $rarr[0]);
-		$getProps = explode('|', $rarr[1]);
 
-		// Check props is exists?
-		$need = explode('|', $require);
-		foreach ($need as $k => $v) {
-			$t = explode(':', $v);
-			$ex = $_pm['mysql']->getOneRecord("SELECT sum(sums) as cnt 
-												  FROM userbag 
-												 WHERE pid ={$t['0']} and uid={$_SESSION['id']}");
-			if ($ex['cnt'] < $t['1']) {
+		$deductions = array();
+		foreach ($needConfig as $needPid => $needCount) {
+			$materialRows = $_pm['mysql']->getRecords("SELECT id,sums
+															 FROM userbag
+															WHERE pid={$needPid} AND uid={$_SESSION['id']} AND sums>0
+														 ORDER BY id
+															FOR UPDATE");
+			$remaining = $needCount;
+			if (is_array($materialRows)) {
+				foreach ($materialRows as $materialRow) {
+					$take = min($remaining, intval($materialRow['sums']));
+					if ($take > 0) {
+						$deductions[] = array('id' => intval($materialRow['id']), 'count' => $take);
+						$remaining -= $take;
+					}
+					if ($remaining == 0) break;
+				}
+			}
+			if ($remaining > 0) {
+				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($id);
 				die('你的材料不足，无法制作！');
 			}
 		}
 
-		// ok, then get props.
-		$idlist = '';
-		foreach ($getProps as $v) {
-			$gets = explode(':', $v);
-			for ($i = 0; $i < $gets['1']; $i++) {
-				$idlist .= $idlist == '' ? $gets[0] : ',' . $gets[0];
+		foreach ($deductions as $deduction) {
+			$materialUsed = $_pm['mysql']->query("UPDATE userbag
+															 SET sums=sums-{$deduction['count']}
+														   WHERE id={$deduction['id']} AND uid={$_SESSION['id']} AND sums>={$deduction['count']}");
+			if (!$materialUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die('服务器繁忙，请稍候再试！');
 			}
 		}
 
-		// clear props
-		$delcount = 0;
-		foreach ($need as $k => $v) {
-			$t = explode(':', $v);
-			$ret = $_pm['mysql']->getRecords("SELECT id,sums
-											  FROM userbag 
-											 WHERE pid ={$t['0']} and uid={$_SESSION['id']}
-											 ORDER by sums
-										  ");
-			//Del props and count num
-			if (is_array($ret)) {
-				foreach ($ret as $k => $v) {
-					if ($v['sums'] < 1) continue;
-					if ($delcount < $t[1]) $del = $t[1] - $delcount;
-					else break;
-					if ($v['sums'] == $del) {
-						// del record
-						$_pm['mysql']->query("UPDATE userbag 
-											   SET sums=0
-											 WHERE id={$v['id']}
-										   ");
-						break;
-					} else if ($v['sums'] < $del) {
-						// del record. $v['sums']
-						$delcount += $v['sums'];
-						$_pm['mysql']->query("UPDATE userbag 
-											   SET sums=0
-											 WHERE id={$v['id']}
-										   ");
-					} else // 减去剩余数值。update.
-					{
-						$v['sums'] = $v['sums'] - $del;
-						// update record.
-						$_pm['mysql']->query("UPDATE userbag 
-											   SET sums={$v['sums']}
-											 WHERE id={$v['id']}
-										  ");
-						break;
-					}
-				}
-			} // end if
-		} // end foreach
-		// clear end
-		$_pm['mysql']->query("UPDATE userbag
-							     SET sums=sums-1
-							   WHERE id={$rs['id']} and uid={$_SESSION['id']} and sums>0
-							");
-		// save props;
+		$recipeUsed = $_pm['mysql']->query("UPDATE userbag
+													 SET sums=sums-1
+												   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$recipeUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('你的材料不足，无法制作!');
+		}
+
 		$tsk = new task();
 		$tsk->saveGetProps($idlist);
-		unLockItem($id);
-		realseLock();
-		die('恭喜您,制作成功!获得了一件物品!');
-	} else if ($arr[0] == 'chongzhu') // 重铸合成 格式：chongzhu:(956|957|958|1025):1012:10|1013:50
-	{
-		require_once('../sec/dblock_fun.php');
-		$a = getLock($_SESSION['id']);
-		if (!is_array($a)) {
-			realseLock();
+		if (mysql_errno($_pm['mysql']->getConn()) != 0 || !$_pm['mysql']->query('COMMIT')) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die('服务器繁忙，请稍候再试！');
 		}
-		$arr = explode('):', $arr[1]);
-		$arr[0] = str_replace('(', '', $arr[0]);
-		$where = 'pid in(' . $arr[0] . ')';
-		$sql = " SELECT id,pid FROM userbag WHERE  uid = '" . $_SESSION['id'] . "' AND sums = 1 AND zbing = 0  AND " . $where;
-		//echo $sql;
+		unLockItem($id);
+		die('恭喜您,制作成功!获得了一件物品!');
+	} else if ($arr[0] == 'chongzhu') // 重铸合成 格式：chongzhu:(956|957|958|1025):1012:10|1013:50
+	{
+		if (!isset($arr[1])) {
+			unLockItem($id);
+			die('重铸配置错误！');
+		}
+		$forgeConfig = explode('):', $arr[1], 2);
+		if (count($forgeConfig) != 2) {
+			unLockItem($id);
+			die('重铸配置错误！');
+		}
+
+		$candidatePids = array();
+		$candidateText = str_replace('(', '', $forgeConfig[0]);
+		foreach (explode(',', $candidateText) as $candidatePid) {
+			$candidatePid = trim($candidatePid);
+			if (!preg_match('/^[0-9]+$/', $candidatePid) || intval($candidatePid) < 1) {
+				unLockItem($id);
+				die('重铸材料配置错误！');
+			}
+			$candidatePids[intval($candidatePid)] = intval($candidatePid);
+		}
+
+		$rewardThresholds = array();
+		foreach (explode('|', $forgeConfig[1]) as $rewardConfig) {
+			$rewardParts = explode('-', $rewardConfig);
+			if (count($rewardParts) != 2 || intval($rewardParts[0]) < 1 || !is_numeric($rewardParts[1])) {
+				unLockItem($id);
+				die('重铸奖励配置错误！');
+			}
+			$rewardPid = intval($rewardParts[0]);
+			$threshold = intval($rewardParts[1]);
+			if ($threshold < 0 || $threshold > 100) {
+				unLockItem($id);
+				die('重铸概率配置错误！');
+			}
+			$rewardInfo = $_pm['mysql']->getOneRecord("SELECT id FROM props WHERE id={$rewardPid}");
+			if (!is_array($rewardInfo)) {
+				unLockItem($id);
+				die('重铸奖励不存在！');
+			}
+			$rewardThresholds[$rewardPid] = $threshold;
+		}
+		if (empty($candidatePids) || empty($rewardThresholds)) {
+			unLockItem($id);
+			die('重铸配置错误！');
+		}
+
+		$lucky_num = rand(0, 100);
+		asort($rewardThresholds, SORT_NUMERIC);
+		$get_pid = 0;
+		foreach ($rewardThresholds as $rewardPid => $threshold) {
+			if ($lucky_num >= $threshold) {
+				$get_pid = intval($rewardPid);
+			}
+		}
+
+		require_once('../sec/dblock_fun.php');
+		$a = getLock($_SESSION['id']);
+		if (!is_array($a)) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+
+		$recipe = $_pm['mysql']->getOneRecord("SELECT id
+															FROM userbag
+														 WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0
+														   FOR UPDATE");
+		if (!is_array($recipe)) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('您没有相应的物品！');
+		}
+
+		$where = 'pid IN(' . implode(',', $candidatePids) . ')';
+		$sql = "SELECT id,pid
+				  FROM userbag
+				 WHERE uid={$_SESSION['id']} AND sums=1 AND zbing=0 AND {$where}
+				 ORDER BY id
+				 FOR UPDATE";
 		$res = $_pm['mysql']->getRecords($sql);
-		if (count($res) < 1 || empty($res) || !is_array($res)) {
+		if (!is_array($res) || count($res) < 1) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die("背包里没有待重铸的物品哦！");
 		}
 		shuffle($res);
-		$sql = " SELECT name FROM props WHERE id = {$res[0][pid]}";
-		$del_name = $_pm['mysql']->getOneRecord($sql);
-		$get_things_arr = explode('|', $arr[1]);
-		for ($i = 0; $i < count($get_things_arr); $i++) {
-			$arr_probability = explode('-', $get_things_arr[$i]);
-			$new_arr[$arr_probability[0]] = $arr_probability[1];
-		}
-		$lucky_num = rand(0, 100);    //为了便于计算概率，最好还是取100
-		//echo $lucky_num."<br>";
-		asort($new_arr);
-		//print_r($new_arr);
-		foreach ($new_arr as $key => $val) {
-			if ($lucky_num >= $val) {
-				$get_pid = $key;
-			}
-		}
-		$sub_p = $_pm['mysql']->query("UPDATE userbag SET sums=sums-1 WHERE id={$rs['id']} and uid={$_SESSION['id']} and sums>0");
-		if ($sub_p) {
-			echo "物品使用成功";
-			$_pm['mysql']->query("DELETE FROM  userbag WHERE id={$res[0][id]} and uid={$_SESSION['id']} ");
-			if (isset($get_pid)) {
+		$targetId = intval($res[0]['id']);
+		$targetPid = intval($res[0]['pid']);
 
-				$sql = " SELECT name,propscolor FROM props WHERE id = {$get_pid}";
-				$get_name = $_pm['mysql']->getOneRecord($sql);
-				$user = $_pm['user']->getUserById($_SESSION['id']);
-				$bag = $_pm['user']->getUserBagById($_SESSION['id']);
-				$card_task = new task;
-				$card_task->saveGetProps($get_pid);
-				if ($get_name['propscolor'] == 6) {
-					$word .= "使用" . $rs['name'] . "重铸得到了" . $get_name['name'];
-					$card_task->saveGword($word);
-				}
-				echo "<br>重铸得到" . $get_name['name'];
-				$str = '重铸成功,消失userbag表id:' . $res[0]['id'] . ',props表id:' . $get_pid . '获得物品:' . $get_name['name'];
-			} else {
-				$card_task = new task;
-				$sql = " SELECT nickname FROM player WHERE id = '" . $_SESSION['id'] . "'";
-				$user_nickname = $_pm['mysql']->getOneRecord($sql);
-				//$word ="木得语言了,顶好的".$del_name['name']."被玩家".$user_nickname['nickname']."重铸过后,就这么木有了";
-				//$card_task->saveGword($word,1);
-				$str = '重铸失败消失userbag表id:' . $res[0]['id'] . ',props表id:' . $get_pid;
-			}
-			//需要日志
-			$_pm['mysql']->query("INSERT INTO gamelog (seller,buyer,ptime,pnote,vary) VALUES({$_SESSION['id']},{$_SESSION['id']}," . time() . ",'$str',177)");
-			realseLock();
+		$recipeUsed = $_pm['mysql']->query("UPDATE userbag
+													 SET sums=sums-1
+												   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$recipeUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
-		} else {
-			unLockItem($id);
-			die("出问题啦,扣物失败");
+			die('您没有相应的物品！');
 		}
-	} else if ($arr[0] == 'random_combine') {
-		require_once('../sec/dblock_fun.php');
-		$a = getLock($_SESSION['id']);
-		if (!is_array($a)) {
-			realseLock();
+
+		$targetUsed = $_pm['mysql']->query("DELETE FROM userbag
+													WHERE id={$targetId} AND uid={$_SESSION['id']} AND sums=1 AND zbing=0");
+		if (!$targetUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('重铸物品扣除失败！');
+		}
+
+		$get_name = false;
+		$card_task = new task();
+		if ($get_pid > 0) {
+			$get_name = $_pm['mysql']->getOneRecord("SELECT name,propscolor FROM props WHERE id={$get_pid}");
+			if (!is_array($get_name)) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die('重铸奖励不存在！');
+			}
+			$user = $_pm['user']->getUserById($_SESSION['id']);
+			$bag = $_pm['user']->getUserBagById($_SESSION['id']);
+			$card_task->saveGetProps($get_pid);
+			if (mysql_errno($_pm['mysql']->getConn()) != 0) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die('重铸奖励发放失败！');
+			}
+		}
+
+		if (!$_pm['mysql']->query('COMMIT')) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die('服务器繁忙，请稍候再试！');
 		}
-		$sysl = $_pm['mysql']->getOneRecord(" SELECT sums FROM userbag WHERE sums > 0 AND uid = {$_SESSION['id']} AND  id={$rs['id']}");
-		if (!isset($sysl['sums']) || empty($sysl['sums'])) {
+
+		echo '物品使用成功';
+		if (is_array($get_name)) {
+			if (intval($get_name['propscolor']) == 6) {
+				$card_task->saveGword('使用' . $rs['name'] . '重铸得到了' . $get_name['name']);
+			}
+			echo '<br>重铸得到' . $get_name['name'];
+			$str = '重铸成功,消失userbag表id:' . $targetId . ',props表id:' . $targetPid . ',获得物品:' . $get_name['name'];
+		} else {
+			$str = '重铸失败,消失userbag表id:' . $targetId . ',props表id:' . $targetPid;
+		}
+		$logText = $_pm['mysql']->escape($str);
+		$_pm['mysql']->query("INSERT INTO gamelog (seller,buyer,ptime,pnote,vary)
+											VALUES ({$_SESSION['id']},{$_SESSION['id']}," . time() . ",'{$logText}',177)");
+		unLockItem($id);
+	} else if ($arr[0] == 'random_combine') {
+		if (!isset($arr[1])) {
+			unLockItem($id);
+			die('随机合成配置错误！');
+		}
+		$settings_of_gain = explode(';', $arr[1]);
+		if (count($settings_of_gain) != 2) {
+			unLockItem($id);
+			die('随机合成配置错误！');
+		}
+
+		$needConfig = array();
+		foreach (explode('|', $settings_of_gain[0]) as $idx => $it_need) {
+			$it_need_setting = explode(',', $it_need);
+			if (count($it_need_setting) != 2 || !preg_match('/^[0-9]+$/', $it_need_setting[0])
+				|| !preg_match('/^[0-9]+$/', $it_need_setting[1]) || intval($it_need_setting[0]) < 1
+				|| intval($it_need_setting[1]) < 1) {
+				unLockItem($id);
+				die('需要物品设定第' . $idx . '条错误!');
+			}
+			$needPid = intval($it_need_setting[0]);
+			$needConfig[$needPid] = isset($needConfig[$needPid])
+				? $needConfig[$needPid] + intval($it_need_setting[1])
+				: intval($it_need_setting[1]);
+		}
+
+		$gainConfigs = array();
+		$gainPids = array();
+		foreach (explode('|', $settings_of_gain[1]) as $idx => $it_gain) {
+			$it_gain_setting = explode(',', $it_gain);
+			if (count($it_gain_setting) != 4
+				|| !preg_match('/^[0-9]+$/', $it_gain_setting[0])
+				|| !preg_match('/^[0-9]+$/', $it_gain_setting[1])
+				|| !preg_match('/^[0-9]+$/', $it_gain_setting[2])
+				|| !preg_match('/^[0-9]+$/', $it_gain_setting[3])) {
+				unLockItem($id);
+				die('获得物品设定第' . $idx . '条错误!');
+			}
+			$gainPid = intval($it_gain_setting[0]);
+			$gainChance = intval($it_gain_setting[1]);
+			$gainCount = intval($it_gain_setting[2]);
+			$gainNotice = intval($it_gain_setting[3]);
+			if ($gainPid < 1 || $gainChance > 100 || $gainCount < 1) {
+				unLockItem($id);
+				die('获得物品设定第' . $idx . '条错误!');
+			}
+			$gainConfigs[] = array(
+				'pid' => $gainPid,
+				'chance' => $gainChance,
+				'count' => $gainCount,
+				'notice' => $gainNotice
+			);
+			$gainPids[$gainPid] = $gainPid;
+		}
+
+		$gainNames = array();
+		if (!empty($gainPids)) {
+			$gainRows = $_pm['mysql']->getRecords('SELECT id,name FROM props WHERE id IN(' . implode(',', $gainPids) . ')');
+			if (is_array($gainRows)) {
+				foreach ($gainRows as $gainRow) {
+					$gainNames[intval($gainRow['id'])] = $gainRow['name'];
+				}
+			}
+		}
+		if (count($gainNames) != count($gainPids)) {
+			unLockItem($id);
+			die('随机合成奖励物品不存在！');
+		}
+
+		require_once('../sec/dblock_fun.php');
+		$a = getLock($_SESSION['id']);
+		if (!is_array($a)) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+
+		$sysl = $_pm['mysql']->getOneRecord("SELECT id,sums
+											 FROM userbag
+											WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0
+											  FOR UPDATE");
+		if (!is_array($sysl)) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die('你的材料不足，无法制作!');
 		}
-		$settings_of_gain = explode(';', $arr[1]);
-		$items_need = explode('|', $settings_of_gain[0]);
-		$items_gain = explode('|', $settings_of_gain[1]);
 
-		$sqls_remove_item = array();
-		foreach ($items_need as $idx => $it_need) {
-			$it_need_setting = explode(',', $it_need);
-			if (count($it_need_setting) != 2 || $it_need_setting[1] < 1 || $it_need_setting[0] < 1) {
-				unLockItem($id);
-				die("需要物品设定第" . $idx . "条错误!");
+		$deductions = array();
+		foreach ($needConfig as $needPid => $needCount) {
+			$materialRows = $_pm['mysql']->getRecords("SELECT id,sums
+															 FROM userbag
+															WHERE pid={$needPid} AND uid={$_SESSION['id']} AND sums>0
+														 ORDER BY id
+															FOR UPDATE");
+			$remaining = $needCount;
+			if (is_array($materialRows)) {
+				foreach ($materialRows as $materialRow) {
+					$take = min($remaining, intval($materialRow['sums']));
+					if ($take > 0) {
+						$deductions[] = array('id' => intval($materialRow['id']), 'count' => $take);
+						$remaining -= $take;
+					}
+					if ($remaining == 0) break;
+				}
 			}
-			$row = $_pm['mysql']->getOneRecord('select id,sums from userbag where uid=' . $_SESSION['id'] . ' and sums>=' . $it_need_setting[1] . ' and pid=' . $it_need_setting[0]);
-			if (!$row) {
+			if ($remaining > 0) {
+				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($id);
-				die("需要的物品不够数量!");
+				die('需要的物品不够数量!');
 			}
-			$_pm['mysql']->query('select * from userbag where id=' . $row['id'] . ' for update');
-			//$sqls_remove_item[]='update userbag set sums='.($row['sums']-$it_need_setting[1]>-1?$row['sums']-$it_need_setting[1]:0).' where id='.$row['id'];
-			$sqls_remove_item[] = 'update userbag set sums=sums - ' . $it_need_setting[1] . ' where id=' . $row['id'] . ' and sums >=' . $it_need_setting[1];
 		}
 
-		$gainFlag = false;
-		$msg = "";
-		foreach ($items_gain as $idx => $it_gain) {
-			$it_gain_setting = explode(',', $it_gain);
-			$rand = rand(0, 100);
-			if ($rand <= $it_gain_setting[1]) {
-				$tsk = new task();
-				if (!isset($mempropsid)) $mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-				if (!isset($mempropsid[$it_gain_setting[0]])) {
-					unLockItem($id);
-					die("获得物品设定第" . $idx . "条错误,物品" . $it_gain_setting[0] . "不存在!");
-				}
-				$tsk->saveGetPropsMore($it_gain_setting[0], $it_gain_setting[2]);
-				$msg .= '成功合成:' . $mempropsid[$it_gain_setting[0]]['name'] . " " . $it_gain_setting[2] . '件!<br/>';
-				if ($it_gain_setting[3] > 0) {
-					$tsk->saveGword('成功合成:' . $mempropsid[$it_gain_setting[0]]['name'] . " " . $it_gain_setting[2] . '件!');
-				}
-				$gainFlag = true;
-				break;
-			}
-		}
-		if ($msg == "") {
-			$msg = "很遗憾,合成失败,没有获得任何物品!";
-		}
-		//只要数量够,都要扣除物品
-		foreach ($sqls_remove_item as $sql) {
-			$_pm['mysql']->query($sql);
-			if (mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+		foreach ($deductions as $deduction) {
+			$materialUsed = $_pm['mysql']->query("UPDATE userbag
+															 SET sums=sums-{$deduction['count']}
+														   WHERE id={$deduction['id']} AND uid={$_SESSION['id']} AND sums>={$deduction['count']}");
+			if (!$materialUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($id);
 				die('系统繁忙，请稍候操作！');
 			}
 		}
 
-		if ($error = mysql_error()) {
+		$recipeUsed = $_pm['mysql']->query("UPDATE userbag
+													 SET sums=sums-1
+												   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$recipeUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
-			die("出现错误:" . $error);
+			die('你的材料不足，无法制作!');
 		}
-		$_pm['mysql']->query("UPDATE userbag
-							     SET sums=sums-1
-							   WHERE id={$rs['id']} and uid={$_SESSION['id']} and sums>0
-							");
 
-		realseLock();
+		$selectedGain = false;
+		foreach ($gainConfigs as $gainConfig) {
+			if (rand(1, 100) <= $gainConfig['chance']) {
+				$selectedGain = $gainConfig;
+				break;
+			}
+		}
+
+		$tsk = new task();
+		if (is_array($selectedGain)) {
+			$tsk->saveGetPropsMore($selectedGain['pid'], $selectedGain['count']);
+			if (mysql_errno($_pm['mysql']->getConn()) != 0) {
+				$_pm['mysql']->query('ROLLBACK');
+				unLockItem($id);
+				die('合成奖励发放失败！');
+			}
+		}
+
+		if (!$_pm['mysql']->query('COMMIT')) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+
+		if (is_array($selectedGain)) {
+			$msg = '成功合成:' . $gainNames[$selectedGain['pid']] . ' ' . $selectedGain['count'] . '件!<br/>';
+			if ($selectedGain['notice'] > 0) {
+				$tsk->saveGword('成功合成:' . $gainNames[$selectedGain['pid']] . ' ' . $selectedGain['count'] . '件!');
+			}
+		} else {
+			$msg = '很遗憾,合成失败,没有获得任何物品!';
+		}
 		unLockItem($id);
 		die($msg);
 	}
 }
 else if ($rs['varyname'] == 15) // 宠物卵
 {
-	require_once('../sec/dblock_fun.php');
-	$a = getLock($_SESSION['id']);
-	if (!is_array($a)) {
-		realseLock();
+	$petConfig = explode(':', $rs['effect']);
+	if (count($petConfig) != 2 || $petConfig[0] != 'openpet' || intval($petConfig[1]) < 1) {
 		unLockItem($id);
-		die('服务器繁忙，请稍候再试！');
+		die('宠物卵数据错误，使用失败！');
 	}
-	$allbb = $_pm['user']->getUserPetById($_SESSION['id']);
-	$all = 0;
-	if (is_array($allbb)) {
-		foreach ($allbb as $x => $y) {
-			if ($y['muchang'] != 0) continue;
-			$all++;
-		}
-		if ($all >= 3) {
-			unLockItem($id);
-			die("您只能携带3个宝宝,使用道具失败！<br/>[系统推荐]：您可以把身上携带的宝宝放入到牧场！");
-		}
-	}
+	$newpetsid = intval($petConfig[1]);
 
-	//$_pm['mysql']->query("START TRANSACTION;");
-	$_pm['mysql']->query("UPDATE userbag
-								  SET sums=sums-1
-							 WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-							 ");
-	$result = mysql_affected_rows($_pm['mysql']->getConn());
-	if ($result != 1) {
-		unLockItem($id);
-		//$_pm['mysql']->query("ROLLBACK;");
-		die("您没有相应的物品！");
-	}
-	unset($result);
-	$arr = explode(':', $rs['effect']);
-	if ($arr[0] == "openpet") $newpetsid = $arr[1];
-
-	// 根据宝宝ID，生成宝宝属性并插入数据给到玩家数据包。
-	#########################################################################################
-	// Get new bb info.
 	$bb = $_pm['mem']->dataGet(array('k' => MEM_BB_KEY,
 		'v' => "if(\$rs['id'] == '{$newpetsid}') \$ret=\$rs;"
 	));
+	if (!is_array($bb) || intval($bb['id']) < 1 || trim($bb['name']) == '' || trim($bb['name']) == '0'
+		|| intval($bb['wx']) < 1) {
+		unLockItem($id);
+		die('宠物资料不存在或不完整，使用失败！');
+	}
 
 	$czl = getCzl($bb['czl']);
+	if ($czl === false || $czl <= 0) {
+		unLockItem($id);
+		die('宠物成长配置错误，使用失败！');
+	}
 
-	// insert into userbb.
-	//$bbid= $newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbb');
+	$initialSkills = array();
+	$skillList = isset($bb['skillist']) ? trim($bb['skillist']) : '';
+	if ($skillList != '' && $skillList != '0') {
+		foreach (explode(',', $skillList) as $skillConfig) {
+			if ($skillConfig === '0' || $skillConfig === '') continue;
+			$skillParts = explode(':', $skillConfig);
+			if (count($skillParts) != 2 || !preg_match('/^[0-9]+$/', $skillParts[0])
+				|| !preg_match('/^[0-9]+$/', $skillParts[1]) || intval($skillParts[0]) < 1
+				|| intval($skillParts[1]) < 1) {
+				unLockItem($id);
+				die('宠物初始技能配置错误，使用失败！');
+			}
+
+			$skillId = intval($skillParts[0]);
+			$skillLevel = intval($skillParts[1]);
+			$jn = $_pm['mem']->dataGet(array('k' => MEM_SKILLSYS_KEY,
+				'v' => "if(\$rs['id'] == '{$skillId}') \$ret=\$rs;"
+			));
+			if (!is_array($jn) || intval($jn['id']) != $skillId) {
+				unLockItem($id);
+				die('宠物初始技能资料不存在，使用失败！');
+			}
+
+			$skillIndex = $skillLevel - 1;
+			$ackValues = explode(',', isset($jn['ackvalue']) ? $jn['ackvalue'] : '');
+			$plusValues = explode(',', isset($jn['plus']) ? $jn['plus'] : '');
+			$uhpValues = explode(',', isset($jn['uhp']) ? $jn['uhp'] : '');
+			$umpValues = explode(',', isset($jn['ump']) ? $jn['ump'] : '');
+			$imgValues = explode(',', isset($jn['imgeft']) ? $jn['imgeft'] : '');
+			if (!isset($ackValues[$skillIndex]) || !isset($uhpValues[$skillIndex]) || !isset($umpValues[$skillIndex])) {
+				unLockItem($id);
+				die('宠物初始技能等级配置错误，使用失败！');
+			}
+
+			$initialSkills[] = array(
+				'id' => $skillId,
+				'name' => isset($jn['name']) ? $jn['name'] : '',
+				'level' => $skillLevel,
+				'vary' => isset($jn['vary']) ? $jn['vary'] : '',
+				'wx' => isset($jn['wx']) ? intval($jn['wx']) : 0,
+				'value' => $ackValues[$skillIndex],
+				'plus' => isset($plusValues[$skillIndex]) ? $plusValues[$skillIndex] : '',
+				'img' => isset($imgValues[$skillIndex]) ? $imgValues[$skillIndex] : '',
+				'uhp' => intval($uhpValues[$skillIndex]),
+				'ump' => intval($umpValues[$skillIndex])
+			);
+		}
+	}
+
+	require_once('../sec/dblock_fun.php');
+	$a = getLock($_SESSION['id']);
+	if (!is_array($a)) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('服务器繁忙，请稍候再试！');
+	}
+
+	$carriedPets = $_pm['mysql']->getRecords("SELECT id
+															 FROM userbb
+															WHERE uid={$_SESSION['id']} AND muchang=0
+															  FOR UPDATE");
+	if ($carriedPets === false && mysql_errno($_pm['mysql']->getConn()) != 0) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('服务器繁忙，请稍候再试！');
+	}
+	$carriedCount = is_array($carriedPets) ? count($carriedPets) : 0;
+	if ($carriedCount >= 3) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die("您只能携带3个宝宝,使用道具失败！<br/>[系统推荐]：您可以把身上携带的宝宝放入到牧场！");
+	}
+
+	$eggRow = $_pm['mysql']->getOneRecord("SELECT id
+														FROM userbag
+													 WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0
+													   FOR UPDATE");
+	if (!is_array($eggRow)) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('您没有相应的物品！');
+	}
+	$eggUsed = $_pm['mysql']->query("UPDATE userbag
+													 SET sums=sums-1
+												   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+	if (!$eggUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('您没有相应的物品！');
+	}
 
 	$uinfo = $user;
+	$petName = $_pm['mysql']->escape($bb['name']);
+	$petUsername = $_pm['mysql']->escape(isset($uinfo['nickname']) ? $uinfo['nickname'] : (isset($_SESSION['username']) ? $_SESSION['username'] : ''));
+	$skillListSql = $_pm['mysql']->escape($skillList);
+	$remakeLevel = $_pm['mysql']->escape(isset($bb['remakelevel']) ? $bb['remakelevel'] : '');
+	$remakeId = $_pm['mysql']->escape(isset($bb['remakeid']) ? $bb['remakeid'] : '');
+	$remakePid = $_pm['mysql']->escape(isset($bb['remakepid']) ? $bb['remakepid'] : '');
+	$petAc = $_pm['mysql']->escape(isset($bb['ac']) ? $bb['ac'] : '0');
+	$petMc = $_pm['mysql']->escape(isset($bb['mc']) ? $bb['mc'] : '0');
+	$petHp = $_pm['mysql']->escape(isset($bb['hp']) ? $bb['hp'] : '0');
+	$petMp = $_pm['mysql']->escape(isset($bb['mp']) ? $bb['mp'] : '0');
+	$petNowExp = $_pm['mysql']->escape(isset($bb['nowexp']) ? $bb['nowexp'] : '0');
+	$petImgStand = $_pm['mysql']->escape(isset($bb['imgstand']) ? $bb['imgstand'] : '');
+	$petImgAck = $_pm['mysql']->escape(isset($bb['imgack']) ? $bb['imgack'] : '');
+	$petImgDie = $_pm['mysql']->escape(isset($bb['imgdie']) ? $bb['imgdie'] : '');
+	$petHits = $_pm['mysql']->escape(isset($bb['hits']) ? $bb['hits'] : '0');
+	$petMiss = $_pm['mysql']->escape(isset($bb['miss']) ? $bb['miss'] : '0');
+	$petSpeed = $_pm['mysql']->escape(isset($bb['speed']) ? $bb['speed'] : '0');
+	$petKx = $_pm['mysql']->escape(isset($bb['kx']) ? $bb['kx'] : '0');
 
-	$_pm['mysql']->query("INSERT INTO userbb(
+	$petInserted = $_pm['mysql']->query("INSERT INTO userbb(
 									   name,
 									   uid,
 									   username,
@@ -1666,119 +1997,124 @@ else if ($rs['varyname'] == 15) // 宠物卵
 									   effectimg
 									  )
 					VALUES(
-						   '{$bb['name']}',
-						   '{$uinfo['id']}',
-						   '{$uinfo['nickname']}',
-						   '1',
-						   '{$bb['wx']}',
-						   '{$bb['ac']}',
-						   '{$bb['mc']}',
-						   '{$bb['hp']}',
-						   '{$bb['hp']}',
-						   '{$bb['mp']}',
-						   '{$bb['mp']}',
-						   '{$bb['skillist']}',
-						   unix_timestamp(),
-						   '{$bb['nowexp']}',
-						   '100',
-						   '{$bb['imgstand']}',
-						   '{$bb['imgack']}',
-						   '{$bb['imgdie']}',
-						   '{$bb['hits']}',
-						   '{$bb['miss']}',
-						   '{$bb['speed']}',
-						   '{$bb['kx']}',
-						   '{$bb['remakelevel']}',
-						   '{$bb['remakeid']}',
-						   '{$bb['remakepid']}',
-						   '0',
-						   '{$czl}',
-						   't{$bb['id']}.gif',
+					   '{$petName}',
+					   '{$_SESSION['id']}',
+					   '{$petUsername}',
+					   '1',
+					   '" . intval($bb['wx']) . "',
+					   '{$petAc}',
+					   '{$petMc}',
+					   '{$petHp}',
+					   '{$petHp}',
+					   '{$petMp}',
+					   '{$petMp}',
+					   '{$skillListSql}',
+					   unix_timestamp(),
+					   '{$petNowExp}',
+					   '100',
+					   '{$petImgStand}',
+					   '{$petImgAck}',
+					   '{$petImgDie}',
+					   '{$petHits}',
+					   '{$petMiss}',
+					   '{$petSpeed}',
+					   '{$petKx}',
+					   '{$remakeLevel}',
+					   '{$remakeId}',
+					   '{$remakePid}',
+					   '0',
+					   '" . floatval($czl) . "',
+					   't{$bb['id']}.gif',
 						   'k{$bb['id']}.gif',
 						   'q{$bb['id']}.gif'
 						   )
 				  ");
-
-	$jnall = split(",", $bb['skillist']);
-	foreach ($jnall as $a => $b) {
-		$arr = split(":", $b);
-		// Get jn info.
-		$jn = $_pm['mem']->dataGet(array('k' => MEM_SKILLSYS_KEY,
-			'v' => "if(\$rs['id'] == '{$arr[0]}') \$ret=\$rs;"
-		));
-		// #################################################
-		// if ($jn['ackvalue'] == '') continue; // 增加辅助技能。
-		//##################################################
-
-		$ack = split(",", $jn['ackvalue']);
-		$plus = split(",", $jn['plus']);
-		$uhp = split(",", $jn['uhp']);
-		$ump = split(",", $jn['ump']);
-		$img = split(",", $jn['imgeft']);
-
-		// Insert userbb jn.
-		//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'skill');
-		/*获取刚插入宠物ID。*/
-		$newbb = $_pm['mysql']->getOneRecord("SELECT id 
-										  FROM userbb
-										 WHERE uid={$_SESSION['id']}
-										 ORDER BY stime DESC
-										 LIMIT 0,1			                                         
-									  ");
-		$bbid = $newbb['id'];
-		$szid=$arr['1']-1;
-		$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
-						VALUES(
-							   '{$bbid}',
-							   '{$jn['name']}',
-							   '{$arr['1']}',
-							   '{$jn['vary']}',
-							   '{$jn['wx']}',
-							   '{$ack[$szid]}',
-							   '{$plus[$szid]}',
-							   '{$img[$szid]}',
-							   '{$uhp[$szid]}',
-							   '{$ump[$szid]}',
-							   '{$jn['id']}'
-							  )
-					  ");
+	if (!$petInserted || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('宠物生成失败，道具数量未减少！');
+	}
+	$bbid = $_pm['mysql']->last_id();
+	if ($bbid < 1) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('宠物生成失败，道具数量未减少！');
 	}
 
-	// sub props sum.
-	realseLock();
-	echo "使用道具成功!";
-	// $_pm['mysql']->query("COMMIT;");
-	//#######################################################################################
+	foreach ($initialSkills as $initialSkill) {
+		$skillName = $_pm['mysql']->escape($initialSkill['name']);
+		$skillVary = $_pm['mysql']->escape($initialSkill['vary']);
+		$skillValue = $_pm['mysql']->escape($initialSkill['value']);
+		$skillPlus = $_pm['mysql']->escape($initialSkill['plus']);
+		$skillImg = $_pm['mysql']->escape($initialSkill['img']);
+		$skillInserted = $_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
+						VALUES(
+							   '{$bbid}',
+							   '{$skillName}',
+							   '{$initialSkill['level']}',
+							   '{$skillVary}',
+							   '{$initialSkill['wx']}',
+							   '{$skillValue}',
+							   '{$skillPlus}',
+							   '{$skillImg}',
+							   '{$initialSkill['uhp']}',
+							   '{$initialSkill['ump']}',
+							   '{$initialSkill['id']}'
+							  )
+					  ");
+		if (!$skillInserted || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('宠物技能生成失败，道具数量未减少！');
+		}
+	}
+
+	if (!$_pm['mysql']->query('COMMIT')) {
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($id);
+		die('服务器繁忙，请稍候再试！');
+	}
+	echo '使用道具成功!';
 }
 else if ($rs['varyname'] == 14) // 军功令，换取军功
 {
 	require_once('../sec/dblock_fun.php');
 	$a = getLock($_SESSION['id']);
 	if (!is_array($a)) {
-		realseLock();
+		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($id);
 		die('服务器繁忙，请稍候再试！');
 	}
 	$arr = explode(':', $rs['effect']);
-	if ($arr[0] == "jg") {
-		$sql = "SELECT jgvalue FROM battlefield_user WHERE uid = {$_SESSION['id']}";
+	if ($arr[0] == "jg" && isset($arr[1]) && intval($arr[1]) > 0) {
+		$jgValue = intval($arr[1]);
+		$sql = "SELECT jgvalue FROM battlefield_user WHERE uid = {$_SESSION['id']} FOR UPDATE";
 		$row = $_pm['mysql']->getOneRecord($sql);
 		if (!is_array($row)) {
+			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($id);
 			die("您目前没有参加战场活动，不能使用此道具！");
 		}
-		$_pm['mysql']->query("UPDATE battlefield_user
-		                         SET jgvalue=jgvalue+{$arr[1]}
+		$itemUsed = $_pm['mysql']->query("UPDATE userbag
+									 SET sums=sums-1
+								   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$itemUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('您没有相应的物品！');
+		}
+		$meritUpdated = $_pm['mysql']->query("UPDATE battlefield_user
+		                         SET jgvalue=jgvalue+{$jgValue}
 							   WHERE uid={$_SESSION['id']}
 							");
-		// sub props sum.
-		$_pm['mysql']->query("UPDATE userbag
-						   SET sums=sums-1
-						   WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-						  ");
-		realseLock();
-		echo "恭喜您，使用道具成功，您获得了 {$arr[1]} 点军功！";
+		if (!$meritUpdated || mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT')) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+		echo "恭喜您，使用道具成功，您获得了 {$jgValue} 点军功！";
 	} else {
+		$_pm['mysql']->query('ROLLBACK');
 		echo '道具使用失败！';
 	}
 
@@ -1786,25 +2122,36 @@ else if ($rs['varyname'] == 14) // 军功令，换取军功
 else if ($rs['varyname'] == 55) // 天赋类
 {
 	$arr = explode(':', $rs['effect']);
-	if ($arr[0] == "xidian") {
-		$sql = "SELECT id FROM war_player WHERE id = {$_SESSION['id']}";
+	if ($arr[0] == "xidian" && isset($arr[1]) && intval($arr[1]) > 0) {
+		$washCount = intval($arr[1]);
+		if (!$_pm['mysql']->query('START TRANSACTION')) {
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+		$sql = "SELECT id FROM war_player WHERE id = {$_SESSION['id']} FOR UPDATE";
 		$row = $_pm['mysql']->getOneRecord($sql);
-		if (!is_array($row))
-			$_pm['mysql']->query("INSERT INTO war_player (`id`, wash_talent_count) VALUES 
-                                    ({$_SESSION['id']}, {$arr[1]})
-                            ");
-		else
-			$_pm['mysql']->query("UPDATE war_player
-                                 SET wash_talent_count=wash_talent_count+{$arr[1]}
-                               WHERE id={$_SESSION['id']}
-                            ");
-
-		// sub props sum.
-		$_pm['mysql']->query("UPDATE userbag
-                           SET sums=sums-1
-                           WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-                          ");
-		echo "恭喜您，使用道具成功，您获得了 {$arr[1]} 点洗点次数！";
+		$itemUsed = $_pm['mysql']->query("UPDATE userbag
+									 SET sums=sums-1
+								   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$itemUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('您没有相应的物品！');
+		}
+		if (!is_array($row)) {
+			$washUpdated = $_pm['mysql']->query("INSERT INTO war_player (`id`, wash_talent_count) VALUES
+														({$_SESSION['id']}, {$washCount})");
+		} else {
+			$washUpdated = $_pm['mysql']->query("UPDATE war_player
+								 SET wash_talent_count=wash_talent_count+{$washCount}
+							   WHERE id={$_SESSION['id']}");
+		}
+		if (!$washUpdated || mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT')) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+		echo "恭喜您，使用道具成功，您获得了 {$washCount} 点洗点次数！";
 	} else {
 		echo '道具使用失败！';
 	}
@@ -1814,19 +2161,20 @@ else if ($rs['varyname'] == 57) // 增加携带宠物数量类
 	$arr = explode(':', $rs['effect']);
 
 	if (
-		in_array($arr[0], array('xiedaibb21', 'xiedaibb31', 'xiedaibb20', 'xiedaibb30'))
+		isset($arr[0]) && in_array($arr[0], array('xiedaibb21', 'xiedaibb31', 'xiedaibb20', 'xiedaibb30'))
 
 	) {
 		$xdnum = 1;
 		$xdtime = 0;
+		$now = time();
 		switch ($arr[0]) {
 			case 'xiedaibb21':
 				$xdnum = 2;
-				$xdtime = time() + 3600 * 24 * 30;
+				$xdtime = $now + 3600 * 24 * 30;
 				break;
 			case 'xiedaibb31':
 				$xdnum = 3;
-				$xdtime = time() + 3600 * 24 * 30;
+				$xdtime = $now + 3600 * 24 * 30;
 				break;
 			case 'xiedaibb20':
 				$xdnum = 2;
@@ -1839,61 +2187,86 @@ else if ($rs['varyname'] == 57) // 增加携带宠物数量类
 		}
 
 		$xdtimestr = $xdtime == 0 ? "永久" : date("Y/m/d H:i", $xdtime);
-		$sql = "SELECT max_take_pet_num_save,max_take_pet_num, take_pet_limit_time FROM war_player WHERE id = {$_SESSION['id']}";
-		$row = $_pm['mysql']->getOneRecord($sql);
+		if (!$_pm['mysql']->query('START TRANSACTION')) {
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
 
-		if ($row['take_pet_limit_time'] < time() && $row['take_pet_limit_time'] > 0)//处理过期
-		{
-			$_pm['mysql']->query("
-							   UPDATE war_player
-                                 SET max_take_pet_num=max_take_pet_num_save,take_pet_limit_time=0
-                               WHERE id={$_SESSION['id']}
-                            ");
+		$sql = "SELECT max_take_pet_num_save,max_take_pet_num,take_pet_limit_time
+				  FROM war_player
+				 WHERE id={$_SESSION['id']}
+				 FOR UPDATE";
+		$row = $_pm['mysql']->getOneRecord($sql);
+		if ($row === false && mysql_errno($_pm['mysql']->getConn()) != 0) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('服务器繁忙，请稍候再试！');
+		}
+
+		if (is_array($row) && $row['take_pet_limit_time'] < $now && $row['take_pet_limit_time'] > 0) {
 			$row['take_pet_limit_time'] = 0;
 			$row['max_take_pet_num'] = $row['max_take_pet_num_save'];
 		}
 
-		if ($row['max_take_pet_num'] > 2 && $row['take_pet_limit_time'] == 0) {
+		if (is_array($row) && $row['max_take_pet_num'] > 2 && $row['take_pet_limit_time'] == 0) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
 			die("您可以携带的宠物数量已经到最大值。");
 		}
 
-		if ($row['take_pet_limit_time'] > time() && !isset($_GET['cofxiedaibb'])) {
+		if (is_array($row) && $row['take_pet_limit_time'] > $now && !isset($_GET['cofxiedaibb'])) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
 			die('您目前可以携带' . $row['max_take_pet_num'] . '只宝宝，到期时间为：' . date("Y/m/d H:i", $row['take_pet_limit_time']) . '；<br/><font color="#f00">如果继续这个状态将被覆盖，</font><br/>确定请点<a href="javascript:bid=\'' . $id . '&cofxiedaibb=1\';Used();setTimeout(\'bid=' . $id . '\',500);this.style.display=\'none\';void(0);"><strong>继续</strong></a>。');
 		}
 
-		$_pm['mysql']->query("START TRANSACTION");
+		$itemUsed = $_pm['mysql']->query("UPDATE userbag
+										 SET sums=sums-1
+									   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$itemUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql']->query('ROLLBACK');
+			unLockItem($id);
+			die('您没有相应的物品！');
+		}
 
 		if (!is_array($row)) {
-			//echo "********************************************";
-			$row_czl = $_pm['mysql']->getOneRecord("select czl,wx from userbb where uid=" . $_SESSION['id'] . " order by czl desc");
-			$_pm['mysql']->query("INSERT INTO war_player (`id`,name, max_take_pet_num, take_pet_limit_time,grow_up,wuxing) VALUES 
-                                    ({$_SESSION['id']}, '" . $_SESSION['username'] . "'," . $xdnum . "," . $xdtime . "," . $row_czl['czl'] . "," . $row_czl['wx'] . ")
-                            ");
-			$_pm['mysql']->query("UPDATE userbag
-                               SET sums=sums-1
-                               WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-                              ");
+			$row_czl = $_pm['mysql']->getOneRecord("SELECT czl,wx
+											  FROM userbb
+											 WHERE uid={$_SESSION['id']}
+										  ORDER BY czl DESC
+											 LIMIT 1");
+			if ($row_czl === false && mysql_errno($_pm['mysql']->getConn()) != 0) {
+				$limitUpdated = false;
+			} else {
+				$growUp = is_array($row_czl) ? intval($row_czl['czl']) : 0;
+				$wuxing = is_array($row_czl) ? intval($row_czl['wx']) : 1;
+				$savedNum = $xdtime == 0 ? $xdnum : 1;
+				$username = $_pm['mysql']->escape(isset($_SESSION['username']) ? $_SESSION['username'] : '');
+				$limitUpdated = $_pm['mysql']->query("INSERT INTO war_player
+															 (`id`,name,max_take_pet_num,max_take_pet_num_save,take_pet_limit_time,grow_up,wuxing)
+													 VALUES ({$_SESSION['id']},'{$username}',{$xdnum},{$savedNum},{$xdtime},{$growUp},{$wuxing})");
+			}
 		} else {
-			//echo "-------------------------------------------";
-			$_pm['mysql']->query("UPDATE war_player
-                                 SET max_take_pet_num_save='" . ($row['take_pet_limit_time'] > time() ? $row['max_take_pet_num_save'] : $row['max_take_pet_num']) . "',max_take_pet_num='" . $xdnum . "',take_pet_limit_time='" . $xdtime . "'
-                               WHERE id={$_SESSION['id']}
-                            ");
-			$_pm['mysql']->query("UPDATE userbag
-                               SET sums=sums-1
-                               WHERE id={$id} and uid={$_SESSION['id']} and sums>0
-                              ");
+			if ($xdtime == 0) {
+				$savedNum = $xdnum;
+			} else {
+				$savedNum = $row['take_pet_limit_time'] > $now
+					? intval($row['max_take_pet_num_save'])
+					: intval($row['max_take_pet_num']);
+			}
+			$limitUpdated = $_pm['mysql']->query("UPDATE war_player
+															 SET max_take_pet_num_save={$savedNum},
+																 max_take_pet_num={$xdnum},
+																 take_pet_limit_time={$xdtime}
+														   WHERE id={$_SESSION['id']}");
 		}
 
-		if (!mysql_error()) {
-			$_pm['mysql']->query("COMMIT");
+		if ($limitUpdated && $_pm['mysql']->query('COMMIT')) {
 			echo "恭喜您，使用道具成功，您的宠物携带数量变更为:" . $xdnum . "，有效时间至:" . $xdtimestr . "！";
 		} else {
-			$_pm['mysql']->query("ROLLBACK");
+			$_pm['mysql']->query('ROLLBACK');
 			echo "使用道具失败,道具数量未减少！";
 		}
-		echo time();
-		// sub props sum.
 
 	} else {
 		echo '道具使用失败！';
@@ -1922,40 +2295,56 @@ else if ($rs['varyname'] == 58) // 增加携带宠物数量类
 			$expGet = (int)$exp[0];
 		}
 
+		$_pm['mysql']->query("START TRANSACTION");
 		$sql = 'select
 					id,current_experience
 				from
 					war_fighter_talent
 				where
-					fighter_id=' . $bb['id'] . '';
+					fighter_id=' . $bb['id'] . ' for update';
 
 		$ts = $_pm['mysql']->getRecords($sql);
 
 
 		if (empty($ts) || !is_array($ts)) {
+			$_pm['mysql']->query("ROLLBACK");
 			unLockItem($id);
 			die("您没有进入过魔塔，没有魔塔数据！");
 		}
 
 		if ($err = mysql_error()) {
+			$_pm['mysql']->query("ROLLBACK");
 			unLockItem($id);
 			die("查询错误：" . $err);
 		}
 
 		$expGetAver = ceil($expGet / count($ts));
 
-		$_pm['mysql']->query("START TRANSACTION");
-		foreach ($ts as $row) {
-			$sql = 'update war_fighter_talent set current_experience=' . ($row['current_experience'] + $expGetAver) . ' where id=' . $row['id'];
-			$_pm['mysql']->query($sql);
+		$itemUsed = $_pm['mysql']->query("UPDATE userbag
+										 SET sums=sums-1
+									   WHERE id={$id} AND uid={$_SESSION['id']} AND sums>0");
+		if (!$itemUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+		{
+			$_pm['mysql']->query("ROLLBACK");
+			unLockItem($id);
+			die("您没有相应的物品！");
 		}
 
-		if (!$err = mysql_error()) {
-			$_pm['mysql']->query("COMMIT");
+		$updateOk = true;
+		foreach ($ts as $row) {
+			$sql = 'update war_fighter_talent set current_experience=' . ($row['current_experience'] + $expGetAver) . ' where id=' . $row['id'];
+			if (!$_pm['mysql']->query($sql))
+			{
+				$updateOk = false;
+				break;
+			}
+		}
+
+		if ($updateOk && $_pm['mysql']->query("COMMIT")) {
 			echo "使用道具成功，主战宠物已经有天赋平分经验：" . $expGet . "！";
 		} else {
 			$_pm['mysql']->query("ROLLBACK");
-			echo "使用道具失败,道具数量未减少($err)！";
+			echo "使用道具失败,道具数量未减少！";
 		}
 	} else {
 		echo '道具使用失败！道具数据错误！';
@@ -1965,15 +2354,18 @@ else if ($rs['varyname'] == 58) // 增加携带宠物数量类
 function rand_num($config)
 {
 	global $_pm;
-	$rand = rand(10000, 99999);
-	$num = $config . $rand;
-	$_pm['mysql']->query('INSERT INTO ticket_' . date('Ymd') . ' SET uid=' . $_SESSION['id'] . ',ticket_num="' . $num . '"');
-	$result = mysql_affected_rows($_pm['mysql']->getConn());
-	if ($result != 1) {
-		return rand_num($config);
-	} else {
-		return $num;
+	for ($attempt = 0; $attempt < 100; $attempt++) {
+		$rand = rand(10000, 99999);
+		$num = $config . $rand;
+		$inserted = $_pm['mysql']->query('INSERT INTO ticket_' . date('Ymd') . ' SET uid=' . $_SESSION['id'] . ',ticket_num="' . $num . '"');
+		if ($inserted && mysql_affected_rows($_pm['mysql']->getConn()) == 1) {
+			return $num;
+		}
+		if (mysql_errno($_pm['mysql']->getConn()) != 1062) {
+			return false;
+		}
 	}
+	return false;
 }
 
 unLockItem($id);

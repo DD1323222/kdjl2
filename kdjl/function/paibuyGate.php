@@ -29,7 +29,6 @@ else
 	$ctime = $nowtime - $time;
 	if($ctime < $srctime)
 	{
-		unLockItem($bid);
 		die("5");//没有达到间隔时间
 	}
 	else
@@ -318,7 +317,6 @@ function updateUser($selluid,$buyuid,$priceSum)
 	global $_pm,$logsql;
 
 /****打开MYSQL事务，禁止自动提交****/		
-	$_pm['mysql']->query('START TRANSACTION');	
 	$_pm['mysql']->query("UPDATE player 
 							 SET money=money-{$priceSum}
 						   WHERE id={$buyuid} and money >= $priceSum
@@ -332,10 +330,10 @@ function updateUser($selluid,$buyuid,$priceSum)
 							 SET paimoney=paimoney+{$priceSum}
 						   WHERE id={$selluid}
 						");
-/****提交事务，失败则执行回滚操作****/
-                if(!$_pm['mysql']->query('COMMIT')){
-				    $_pm['mysql']->query('ROLLBACK');
-				}
+	$result = mysql_affected_rows($_pm['mysql'] -> getConn());
+	if($result != 1){
+		return false;
+	}
 
 	$logsql .=";UPDATE player 
 				 SET money=money-{$priceSum}
@@ -345,6 +343,7 @@ function updateUser($selluid,$buyuid,$priceSum)
 				 SET paimoney=paimoney+{$priceSum}
 			   WHERE id={$selluid}
 			  ";
+	return true;
 }
 // 保存交易日志
 function savelog($sell, $buy, $note, $vary)

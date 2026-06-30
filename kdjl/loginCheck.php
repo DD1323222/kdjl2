@@ -13,7 +13,7 @@ define('MYSQL_DB_USER', $_mysql['user']);
 define('MYSQL_DB_PASS', $_mysql['pass']);
 define('MYSQL_DB_NAME', $_mysql['db']);
 // define for memcached
-define('MEMCACHED_HOST', '222.73.57.101');
+define('MEMCACHED_HOST', '127.0.0.1');
 define('MEMCACHED_PORT', '11211');
 
 // define return code

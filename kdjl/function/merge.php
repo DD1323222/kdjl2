@@ -1,4 +1,4 @@
-<?
+<?php
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 $type=$_REQUEST['type'];

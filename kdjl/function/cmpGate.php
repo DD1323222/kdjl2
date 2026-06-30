@@ -43,6 +43,7 @@ else
 	$ctime = $nowtime - $time;
 	if($ctime < $srctime && $_GET['type'] != 'do' && $_GET['type1'] != 'check')
 	{
+		realseLock();
 		die("11");//没有达到间隔时间
 	}
 	else
@@ -78,22 +79,22 @@ if($_GET['type1'] != 'check') //判断一次就够了
 		}
 		if($check_props == 0)
 		{
+			realseLock();
 			die('200');
 		}
 	}
 	else
 	{
+		realseLock();
 		die('200');
 	}
 }
 
 ##################增加在这里结束#################
-if($_GET['type'] != 'do'){
-	$zbcheck = $_pm['mysql'] -> getRecords("SELECT id FROM userbag WHERE zbpets = $ap or zbpets = $bp");//echo "SELECT id FROM userbag WHERE zbpets = $ap or zbpets = $bp";
-	if(count($zbcheck) >= 1){//echo __LINE__."<br>";
-		realseLock();
-		die('1000');
-	}//echo __LINE__."<br>";
+$zbcheck = $_pm['mysql'] -> getRecords("SELECT id FROM userbag WHERE uid={$_SESSION['id']} and (zbpets = $ap or zbpets = $bp)");
+if(is_array($zbcheck) && count($zbcheck) >= 1){
+	realseLock();
+	die('1000');
 }
 
 
@@ -111,6 +112,10 @@ if ($ap<0 || $bp<0) {
 
 $user		= $_pm['user']->getUserById($_SESSION['id']);//一个用户的所有信息player
 $userbb		= $_pm['user']->getUserPetById($_SESSION['id']);//一个用户所有的宠物信息userbb
+$app = array();
+$bpp = array();
+$pp1 = array();
+$pp2 = array();
 if(!empty($p1))
 {
 	$pp1 = $_pm['user']->getUserItemById($_SESSION['id'],$p1);//道具一资料userbag
@@ -145,12 +150,6 @@ if ( is_array($userbb))
 	}
     unset($rs);
 	
-	$cishu=$_pm['mysql']->getOneRecord("select hecheng_nums,chouqu_chongwu from player_ext where uid={$_SESSION['id']}");
-	if(strpos($cishu['chouqu_chongwu'],','.$app['id'].',')!==false||strpos($cishu['chouqu_chongwu'],','.$bpp['id'].',')!==false)
-	{
-		die("某个宠物抽取过成长,不能进行合成!");
-	}
-
 	if($p1 == $p2 && $p1 != 0)
 	{
 		if($pp1['sums'] < 2)
@@ -164,6 +163,13 @@ if ( is_array($userbb))
 		realseLock();
 		die('1'); //没有对应的宠物。
 	}
+
+	$cishu=$_pm['mysql']->getOneRecord("select hecheng_nums,chouqu_chongwu from player_ext where uid={$_SESSION['id']}");
+	if(is_array($cishu) && (strpos($cishu['chouqu_chongwu'],','.$app['id'].',')!==false||strpos($cishu['chouqu_chongwu'],','.$bpp['id'].',')!==false))
+	{
+		realseLock();
+		die("某个宠物抽取过成长,不能进行合成!");
+	}
 	
 	// 检查是否满足公式。
 	//$ars = $_pm['mem']->dataGet(array('k' => MEM_BB_KEY, 
@@ -173,6 +179,11 @@ if ( is_array($userbb))
 	//									 'v' => "if(\$rs['name'] == '{$bpp['name']}') \$ret=\$rs;"//bb
 	//						  ));
 	$membbname = unserialize($_pm['mem']->get('db_bbname'));
+	if (!is_array($membbname) || !isset($membbname[$app['name']]) || !isset($membbname[$bpp['name']]))
+	{
+		realseLock();
+		die('2');
+	}
 	$ars = $membbname[$app['name']];
 	//print_r($ars);exit;
 	$brs = $membbname[$bpp['name']];
@@ -241,11 +252,16 @@ if ( is_array($userbb))
 										  
 		if (!is_array($brs))
 		{
-			realseLock();
+			$_pm['mysql']->query('ROLLBACK');
 			die('10'); // 数据错误
 		}
 		// 改变各项数据:
-		makebb($brs,$max_czl);
+		$newbbid = makebb($brs,$max_czl);
+		if ($newbbid === false)
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('10');
+		}
 		$cstatus = 2;
 	}
 	else // 如果没有相关道具进行绑定，副宠消失
@@ -255,24 +271,31 @@ if ( is_array($userbb))
 		$cstatus = 1;
 	}
 
-	$user['money'] = $user['money']-50000;		// 减少用户金币.
-	$_pm['mysql']->query("UPDATE player
-						     SET money='{$user['money']}'
-					 	   WHERE id={$_SESSION['id']}
-				  		");
+	if (!$_pm['mysql']->query("UPDATE player SET money=money-50000 WHERE id={$_SESSION['id']} and money>=50000") ||
+		mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('3');
+	}
 	// 记录日志：
 	$log .= "合成结果：".($cstatus==1?"失败":"成功")."\n";
-	$log .= "合成道具：1:".$pp1['pid'].' 2:'.$pp2['pid']."\n";
+	$log .= "合成道具：1:".(isset($pp1['pid']) ? $pp1['pid'] : 0).' 2:'.(isset($pp2['pid']) ? $pp2['pid'] : 0)."\n";
 
 	//######### del props Start.##################
-	delProps();
+	if (!delProps())
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('20');
+	}
 	############# del props end.#####################
 //$cstatus=1;
 	if ($cstatus == 1) //副宠消失。合成失败
 	{
-		//在此写入一张表
-		if(!isset($cishu)) $cishu=$_pm['mysql']->getOneRecord("select hecheng_nums from player_ext where uid={$_SESSION['id']}");
-		$nums2=$_pm['mysql']->query("update player_ext set hecheng_nums=".($cishu[hecheng_nums]+1)." where uid={$_SESSION['id']}");
+		if (!$_pm['mysql']->query("UPDATE player_ext SET hecheng_nums=hecheng_nums+1 WHERE uid={$_SESSION['id']}"))
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('10');
+		}
 	
 		$del = 1;
 		$log .= '合成道具详细：';
@@ -289,7 +312,7 @@ if ( is_array($userbb))
 			//$pp1['name']$pp1['effect']
 			
 			//$log .= $n['shbb']."-";
-			if ($propseff[2] == 1 || $propseff[5] == 1)
+			if ((isset($propseff[2]) && $propseff[2] == 1) || (isset($propseff[5]) && $propseff[5] == 1))
 			{
 				$del = 0;
 			}
@@ -297,20 +320,38 @@ if ( is_array($userbb))
 	
 		if ($del == 1)//副宠消失的条件
 		{
-			clearBB($bpp);
+			if (!clearBB($bpp))
+			{
+				$_pm['mysql']->query('ROLLBACK');
+				die('10');
+			}
 			$log .= 'name:'.$bpp['name'].'level:'.$bpp['level'].'czl:'.$bpp['czl'].'ac:'.$bpp['ac'].'srchp:'.$bpp['srchp'].'hits:'.$bpp['hits'];
 		}
 		$log = addslashes($log);
+		if (!$_pm['mysql']->query('COMMIT'))
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('10');
+		}
 		// 合成失败记录点：
 		$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
 		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','{$log}',2)
 							");
-		realseLock();
 		die('6');
 	}
 	else if($cstatus == 2) // 成功。
 	{
-		$nums3=$_pm['mysql']->query("update player_ext set hecheng_nums=0 where uid={$_SESSION['id']}");
+		if (!$_pm['mysql']->query("UPDATE player_ext SET hecheng_nums=0 WHERE uid={$_SESSION['id']}") ||
+			!clearBB($app) || !clearBB($bpp))
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('10');
+		}
+		if (!$_pm['mysql']->query('COMMIT'))
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('10');
+		}
 		/*
 		$_pm['mem']->set(array('k'=>MEM_SYSWORD_KEY, 
 							   'v'=>'[系统公告]恭喜玩家 '.$user['nickname'].'成功的合成了一只['.$cmprs['name'].'],真是太幸运了!'));
@@ -323,13 +364,16 @@ if ( is_array($userbb))
 			$arrt = array_shift($arr);
 		}
 		$newstr = '<font color=red>[系统公告]恭喜玩家 '.$user['nickname'].' 成功的合成了一只['.$brs['name'].'],真是太幸运了!</font>';
-		$newbbarr = $_pm['mysql'] -> getOneRecord("SELECT level,czl,ac,hits,srchp FROM userbb WHERE name = '{$brs[name]}' and uid = {$_SESSION['id']} order by id desc");
+		$newbbarr = $_pm['mysql'] -> getOneRecord("SELECT level,czl,ac,hits,srchp FROM userbb WHERE id={$newbbid} and uid={$_SESSION['id']} LIMIT 1");
 		
-		$str = '新宠物名字：'.$brs['name'].'level:'.$newbbarr['level'].'czl:'.$newbbarr['czl'].'ac:'.$newbbarr['ac'].'hits:'.$newbbarr['hits'].',使用物品1：'.$pp1['name'].',使用物品2：'.$pp2['name'].',宠物：'.$app['name'].'level:'.$app['level'].'czl:'.$app['czl'].'ac:'.$app['ac'].'hits:'.$app['hits'].'-'.$bpp['name'].'level:'.$bpp['level'].'czl:'.$bpp['czl'].'ac:'.$bpp['ac'].'hits:'.$bpp['hits'];
+		$p1name = isset($pp1['name']) ? $pp1['name'] : '';
+		$p2name = isset($pp2['name']) ? $pp2['name'] : '';
+		$str = '新宠物名字：'.$brs['name'].'level:'.$newbbarr['level'].'czl:'.$newbbarr['czl'].'ac:'.$newbbarr['ac'].'hits:'.$newbbarr['hits'].',使用物品1：'.$p1name.',使用物品2：'.$p2name.',宠物：'.$app['name'].'level:'.$app['level'].'czl:'.$app['czl'].'ac:'.$app['ac'].'hits:'.$app['hits'].'-'.$bpp['name'].'level:'.$bpp['level'].'czl:'.$bpp['czl'].'ac:'.$bpp['ac'].'hits:'.$bpp['hits'];
 		$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
 		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','{$str}',4)
 							");
 		
+		$retstr = '';
 		foreach($arr as $k=>$v)
 		{
 			$retstr .= $v.'linend';
@@ -338,29 +382,17 @@ if ( is_array($userbb))
 		$retstr = $retstr.$newstr;
 		$_pm['mem']->set( array('k'=>$msg_key, 'v'=>$retstr) ); // default ten min.
 		
-		// 合成成功连接socket之前做记录
-		$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','合成成功连接socket之前做记录',173)
-							");
-		clearBB($app); // del pets master
-		clearBB($bpp); // del pets other
-		
 		//----------------------------------------------------------------------------------------------------------------------
 		//$_olddata = @unserialize($_pm['mem']->get('ttmt_data_notice'));		
 		require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 		$s=new socketmsg();
 		$s->sendMsg('an|'.$newstr);
 		
-		// 合成成功连接socket之后做记录
-		$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','合成成功连接socket之后做记录',173)
-							");
 		//$_olddata['an'] = isset($_olddata['an'])?$_olddata['an']."<br/>[系统公告]：".$swfData:$swfData;
 		//$_pm['mem']->set(array('k'=>'ttmt_data_notice','v'=>$_olddata));
 		//----------------------------------------------------------------------------------------------------------------------
 		
 		
-		realseLock();
 		die('5');
 	}
 }
@@ -414,7 +446,7 @@ function makebb($bb,$max_czl)
 	{
 		$czl = $max_czl;
 	}
-	$_pm['mysql']->query("INSERT INTO userbb(
+	$inserted = $_pm['mysql']->query("INSERT INTO userbb(
 								   name,
 								   uid,
 								   username,
@@ -479,6 +511,15 @@ function makebb($bb,$max_czl)
 					   'q{$bb['id']}.gif'
 					   )
 			  ");
+	if (!$inserted)
+	{
+		return false;
+	}
+	$bbid = intval($_pm['mysql']->last_id());
+	if ($bbid <= 0)
+	{
+		return false;
+	}
 	
 	$jnall = split(",", $bb['skillist']);//1:1,60:1
 	
@@ -487,6 +528,10 @@ function makebb($bb,$max_czl)
 	foreach($jnall as $a => $b)
 	{
 		$arr = split(":", $b);
+		if (!isset($arr[0]) || !isset($arr[1]) || !isset($membbname[$arr[0]]))
+		{
+			return false;
+		}
 		// Get jn info.
 		
 		//$memjnid = $this->m_m->unserialize(get('db_skillsysid'));
@@ -494,33 +539,13 @@ function makebb($bb,$max_czl)
 		/*$jn = $_pm['mem']->dataGet(array('k'	=>	MEM_SKILLSYS_KEY,
 								'v'	=>  "if(\$rs['id'] == '{$arr[0]}') \$ret=\$rs;"
 						));*/
-		// #################################################				
-		if ($jn['ackvalue']=='')
-		{
-			$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','".$arr[0]."技能攻击为0',173)
-							");
-			continue; // 增加辅助技能。
-		}
-		//##################################################
-		
 		$ack  = split(",", $jn['ackvalue']);
 		$plus = split(",", $jn['plus']);
 		$uhp  = split(",", $jn['uhp']);
 		$ump  = split(",", $jn['ump']);
 		$img  = split(",", $jn['imgeft']);
 
-		// Insert userbb jn.	
-		/*获取刚插入宠物ID。*/
-		$newbb = $_pm['mysql']->getOneRecord("SELECT id 
-									  FROM userbb
-									 WHERE uid={$_SESSION['id']}
-									 ORDER BY stime DESC
-									 LIMIT 0,1			                                         
-								  ");
-		$bbid = $newbb['id'];
-
-		$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
+		if (!$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
 					VALUES(
 						   '{$bbid}',
 						   '{$jn['name']}',
@@ -534,11 +559,18 @@ function makebb($bb,$max_czl)
 						   '{$ump[0]}',
 						   '{$jn['id']}'
 						  )
-				  ");
-				  
-		$_pm['mysql'] -> query("UPDATE player SET mbid = {$bbid} WHERE id = {$_SESSION['id']}");
+				  "))
+		{
+			return false;
+		}
 				  
    }
+	if (!$_pm['mysql'] -> query("UPDATE player SET mbid = {$bbid} WHERE id = {$_SESSION['id']}") ||
+		mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+	{
+		return false;
+	}
+	return $bbid;
 }
 
 /**
@@ -558,28 +590,28 @@ function clearBB($bb)
 	}
 	
 	// del sk. 
-	$_pm['mysql']->query("DELETE FROM skill
+	if (!$_pm['mysql']->query("DELETE FROM skill
 				 WHERE bid={$id}
-			  ");
+			  "))
+	{
+		return false;
+	}
 			  
 	// del zb.
-	/*$_pm['mysql']->query("DELETE FROM userbag
+	if (!$_pm['mysql']->query("DELETE FROM userbag
 				 WHERE uid={$_SESSION['id']} and zbpets={$id}
-			  ");*/
-	$arr = $_pm['mysql'] -> getRecords("SELECT id,pid FROM userbag WHERE uid = {$_SESSION['id']} and zbpets = {$id}");
-	if(is_array($arr)){
-		foreach($arr as $v){
-			if(!empty($v)){
-				$_pm['mysql']->query("DELETE FROM userbag
-				 WHERE uid={$_SESSION['id']} and pid = {$v['pid']} and zbpets = {$id}
-			  ");
-			}
-		}
+			  "))
+	{
+		return false;
 	}
 	// del bb.
-	$_pm['mysql']->query("DELETE FROM userbb
+	if (!$_pm['mysql']->query("DELETE FROM userbb
 				 WHERE uid={$_SESSION['id']} and id={$id}
-			  ");
+			  "))
+	{
+		return false;
+	}
+	return mysql_affected_rows($_pm['mysql']->getConn()) == 1;
 }
 
 /**
@@ -597,6 +629,7 @@ function clearBB($bb)
 function bbczl($a, $b, $pp1, $pp2)
 {
 	global $brs; // 资料库中宠物属性。
+	$arr = 0;
 	
 	if (is_array($pp1))
 	{
@@ -631,17 +664,17 @@ function bbczl($a, $b, $pp1, $pp2)
 	$czl=round($a['czl']+($a['level']/($a['czl']+10)+$b['level']*$b['czl']/200)*(1+$arr),1);//23.2
 	return $czl;
 	}
-	if($a['czl']<70.0 || $a['czl']>=51.0)
+	if($a['czl']<70.0)
 	{
 	$czl=round($a['czl']+($a['level']/$a['czl']+$b['level']*$b['czl']/350)*(1+$arr),1);
 	return $czl;
 	}
-	if($a['czl']<90.0 || $a['czl']>=70.0)
+	if($a['czl']<90.0)
 	{
 	$czl=round($a['czl']+($a['level']/$a['czl']+$b['level']*$b['czl']/500)*(1+$arr),1);
 	return $czl;
 	}
-	if($a['czl']<100.0 || $a['czl']>=90.0)
+	if($a['czl']<100.0)
 	{
 	$czl=round($a['czl']+($a['level']/$a['czl']+$b['level']*$b['czl']/700)*(1+$arr),1);
 	return $czl;
@@ -660,7 +693,7 @@ function bbczl($a, $b, $pp1, $pp2)
 */
 function getEffect($pp1, $pp2)
 {
-
+	$one1 = array();
 	if (is_array($pp1))
 	{
 		$one = explode('|', $pp1['effect']);
@@ -1075,26 +1108,31 @@ function delProps()
 	global $pp1, $pp2, $_pm;	// props first,props second, global object array.
 	if (is_array($pp1))
 	{
-		$_pm['mysql']->query("UPDATE userbag
-								 SET sums=abs(sums-1)
+		if (!$_pm['mysql']->query("UPDATE userbag
+								 SET sums=sums-1
 						       WHERE id={$pp1['id']} and uid={$_SESSION['id']} and sums > 0
-							");
+							"))
+		{
+			return false;
+		}
 		//echo mysql_affected_rows($_pm['mysql'] -> getConn()).'<br />';
 		if(mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
-			realseLock();
-			die('20');
+			return false;
 		}
 	}
 	if (is_array($pp2))
 	{
-		$_pm['mysql']->query("UPDATE userbag
-								 SET sums=abs(sums-1)
+		if (!$_pm['mysql']->query("UPDATE userbag
+								 SET sums=sums-1
 						       WHERE id={$pp2['id']} and uid={$_SESSION['id']} and sums > 0
-							");
+							"))
+		{
+			return false;
+		}
 		if(mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
-			realseLock();
-			die('20');
+			return false;
 		}
 	}
+	return true;
 }
 ?>

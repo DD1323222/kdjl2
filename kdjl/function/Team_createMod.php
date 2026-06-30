@@ -65,7 +65,7 @@ function vMember()
 
 	if (strlen(trim($_REQUEST['u'])) < 3 && $_REQUEST['u']!='GM') return false;
 
-	$userName = @mysql_real_escape_string($_REQUEST['u']);
+	$userName = $_pm['mysql']->escape($_REQUEST['u']);
 
 	
 

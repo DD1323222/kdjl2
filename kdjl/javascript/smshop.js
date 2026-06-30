@@ -16,7 +16,7 @@ function sel(obj)
 		$('num').value = "";
 	}
 }
-function buy(){
+function buy(channel){
 	//window.parent.Alert('神秘商店暂时未开门!');
     // return;
 	//
@@ -50,7 +50,8 @@ function buy(){
     		 	asynchronous:true        
 			}
 			//window.status='../function/smbuyGate.php?bid='+bid+'&n='+nums;
-			var ajax=new Ajax.Request('../function/smbuyGate.php?bid='+bid+'&n='+nums, opt);
+			channel = channel == 'limit' ? 'limit' : 'yb';
+			var ajax=new Ajax.Request('../function/smbuyGate.php?bid='+bid+'&n='+nums+'&channel='+channel, opt);
 		}
 		else return;
 	}

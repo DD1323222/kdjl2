@@ -11,7 +11,8 @@ if(is_array($arr)){
 			continue;
 		}
 		$friend = '';
-		$friend = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '$v'");
+		$friendNameSql = $_pm['mysql']->escape($v);
+		$friend = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '$friendNameSql'");
 		if(empty($friend['id'])){
 			continue;
 		}

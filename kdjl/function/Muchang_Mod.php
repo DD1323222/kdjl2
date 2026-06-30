@@ -98,7 +98,7 @@ $i = 0;
 $utime = $user['tgtime'];
 foreach($petsAll as $pall)
 {
-	if($pall['level'] <= 10 || $pall['muchang'] != 1)
+	if($pall['level'] < 10 || $pall['muchang'] != 1)
 	{
 		continue;
 	}
@@ -217,7 +217,7 @@ function petoption($id,$name,$pets)
 	$str ='<option value='.$id.'>'.$name.'</option>';
 	foreach($pets as $pall)
 	{
-		if($pall['level'] <= 10 || $pall['id'] == $id || $pall['muchang'] != 1)
+		if($pall['level'] < 10 || $pall['id'] == $id || $pall['muchang'] != 1)
 		{
 			continue;
 		}

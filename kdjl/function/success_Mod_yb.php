@@ -61,11 +61,9 @@ $appsecret = '4220a08009eff4115151728a885a44e9';
 $notice = decode($_POST, $appsecret);
 require_once('../config/config.game.php');
 
-$_pm['mem']->set(array('k'=>'bankpaytets','v'=>unserialize($_pm['mem']->get('bankpaytets'))."<hr>".date("Y-m-d H:i:s")."<br>Line=".__LINE__."<br>_POST=".print_r($_POST,1)."<br>_GET=".print_r($_GET,1)));
 $db = &$_pm['mysql'];
 
 if($notice){//支付成功后51post数据过来
-	$_pm['mem']->set(array('k'=>'bankpaytets','v'=>unserialize($_pm['mem']->get('bankpaytets'))."<hr>"."<br>Line=".__LINE__.print_r($notice,1)));
 	$price = intval($notice['order_price'])/10;	
 	
 	$return_str = "0";
@@ -79,25 +77,39 @@ if($notice){//支付成功后51post数据过来
 		$OpenApp_51->api_client->set_encoding("GBK");
 		$return_str = $OpenApp_51->api_client->create_post_string('51_pay', $params);
 		if($notice['app_key']!=$appapikey){
-			$_pm['mem']->set(array('k'=>'bankpaytets','v'=>unserialize($_pm['mem']->get('bankpaytets'))."<hr><font color=#ff0000>Line=".__LINE__."</font><br>"));
 			die("ERR_app_key");	
 		}
 	}
-	$orderInfo = $_pm['mysql']->getOneRecord("SELECT Id,getyb,user_id FROM yb WHERE orderid = '".$notice['sn_app']."'");
-	if($orderInfo){		
-		$_pm['mem']->set(array('k'=>'bankpaytets','v'=>unserialize($_pm['mem']->get('bankpaytets'))."<hr><font color=#ff0000>Line=".__LINE__."</font><br>"));		
-		
-		$_pm['mysql']->query("update yb set paytime='".$notice['time_pay']."',sn_platform='".$notice['sn_platform']."' where orderid='".$notice['sn_app']."'");		
-		$_pm['mem']->set(array('k'=>'pany51_'.$notice['sn_app'],'v'=>$notice));		
-		$_pm['mysql']->query("update player set yb=yb+".intval($orderInfo['getyb'])." where id=".$orderInfo['user_id']);		
-		if($e=mysql_error()){	
-			die("Q_ERROR_".($orderInfo['user_id'])."_".$price);
-		}
-		die($return_str);
-	}else{
-		$_pm['mem']->set(array('k'=>'bankpaytets','v'=>unserialize($_pm['mem']->get('bankpaytets'))."<hr><font color=#ff0000>Line=".__LINE__."</font><br>"));
+	$orderIdSql = $db->escape($notice['sn_app']);
+	$db->query('START TRANSACTION');
+	$orderInfo = $db->getOneRecord("SELECT Id,getyb,user_id,paytime FROM yb WHERE orderid = '{$orderIdSql}' ORDER BY Id DESC LIMIT 1 FOR UPDATE");
+	if(!$orderInfo){
+		$db->query('ROLLBACK');
 		die("Order not found.");
 	}
+	if(intval($orderInfo['paytime']) > 0){
+		$db->query('ROLLBACK');
+		die($return_str);
+	}
+	if(isset($notice['order_num']) && intval($notice['order_num']) != intval($orderInfo['getyb'])){
+		$db->query('ROLLBACK');
+		die('ERR_order_num');
+	}
+	$payTime = intval($notice['time_pay']);
+	if($payTime < 1) $payTime = time();
+	$platformSql = $db->escape($notice['sn_platform']);
+	$db->query("update yb set paytime={$payTime},sn_platform='{$platformSql}' where Id=".intval($orderInfo['Id'])." and paytime=0");
+	if(mysql_affected_rows($db->getConn()) != 1){
+		$db->query('ROLLBACK');
+		die($return_str);
+	}
+	$db->query("update player set yb=yb+".intval($orderInfo['getyb'])." where id=".intval($orderInfo['user_id']));
+	if(mysql_affected_rows($db->getConn()) != 1 || !$db->query('COMMIT')){
+		$db->query('ROLLBACK');
+		die("Q_ERROR_".intval($orderInfo['user_id'])."_".$price);
+	}
+	$_pm['mem']->set(array('k'=>'pany51_'.$notice['sn_app'],'v'=>$notice));
+	die($return_str);
 }
 /*51 支付通知部分，此时本程序为order_check_url 结束 */
 

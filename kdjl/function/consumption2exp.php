@@ -79,8 +79,8 @@ $err = mysql_error();
 
 if(strpos($err,'consumption2exp_day')!==false)
 {
-	$_pm['mysql']->query('alter table player_ext add consumption2exp_day char(8) null default ""');
-	$got = $_pm['mysql']->getOneRecord('select consumption2exp_day from player where uid='.$_SESSION['id']);
+	$_pm['mysql']->addColumnIfMissing('player_ext', 'consumption2exp_day', 'char(8) null default ""');
+	$got = $_pm['mysql']->getOneRecord('select consumption2exp_day from player_ext where uid='.$_SESSION['id']);
 }
 
 if(!$got)

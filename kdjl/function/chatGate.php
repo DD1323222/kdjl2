@@ -328,7 +328,8 @@ else if(substr($msg, 0,1) == '/' && strpos($msg,' ')!==false)
 		define("MEM_BLACKLIST_KEY","db_blacklist");
 		$blacklist = unserialize($_pm['mem'] -> get(MEM_BLACKLIST_KEY));
 		$truename = 'm'.$truename.'m'.str_replace('/','',$posChk[0]); // m+from+'m'+to:
-		$arr = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '{$getuser}'");
+		$getuserSql = $_pm['mysql']->escape($getuser);
+		$arr = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '{$getuserSql}'");
 		$msg = $posChk[1];
 		if(!empty($blacklist[$arr['id']]) && strpos($fromuser,$blacklist[$arr['id']]) !== false)
 		{

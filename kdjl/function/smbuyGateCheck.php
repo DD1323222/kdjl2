@@ -6,11 +6,11 @@
 */
 
 require_once('../config/config.game.php');
-$orderId=substr($_GET['orderId'],0,25);//游戏发送消费记录时的订单号
-$userAccount=substr($_GET['userAccount'],0,25);//用户通行证号
-$feeMoney=intval($_GET['feeMoney']);//用户消费金额
-$logDate=$_GET['logDate'];//用户消费时间,格式yyyyMMddHHmmss
-$sign=$_GET['sign'];//MD5签名
+$orderId=substr(isset($_GET['orderId']) ? $_GET['orderId'] : '',0,25);//游戏发送消费记录时的订单号
+$userAccount=substr(isset($_GET['userAccount']) ? $_GET['userAccount'] : '',0,60);//用户通行证号
+$feeMoney=intval(isset($_GET['feeMoney']) ? $_GET['feeMoney'] : 0);//用户消费金额
+$logDate=isset($_GET['logDate']) ? $_GET['logDate'] : '';//用户消费时间,格式yyyyMMddHHmmss
+$sign=isset($_GET['sign']) ? $_GET['sign'] : '';//MD5签名
 require_once("../login/lib/nusoap.php");
 $key="7sl+kb9adDAc7gLuv31MeEFPBMJZdRZyAx9eEmXSTui4423hgGfXF1pyM";
 $sn= md5($orderId.$userAccount.$feeMoney.$logDate.$key);
@@ -20,49 +20,73 @@ if($sn!==$sign)
 	die('102');
 }
 
-$row=$_pm['mysql']->getOneRecord('select pid,pnum,uid,uname,fee,flag from shop_order where order_id="'.$orderId.'" order by id desc limit 1');
+$orderIdSql = $_pm['mysql']->escape($orderId);
+$userAccountSql = $_pm['mysql']->escape($userAccount);
+$db = &$_pm['mysql'];
+$db->query('START TRANSACTION');
+$row=$db->getOneRecord('select id,pid,pnum,uid,uname,fee,flag from shop_order where order_id="'.$orderIdSql.'" order by id desc limit 1 FOR UPDATE');
 if(mysql_error())
 {
+	$db->query('ROLLBACK');
 	die('105');
 }
 
 if(!$row)
 {
+	$db->query('ROLLBACK');
 	die('103');
 }
 
 if($row['flag']==1)
 {
+	$db->query('ROLLBACK');
 	die('10');
 }
 
-if(!$row['fee']!=$feeMoney||$userAccount!=$row['uname'])
+if($row['fee']!=$feeMoney||$userAccount!=$row['uname'])
 {
+	$db->query('ROLLBACK');
 	die('104');
 }
 
 $userid=$row['uid'];
 $bid=$row['pid'];
 $n=$row['pnum'];
+if($userid < 1 || $bid < 1 || $n < 1 || $n > 100)
+{
+	$db->query('ROLLBACK');
+	die('104');
+}
 
 
 $m	= &$_pm['mem'];
-$db = &$_pm['mysql'];
 $u	= &$_pm['user'];
-$user	= $u->getUserById($userid);
+$user = $db->getOneRecord("SELECT id,yb,useyb,score,active_useyb,active_score,vip,vipyb FROM player WHERE id={$userid} FOR UPDATE");
+if(!is_array($user))
+{
+	$db->query('ROLLBACK');
+	die('104');
+}
 //$bags    = $u->getUserBagById($_SESSION['id']);
 $bags    = $u->getUserBagById($userid);
 
-$wp = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $bid and yb > 0");
+$wp = $db->getOneRecord("SELECT * FROM props WHERE id = {$bid}");
+if(!is_array($wp))
+{
+	$db->query('ROLLBACK');
+	die('104');
+}
 
 $now = time();
 //$number = $n;
 	
-$db->query("insert into yblog(title,nickname,yb,buytime,pname,nums)
-			values('{$orderId}购买口袋精灵二[7区]道具{$wp['name']} {$n} 个.','".$row['uname']."','{$row['fee']}',unix_timestamp(),'{$wp['name']}',{$n})
-		  "); // save buy log.
-
-$db->query("update shop_order set flag=1 where order_id='".$orderId."' and uname='".$userAccount."'"); 
+$purchaseOk = true;
+$logTitle = $db->escape($orderId.'购买口袋精灵二[7区]道具'.$wp['name'].' '.$n.' 个.');
+$logUser = $db->escape($row['uname']);
+$logProp = $db->escape($wp['name']);
+if($db->query("insert into yblog(title,nickname,yb,buytime,pname,nums)
+			values('{$logTitle}','{$logUser}','{$row['fee']}',unix_timestamp(),'{$logProp}',{$n})
+		  ") === false) $purchaseOk = false; // save buy log.
 		  
 ######################################在这里增加积分 谭炜 11.10###########################################
 //开放积分（玩家累计消耗100元宝增1分）
@@ -88,15 +112,13 @@ $vip = intval($vipybs / 100);
 $vipyb = intval($vipybs % 100);
 #######################################活动积分在这里结束#######################################3
 
-$user['yb'] -=$row['fee'];//这里不会去平台查余额
-
 #########################################################
 
 if ($wp['vary']==2) //不能叠加
 { 
 	for ($i=0; $i<$n; $i++)
 	{
-		$db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+		if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 					VALUES(
 						   {$user['id']},
 						   {$bid},
@@ -105,31 +127,25 @@ if ($wp['vary']==2) //不能叠加
 						   1,
 						   unix_timestamp()
 						  );
-				  ");
+				  ") === false) $purchaseOk = false;
 	}
 }
 else
 {		
-	$arrobj = new arrays();
-	$ret = false;
-	if(is_array($bags))
-	foreach($bags as $k=>$v)
-	{
-		if($v['uid']==$userid && $v['pid']==$bid) $ret=$v;
-	}
+	$ret = $db->getOneRecord("SELECT id FROM userbag WHERE uid={$userid} and pid={$bid} and zbing=0 LIMIT 1 FOR UPDATE");
 	
 	if (is_array($ret))
 	{
 
-		$db->query("UPDATE userbag
+		if($db->query("UPDATE userbag
 					   SET sums=sums+{$n},stime=".time()."
 					 WHERE id={$ret['id']}
-				  ");
+				  ") === false) $purchaseOk = false;
 				  
 	}
 	else //create new data
 	{
-		$db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+		if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 					VALUES(
 						   {$user['id']},
 						   {$bid},
@@ -137,14 +153,33 @@ else
 							1,
 							{$n},
 						   unix_timestamp());
-				  ");
+				  ") === false) $purchaseOk = false;
 				
 	}
 }
 
-$db->query("update player set yb={$user['yb']},useyb={$useyb},score=score + {$score},vip = vip + {$vip},vipyb = {$vipyb},active_useyb={$active_useyb},active_score=active_score+{$active_score} where id={$userid}");
+if($db->query("update player set yb=yb-{$row['fee']},useyb={$useyb},score=score + {$score},vip = vip + {$vip},vipyb = {$vipyb},active_useyb={$active_useyb},active_score=active_score+{$active_score} where id={$userid}") === false)
+{
+	$purchaseOk = false;
+}
+else if(mysql_affected_rows($db->getConn()) != 1)
+{
+	$purchaseOk = false;
+}
+
+if($purchaseOk)
+{
+	$db->query("update shop_order set flag=1 where id={$row['id']} and flag=0");
+	$purchaseOk = mysql_affected_rows($db->getConn()) == 1;
+}
+
+if(!$purchaseOk || !$db->query('COMMIT'))
+{
+	$db->query('ROLLBACK');
+	die('105');
+}
 
 unset($user,$wp);
 $m->memClose();
-echo $err;
+echo '';
 ?>

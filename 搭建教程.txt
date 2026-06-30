@@ -3,9 +3,6 @@
 服务器密码（可变）：
 root
 sdsASDwDAS@2322!
-数据库密码：
-root
-32b30b47ec283cfc
 
 外网ipv4面板地址: http://119.91.114.58:8888/tencentcloud
 内网面板地址:     http://10.1.0.12:8888/tencentcloud

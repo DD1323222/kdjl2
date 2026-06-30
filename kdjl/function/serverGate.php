@@ -22,8 +22,8 @@ if(isset($welcome['openonlinetimestat']['contents'])&&$welcome['openonlinetimest
 }
 
 if($computeOnline){
-	$_pm['mysql']->query('alter table player_ext add onlinetime int(8);');
-	$_pm['mysql']->query('alter table player_ext add logintime int(10);');
+	$_pm['mysql']->addColumnIfMissing('player_ext', 'onlinetime', 'int(8)');
+	$_pm['mysql']->addColumnIfMissing('player_ext', 'logintime', 'int(10)');
 	
 	$_pm['mysql']->query('update player_ext set logintime='.time().' where uid='.$_SESSION['id']);
 }
@@ -40,7 +40,7 @@ function get_real_ip(){
 			array_unshift($ips, $ip); $ip = FALSE; 
 		}
 		for ($i = 0; $i < count($ips); $i++) {
-			if (!eregi ("^(10|172\.16|192\.168)\.", $ips[$i])) {
+			if (!preg_match("/^(10|172\.16|192\.168)\./i", $ips[$i])) {
 				$ip = $ips[$i];
 				break;
 			}

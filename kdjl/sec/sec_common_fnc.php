@@ -1947,6 +1947,10 @@ function saveGetOther($bb, $exp, $_userid=0)
 			}
 			//Get all attrib.
 			$lv = ++$bb['level'];
+			if ($lv > 130)
+			{
+				return false;
+			}
 			$jk = intval($czz['j']*$bb['czl'])+$kx[0];
 			$mk = intval($czz['m']*$bb['czl'])+$kx[1];
 			$sk = intval($czz['s']*$bb['czl'])+$kx[2];
@@ -1977,8 +1981,12 @@ function saveGetOther($bb, $exp, $_userid=0)
 
 			// Get Next Level exp require.
 			$lrs = $_pm['mem']->dataGet(array('k' => MEM_EXP_KEY, 
-									 'v' => "if(\$rs['level'] == '{$lv}') \$ret=\$rs;"
+										'v' => "if(\$rs['level'] == '{$lv}') \$ret=\$rs;"
 								  ));
+			if (!is_array($lrs) || empty($lrs['nxtlvexp']))
+			{
+				return false;
+			}
 			
 			//update user bb.
 			$_pm['mysql']->query("UPDATE userbb
@@ -2367,6 +2375,8 @@ class Ack{
 	private $maxack	=	0;
 	
 	public $skillack	=	0;
+
+	public $fixedDamage = false;
 	
 	public $hit = 0;
 	
@@ -2437,53 +2447,64 @@ class Ack{
 		if( $this->hit == '1' )
 		{
 			$this->hit = 0;	//初始化
-			if ($this->ap['skill']!='')
+			$this->fixedDamage = false;
+			$ackvalue = '';
+			$plus = '';
+			$plusFromSkillList = false;
+			if (!empty($this->ap['skill']))
 			{
+				$plusFromSkillList = true;
 				$patter = $this->ap['s_id'] . ":";
 				$arr = explode( $patter, $this->ap['skill']);	
 				$cid = intval(substr($arr[1],0,1))-1; // 对应数组key。
 				if($cid<0) $cid=0;
 			
 				$ar = explode(",", $this->ap['s_value']);
-				$ackvalue = $ar[$cid];
+				if(isset($ar[$cid])) $ackvalue = $ar[$cid];
 				$ar1= explode(",", $this->ap['s_plus']);
-				$plus	=	$ar1[$cid]/100+1;
+				if(isset($ar1[$cid])) $plus = $ar1[$cid];
 			}
 			else
 			{
 				$ackvalue = $this->ap['s_value'];
 				$plus	  = $this->ap['s_plus'];
-				$plusname = explode(":",$plus);
-				if($plusname[0] == 'super')
+			}
+
+			$plusname = explode(":", $plus, 2);
+			if($plusname[0] == 'super')
+			{
+				$percent = isset($plusname[1]) ? floatval(str_replace("%", "", $plusname[1])) : 0;
+				if(isset($this->bp['srchp']))
 				{
-					if(isset($this -> bp['srchp']))
-					{
-						$one = intval(($plusname[1] * $this -> bp['srchp']) / 100);
-						if(isset($this -> bp['addhp']))
-						{
-							$one .= intval(($plusname[1] * $this -> bp['addhp']) / 100);
-						}
-					}
-					else
-					{
-						$one = intval($plusname[1] * $this -> bp['hp'] / 100);
-					}
+					$targetMaxHp = $this->bp['srchp'];
+					if(isset($this->bp['addhp'])) $targetMaxHp += $this->bp['addhp'];
 				}
 				else
 				{
-					if($plus == '') {
-            			$plus = 1;
-            		}
-            		else
-            		{
-                        $plusValue = str_replace("hp:","",$plus);
-                        $plusValue = str_replace("%","",$plusValue);
-            			$plus = $plusValue/100+1;
-            		}
+					$targetMaxHp = isset($this->bp['hp']) ? $this->bp['hp'] : 0;
 				}
+
+				$one = intval($percent * $targetMaxHp / 100);
+				$this->fixedDamage = true;
+				$this->Crit = 0;
 			}
-			if($plusname[0] != 'super')
+			else
 			{
+				if($plus == '')
+				{
+					$plus = 1;
+				}
+				else if($plusFromSkillList)
+				{
+					$plus = $plus / 100 + 1;
+				}
+				else
+				{
+					$plusValue = str_replace("hp:", "", $plus);
+					$plusValue = str_replace("%", "", $plusValue);
+					$plus = $plusValue / 100 + 1;
+				}
+
 				$ackvalue=explode(',',$ackvalue);
 				$ackvalue=$ackvalue[0];
 				$ackvalue=preg_replace("/[^\d]/",'',$ackvalue);
@@ -2496,7 +2517,7 @@ class Ack{
 	
 				if ($one<0) $one=0;
 			}
-			if($this->bp['id'] != 262)	//涅磐兽不暴击不浮动
+			if(!$this->fixedDamage && $this->bp['id'] != 262)	//涅磐兽不暴击不浮动
 			{
 				$foalt_ac_number = rand(-10,5);
 				if($this->Crit == '1')
@@ -2739,6 +2760,10 @@ function iconvall(&$des){
 
 //$id背包id
 function lockItem($id){
+	if(!isset($_SESSION['lockedItems']) || !is_string($_SESSION['lockedItems']))
+	{
+		$_SESSION['lockedItems'] = '';
+	}
 	if(strpos($_SESSION['lockedItems'],','.$id.',')!==false)
 	{
 		return false;
@@ -2749,6 +2774,7 @@ function lockItem($id){
 }
 
 function unLockItem($id){
+	if(!isset($_SESSION['lockedItems']) || !is_string($_SESSION['lockedItems'])) return;
 	$_SESSION['lockedItems']=str_replace(array(','.$id.',',',,'),array('',','),$_SESSION['lockedItems']);
 }
 

@@ -69,10 +69,11 @@ $_game['keyword']   =	'';
 // Game Desc
 $_game['keydesc']	=	'';
 
-$_game['kernel']	=	'/www/wwwroot/kdjl/kernel/';
-$_game['config']	=	'/www/wwwroot/kdjl/config/';
-$_game['template']  =	'/www/wwwroot/kdjl/template/';
-$_game['sec']  		=	'/www/wwwroot/kdjl/sec/';
+$gameRoot = dirname(dirname(__FILE__)) . '/';
+$_game['kernel']	=	$gameRoot . 'kernel/';
+$_game['config']	=	$gameRoot . 'config/';
+$_game['template']  =	$gameRoot . 'template/';
+$_game['sec']  		=	$gameRoot . 'sec/';
 
 $_mem['host']		=	'127.0.0.1';
 $_mem['port']		=	'11211';

@@ -442,6 +442,5 @@ if (stripos($_SERVER['PHP_SELF'], 'vm') !== false) {
             </table>
         </form>
     </center>
-    <?
+    <?php
 } ?>
-

@@ -47,7 +47,7 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 {
 	require_once("../config/config.game.php");
 
-	$p['bname']=preg_replace("/[\s]/",'',trim($_GET['bname']));
+	$p['bname']=preg_replace("/[\s]/",'',trim(isset($_GET['bname']) ? $_GET['bname'] : ''));
 	//echo $p['bname']."  5<br/>\r\n";
 	require_once('../socketChat/badWord.php');
 	for($i=0;$i<count($badArr);$i++)
@@ -78,22 +78,25 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 	//echo $p['bname']."  4<br/>\r\n";
 	$_pm['mysql'] = new mysql();
 	$tu=$p['bname'];
+	$tuSql = $_pm['mysql']->escape($tu);
 	//$tu	= mysql_real_escape_string(preg_replace("/[ 	 _\s　	]/",'',trim($p['bname'])));
 	//$tu	= preg_replace("/[\s_]/",'',$p['bname']);
 	
-	$u	= $_GET['username'];
+	$u	= isset($_GET['username']) ? $_GET['username'] : '';
+	$uSql = $_pm['mysql']->escape($u);
 	//$bc	= $p['bc'];
-	$bc	= $_GET['bc'];
+	$bc	= isset($_GET['bc']) ? intval($_GET['bc']) : 1;
 	$rs = $_pm['mysql']->getOneRecord("SELECT id 
 							   FROM player 
-							  WHERE nickname='{$tu}'");
+							  WHERE nickname='{$tuSql}'");
 
 	if (!is_array($rs))
 	{
 		$rs = $_pm['mysql']->getOneRecord("SELECT id 
 							   FROM player 
-							  WHERE name='{$u}' and password <>'".str_repeat('0',32)."'");
+							  WHERE name='{$uSql}' and password <>'".str_repeat('0',32)."'");
 	}
+	if(!isset($_GET['sex'])) $_GET['sex']=0;
 	
 	$p['sex'] = $_GET['sex']==1?'帅哥':'美女';
 	
@@ -104,16 +107,16 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 	}
 	else
 	{
-		$p['head'] = $_GET['head']==0?1:$_GET['head'];
-		if($p['head']=="undefined") $p['head']=1;
-		if($p['bc']=="undefined") $p['bc']=1;
+		$p['head'] = (isset($_GET['head']) && intval($_GET['head'])>0)?intval($_GET['head']):1;
+		if($bc < 1 || $bc > 5) $bc=1;
 		//die('注册成功！调试');
 		// insert user data.
 
+		$pass = isset($_GET['pass']) ? $_GET['pass'] : '';
 		$_pm['mysql']->query("INSERT INTO player(name,secret,nickname,sex,regtime,lastvtime,money,yb,headimg,task)
-				    VALUES('{$_GET['username']}','".md5($_GET['pass'])."','{$tu}','{$p['sex']}',".time().",".time().",0,0,'{$p['head']}','')
+				    VALUES('{$uSql}','".md5($pass)."','{$tuSql}','{$p['sex']}',".time().",".time().",0,0,'{$p['head']}','')
 				  ");
-		$_SESSION['username'] = 	$_GET['username'];	
+		$_SESSION['username'] = 	$u;	
 		$_SESSION['id'] = $_pm['mysql']->last_id(); 
 		$_SESSION['LoginApiState'] = 1;
 		// insert user bb init data.
@@ -134,7 +137,7 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 			$czl = getCzl($bb['czl']);
 			$uinfo = $_pm['mysql']->getOneRecord("SELECT id,nickname 
 										  FROM player 
-										 WHERE name='{$u}' 
+										 WHERE name='{$uSql}' 
 										 LIMIT 0,1");
 
 			
@@ -166,7 +169,8 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 			$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump)
 					  	VALUES('{$ids['id']}', '{$jn['name']}','{$arr['1']}','{$jn['vary']}','{$jn['wx']}','{$ack['0']}','{$plus['0']}','{$jn['img']}','{$uhp['0']}','{$ump['0']}')
 					  ");
-			$_pm['mysql']->query("UPDATE player SET mbid = {$ids['id']} WHERE nickname='{$uinfo['nickname']}'");
+			$uinfoNicknameSql = $_pm['mysql']->escape($uinfo['nickname']);
+			$_pm['mysql']->query("UPDATE player SET mbid = {$ids['id']} WHERE nickname='{$uinfoNicknameSql}'");
 			if($_SESSION['registertype'] == 'prize'){
 				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime,cantrade)
 							VALUES(

@@ -5,764 +5,405 @@
 *@Author: %author%
 
 *@Write Date: 2008.09.25
-*@Update Date: 
 *@Usage: 宠物托管
-*@Note: none
 */
-/*ini_set('display_errors',true);
-error_reporting(E_ALL);*/
 session_start();
 require_once('../config/config.game.php');
-
+require_once('../sec/dblock_fun.php');
 secStart($_pm['mem']);
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-$petsAll  = $_pm['user']->getUserPetById($_SESSION['id']);
-$rs	= unserialize($_pm['mem']->get(MEM_PROPS_KEY));
-$userBag	= $_pm['user']->getUserBagById($_SESSION['id']);
-$action = $_REQUEST['action'];
-
-if(lockItem($user['mbid']) === false)
+function tgFail($message, $rollback=false)
 {
-	//die('已经在处理了！');
-	sleep(3);
+	global $_pm;
+	if ($rollback)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+	}
+	die($message);
 }
 
-
-
-
-//增加一个冷却时间
-$srctime = 1;
-#################增加一个间隔时间################
-$time = $_SESSION['paitimes'.$_SESSION['id']];
-if(empty($time))
-{	
-	$_SESSION['paitimes'.$_SESSION['id']] = time();
-}
-else
+function tgCommit()
 {
-	$nowtime = time();
-	$ctime = $nowtime - $time;
-	if($ctime < $srctime)
+	global $_pm;
+	if (!$_pm['mysql']->query('COMMIT'))
 	{
-		unLockItem($user['mbid']);
-		die("服务器繁忙，请稍候操作！");//没有达到间隔时间
-	}
-	else
-	{
-		$_SESSION['paitimes'.$_SESSION['id']] = time();
+		$_pm['mysql']->query('ROLLBACK');
+		die('操作提交失败，请重试！');
 	}
 }
 
-//加载信息
-if($action == 'getinfo'){
-	$id = intval($_GET['id']);
-	if($id <= 0){
-		unLockItem($user['mbid']);
-		die('1');
-	}
-	$mesarr = array(1=>'休息',2=>'武力修炼',3=>'冒险修炼');
-	foreach($petsAll as $v){
-		if($v['id'] == $id){
-			$mes = $mesarr[$v['tgmes']];
-			$tgtime = $v['tgtime'];
-			$stime = $v['tgstime'];
-		}
-	}
-	$time = time();
-	$ctime = $time - $stime;
-	if($ctime < 0){
-		$flag = '等待中';
-	}else if($ctime < $tgtime){
-		$flag = '托管中';
-	}else{
-		$flag = '托管完成';
-	}
-	$str = '托管时间：'.($tgtime/3600).'小时&nbsp;托管方式:'.$mes.'&nbsp;托管状态：'.$flag;
-	unLockItem($user['mbid']);
-	die($str);
-}
-if($action == 'times'){
-	$id = intval($_GET['id']);
-	if($id <= 0){
-		unLockItem($user['mbid']);
-		die('1');
-	}
-	foreach($petsAll as $v){
-		if($v['id'] == $id){
-			$rs = $v;
-		}
-	}
-	$time = time();
-	$ctime = $time - $rs['tgstime'];
-	if($ctime < 0){
-		unLockItem($user['mbid']);
-		die('2');
-	}else if($ctime < $rs['tgtime']){
-		//扣除水晶币=玩家节省时间（及玩家点击立即完成时所剩托管时间，单位为s）*200sj/3600s
-		$sj = round(($rs['tgtime'] - $ctime) * 100 / 3600);
-		unLockItem($user['mbid']);
-		die('立即加速完成，需要消耗水晶：'.$sj.'，您确定加速吗？');
-	}else{
-		unLockItem($user['mbid']);
-		die("3");
-	}
-}
-
-if($action == 'timesdo'){
-	$id = intval($_GET['id']);
-	if($id <= 0){
-		unLockItem($user['mbid']);
-		die('数据有误！');
-	}
-	foreach($petsAll as $v){
-		if($v['id'] == $id){
-			$rs = $v;
-		}
-	}
-	$time = time();
-	$ctime = $time - $rs['tgstime'];
-	if($ctime < 0){
-		unLockItem($user['mbid']);
-		die('等待的宠物不能加速！');
-	}else if($ctime < $rs['tgtime']){
-		//扣除水晶币=玩家节省时间（及玩家点击立即完成时所剩托管时间，单位为s）*200sj/3600s
-		$sj = round(($rs['tgtime'] - $ctime) * 100 / 3600);
-		$_pm['mysql'] -> query("UPDATE player_ext SET sj = sj - $sj WHERE uid = {$_SESSION['id']} and sj >= $sj");
-		$result = mysql_affected_rows($_pm['mysql'] -> getConn());
-		if($result != 1){
-			unLockItem($mbid);
-			die("1");
-		}
-		$time1 = $rs['tgtime'] - $ctime;
-		$_pm['mysql'] -> query("UPDATE userbb SET tgstime = tgstime - $time1 WHERE id = $id and uid = {$_SESSION['id']}");
-		unLockItem($mbid);
-		die('加速完成，您是否取回您的宠物？');
-	}else{
-		unLockItem($user['mbid']);
-		die('托管完成，不需要加速！');
-	}
-}
-
-//得到玩家当前所选的宠物的状态
-if($action == "change")
+function tgPetStatus($pet, $now)
 {
-	$err = "";
-	$id = intval($_REQUEST['id']);
-	if($petsid < 0)
-	{
-		unLockItem($user['mbid']);
-		die("10");//信息出错
-	}
-	foreach($petsAll as $pets)
-	{
-		if($pets['id'] == $id)
-		{
-			if($pets['tgflag'] == "0")
-			{
-				$err = 0;//未托管
-			}
-			else if($pets['tgflag'] == "1")
-			{
-				$times = time();
-				$time = $times - $pets['tgstime'];
-				if($time < $pets['tgtime'])
-				{
-					$err = 1;//托管中
-				}
-				else
-				{
-					$err = 2;//托管完成
-				}
-			}
-			else if($pets['tgflag'] == "2")
-			{
-				$time = time();
-				if($time < $pets['tgstime'])
-				{
-					$err = 3;//等待中
-				}
-				else
-				{
-					$time = $time - $pets['tgstime'];
-					if($time < $pets['tgtime'])
-					{
-						$err = 1;//托管中
-					}
-					else
-					{
-						$err = 2;//托管完成
-					}
-				}
-			}	
-		}
-	}
-	echo $err;
+	if (!is_array($pet) || intval($pet['tgflag']) == 0) return 0;
+	if ($now < intval($pet['tgstime'])) return 3;
+	if ($now - intval($pet['tgstime']) < intval($pet['tgtime'])) return 1;
+	return 2;
 }
 
-//托管宠物
-if($action == "tuoguan")
+function tgGetPet($uid, $id, $forUpdate=false)
 {
-	//时间限制(只有在22:00 到 10：00 可以托管)
-	$err = "";
-	$times = date("H:i:s");
-	$timearr = explode(":",$times);
-	if($timearr[0] >= 10 && $timearr[0] < 22)
-	{
-		unLockItem($user['mbid']);
-		die("0");//只有22：00--10：00 才可以托管！
-	}
-	$pets = intval($_REQUEST['pets']);
-	$time = intval($_REQUEST['time']);
-	$mes = intval($_REQUEST['mes']);
-	$time1 = $timearr[0] + $time;
-	if($time1 >= 24)
-	{
-		$time1 = $time1 - 24;
-	}
-	if($time1 >= 10 && $time1 < 22)
-	{
-		unLockItem($user['mbid']);
-		die("7");//超出托管结束时间。请重新选择时间! 
-	}
-	if($pets <=0 )
-	{
-		unLockItem($user['mbid']);
-		die("1");//请选择要托管宠物
-	}
-	$i = 0;
-	foreach($petsAll as $p)
-	{
-		if($p['tgflag'] > 0)
-		{
-			$i++;
-		}
-	}
-	if($i >= 3)
-	{
-		unLockItem($user['mbid']);
-		die("5");//托管个数已达上限
-	}
-	if($i >= 1 && $i < 3 && $i == $user['tgmax'])
-	{
-		unLockItem($user['mbid']);
-		die("6");//托管个数您目前的上限，您可以能过购买托管所扩充卷扩充您的托管所！
-	}
-	
-	foreach($petsAll as $pet)
-	{	
-		if($pet['id'] == $pets)
-		{
-			if($pet['level'] < 10){
-				unLockItem($user['mbid']);
-				die('199');
-			}
-			if(!empty($pet['tgflag']))
-			{
-				$now = time();
-				$time5 = $now - $pet['tgstime'];
-				if($pet['tgstime'] > $now)
-				{
-					unLockItem($user['mbid']);
-					die("8");//等待中
-				}
-				else
-				{
-					if($time5 < $pet['tgtime'])
-					{
-						unLockItem($user['mbid']);
-						die("3");//玩家当前所选宠物已经在托管！
-					}
-					else
-					{
-						unLockItem($user['mbid']);
-						die("4");//当前宠物托管已完成，请先取回再托管!
-					}
-				}
-			}
-		}
-	}
-	if($pets >0 && $time > 0 && !empty($mes))
-	{
-		//得到要消耗的托管时间
-		if($mes == "1")
-		{
-			$times = $time;
-		}
-		else if($mes == "2")
-		{
-			$times = 2* $time;
-		}
-		else if($mes == "3")
-		{
-			$times = 3*$time;
-		}
-		$tgtime = $time * 3600;
-		//判断用户是否有足够的托管时间
-		if($user['tgtime'] < $times)
-		{
-			unLockItem($user['mbid']);
-			die("2");//托管失败，您的托管时间不足！您可以购买“托管卷”来增加时间。
-		}
-		//减去玩家的托管时间
-		$sql = "UPDATE player
-				SET tgtime = tgtime - {$times}
-				WHERE id = {$_SESSION['id']} AND tgtime >= $times";
-		$_pm['mysql'] -> query($sql);
-		$result = mysql_affected_rows($_pm['mysql'] -> getConn());
-		if($result != 1){
-			unLockItem($user['mbid']);
-			die("托管时间不足");
-		}
-		//更新玩家该宠物的状态
-		$time1 = time();
-		$sql = "UPDATE userbb 
-				SET tgflag = 1,tgstime = {$time1},tgmes = {$mes},tgtime = {$tgtime}
-				WHERE id = {$pets}";
-		$_pm['mysql'] -> query($sql);
-		$err = 10;
-	}
-	echo $err;
+	global $_pm;
+	$sql = 'SELECT * FROM userbb WHERE uid='.intval($uid).' AND id='.intval($id);
+	if ($forUpdate) $sql .= ' FOR UPDATE';
+	return $_pm['mysql']->getOneRecord($sql);
 }
 
-//判断宠物状态
-if($action == "offpets")
+function tgStart($uid, $auto)
 {
-	$id = intval($_REQUEST['id']);
-	if($id <= 0)
+	global $_pm;
+	$db = $_pm['mysql'];
+	$petId = isset($_REQUEST['pets']) ? intval($_REQUEST['pets']) : 0;
+	$hours = isset($_REQUEST['time']) ? intval($_REQUEST['time']) : 0;
+	$mode = isset($_REQUEST['mes']) ? intval($_REQUEST['mes']) : 0;
+	$allowedHours = array(1, 2, 4, 8, 10);
+
+	if ($petId < 1 || !in_array($hours, $allowedHours, true) || $mode < 1 || $mode > 3)
 	{
-		unLockItem($user['mbid']);
-		die("0");//请选择您要取回的宠物！
+		tgFail('1');
 	}
-	foreach($petsAll as $pets)
+
+	$now = time();
+	$currentHour = intval(date('G', $now));
+	if (!$auto && $currentHour >= 10 && $currentHour < 22)
 	{
-		if($pets['id'] == $id)
-		{
-			if($pets['tgflag'] == 0)
-			{
-				unLockItem($user['mbid']);
-				die("1");//您还没有进行任何托管操作，不用取回宠物。
-			}
-			else if($pets['tgflag'] == 2)
-			{
-				$time = time();
-				if($pets['tgstime'] > $time )
-				{
-					unLockItem($user['mbid']);
-					die("4");//还在等待中，确定取回吗？
-				}
-				else
-				{
-					$ctime = $time - $pets['tgstime'];
-					if($ctime < $pets['tgtime'])
-					{
-						unLockItem($user['mbid']);
-						die("3");//提前取回宠物，您之前消耗托管时间将失效，确认取回吗？
-					}
-					else
-					{
-						unLockItem($user['mbid']);
-						die("2");//托管已完成，您可以取回您的宠物了！
-					}
-				}
-			}
-			else if(!empty($pets['tgflag']))
-			{
-				$time = time();
-				$ctime = $time - $pets['tgstime'];
-				if($ctime < $pets['tgtime'])
-				{
-					unLockItem($user['mbid']);
-					die("3");//提前取回宠物，您之前消耗托管时间将失效，确认取回吗？
-				}
-				else
-				{
-					unLockItem($user['mbid']);
-					die("2");//托管已完成，您可以取回您的宠物了！
-				}
-			}
-		}
+		tgFail('0');
 	}
+
+	$startTime = $now;
+	if ($auto && $currentHour >= 10 && $currentHour < 22)
+	{
+		$startTime = strtotime(date('Y-m-d', $now).' 22:00:00');
+	}
+	$duration = $hours * 3600;
+	$endHour = intval(date('G', $startTime + $duration));
+	if ($endHour >= 10 && $endHour < 22)
+	{
+		tgFail('7');
+	}
+
+	getLock($uid);
+	$user = $db->getOneRecord('SELECT tgtime,tgmax FROM player WHERE id='.$uid.' FOR UPDATE');
+	$pet = tgGetPet($uid, $petId, true);
+	if (!is_array($user) || !is_array($pet))
+	{
+		tgFail('1', true);
+	}
+	if (intval($pet['level']) < 10)
+	{
+		tgFail('199', true);
+	}
+	if (intval($pet['muchang']) != 1 || !empty($pet['chchengsx']))
+	{
+		tgFail('该宠物当前状态不能托管！', true);
+	}
+	if (intval($pet['tgflag']) != 0)
+	{
+		$status = tgPetStatus($pet, $now);
+		if ($status == 3) tgFail('8', true);
+		if ($status == 1) tgFail('3', true);
+		tgFail('4', true);
+	}
+
+	$activePets = $db->getRecords('SELECT id FROM userbb WHERE uid='.$uid.' AND tgflag>0 FOR UPDATE');
+	$activeCount = is_array($activePets) ? count($activePets) : 0;
+	if ($activeCount >= 3)
+	{
+		tgFail('5', true);
+	}
+	$playerLimit = intval($user['tgmax']);
+	if ($playerLimit < 0) $playerLimit = 0;
+	if ($activeCount >= $playerLimit)
+	{
+		tgFail('6', true);
+	}
+
+	$cost = $hours * $mode;
+	$sql = 'UPDATE player SET tgtime=tgtime-'.$cost.' WHERE id='.$uid.' AND tgtime>='.$cost;
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		tgFail('2', true);
+	}
+
+	$flag = $auto ? 2 : 1;
+	$sql = 'UPDATE userbb SET tgflag='.$flag.',tgstime='.$startTime.',tgmes='.$mode.',tgtime='.$duration.
+		' WHERE uid='.$uid.' AND id='.$petId.' AND muchang=1 AND tgflag=0'.
+		' AND (chchengsx IS NULL OR chchengsx="")';
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		tgFail('宠物状态已经变化，请刷新后重试！', true);
+	}
+
+	tgCommit();
+	die('10');
 }
-//取回宠物
-if($action == "offpet")
-{
-	$err = "";
-	$id = intval($_REQUEST['id']);
-	foreach($petsAll as $p)
-	{
-		if($p['muchang'] == 1)
-		{
-			$numarr[] = $p['id'];
-		}
-	}
-	if(count($numarr) >= $user['maxmc'] ) 
-	{
-		unLockItem($user['mbid']);
-		die("13");//牧场格子已经占满！
-	}
-	if($id > 0)
-	{
-		//改变状态并增加该玩家的当前宠物的相关信息
-		foreach($petsAll as $pets)
-		{
-			if($pets['id'] == $id)
-			{
-				$mes = $pets['tgmes'];
-				$stime = $pets['tgstime'];
-				$time = $pets['tgtime'];
-				$level = $pets['level'];
-				$czl = $pets['czl'];
-				$srchp = $pets['srchp'];
-				$srcmp = $pets['srcmp'];
-				$ac = $pets['ac'];
-				$mc = $pets['mc'];
-				break;
-			}
-		}
-		$nowtime = time();
-
-		$ctime = $nowtime - $stime;
-		//获得的经验数=宠物等级*（宠物成长率/40）*5000
-		if($time <= 0)
-		{
-			unLockItem($user['mbid']);
-			die("0");
-		}
-		if($ctime < $time)//取回托管时间未用完
-		{
-			$time = $ctime;
-		}
-		if($time < 0){
-			$time = 0;
-		}
-		$num = intval($time / 60 / 5);//计算的次数
-		if($mes == 1)//休息
-		{
-			$exp += $level * ($czl / 40) * 2500 * $num;
-		}
-		else if($mes == 2)//武力修炼
-		{
-			$exp += $level * ($czl / 40) * 2500 * $num * 2;
-		}
-		else if($mes == 3)//冒险修炼
-		{
-			$exp += $level * ($czl / 40) * 2500 * $num * 2.5;
-			for($i = 1;$i <= $num;$i++)
-			{
-				$props[] = giveprops($level);
-			}
-		}
-		else
-		{
-			unLockItem($user['mbid']);
-			die("0");//相关信息出错
-		}
-		//判断用户包裹是否已满
-		$bagNum=0;
-		$arr = array();
-		if(is_array($props))
-		{
-			foreach($props as  $v)
-			{
-				if(array_key_exists($v['id'],$arr))
-				{
-					$arr[$v['id']] += $v['sum'];
-				}
-				else
-				{
-					$arr[$v['id']] = $v['sum'];
-				}
-			}
-		}
-		if(is_array($userBag))
-		{
-			foreach($userBag as $x => $y)
-			{
-				if($y['sums']>0 and $y['zbing'] == 0) 
-				{
-					$bagNum++;		
-				}
-			}
-		}
-		$bagNum += count($arr);
-		if($bagNum > $user['maxbag'])
-		{
-			unLockItem($user['mbid']);
-			die('12');//包裹空间不够，请先清理包裹！
-		}
-		if(is_array($arr))
-		{
-			foreach($arr as $k => $p)
-			{
-				foreach($userBag as $ub)
-				{
-					$ids[] = $ub['pid'];
-				}
-				if(in_array($k,$ids))
-				{
-					$sql = "UPDATE userbag SET sums = sums+{$p} WHERE uid = {$_SESSION['id']} and pid = {$k}";
-				}
-				else
-				{
-					$sql = "INSERT INTO userbag (pid,sums,uid) VALUES ({$k},{$p},{$_SESSION['id']})";
-				}
-				$_pm['mysql'] -> query($sql);
-			}
-		}
-		//宠物升级
-		$t = new task();
-		$a = $t->saveExps($exp,$id);
-		//改变宠物的状态
-		$sql = "UPDATE userbb
-				SET tgflag = 0,tgstime = 0,tgtime = 0,tgmes = 0
-				WHERE id = {$id}";
-		$_pm['mysql'] -> query($sql);
-		//加日志 09 06 24
-		$time1 = $time / 3600;
-		$rearr = $_pm['mysql'] -> getOneRecord("SELECT level,czl,srchp,srcmp,ac,mc,tgflag,tgstime,tgtime,tgmes FROM userbb WHERE id = {$id}");
-		$str = 'id:'.$id.'得经验:'.$exp.'level:'.$level.'->'.$rearr['level'].'托管方式:'.$mes.'stime:'.date("YmdHi",$stime).'->'.$rearr['tgstime'].'托管时间:'.$time1.'->'.$rearr['tgtime'].'成长:'.$czl.'->'.$rearr['czl'].'生命:'.$srchp.'->'.$rearr['srchp'].'魔法:'.$srcmp.'->'.$rearr['srcmp'].'攻击:'.$ac.'->'.$rearr['ac'].'防御:'.$mc.'->'.$rearr['mc'];
-		$_pm['mysql'] -> query("INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES (".time().",{$_SESSION['id']},{$_SESSION['id']},'$str',30)");
-		
-		
-		$err = 10;//取回宠物成功
-	}
-	else
-	{
-		$err = 11;//取回宠物失败
-	}
-	echo $err;
-}
-
-
-//查看详情
-if($action == "show")
-{
-	$id = intval($_REQUEST['id']);
-	if($id <= 0)
-	{
-		unLockItem($user['mbid']);
-		die("请选择一个宠物!");//请选择一个您要查看的宠物！
-	}
-	foreach($petsAll as $pet)
-	{
-		if($pet['id'] == $id)
-		{
-			if(empty($pet['tgflag']))
-			{
-				$str = "该宠物还没有托管或者已经取回！";
-				echo $str;
-				exit;
-			}
-			$time = time();
-			if($time < $pet['tgstime'])
-			{
-				$str = "还没有到托管时间，您不能查看！";
-				echo $str;
-				exit;
-			}
-			$nowtime = time();
-			$ctime = $nowtime - $pet['tgstime'];
-			if($ctime > $pet['tgtime'])
-			{
-				$time = $pet['tgtime'];
-			}
-			else
-			{
-				$time = $ctime;
-			}
-			$num = $time / 60 / 5;
-			if($pet['tgmes'] == 1)//休息
-			{
-				$exp += $pet['level'] * ($pet['czl'] / 40) * 2500 * $num;
-			}
-			else if($pet['tgmes'] == 2)//武力修炼
-			{
-				$exp += $pet['level'] * ($pet['czl'] / 40) * 2500 * $num * 2;
-			}
-			else if($pet['tgmes'] == 3)//冒险修炼
-			{
-				$exp += $pet['level'] * ($pet['czl'] / 40) * 2500 * $num * 2.5;
-				for($i = 1;$i <= $num;$i++)
-				{
-					$props[] = giveprops($pet['level']);
-				}
-			}
-			$str = "托管宠物：".$pet['name']."\n";
-			$str .= "托管前宠物等级：".$pet['level']."\n";
-			//$str .= "当前宠物等级";
-			$str .= "托管时间：".($pet['tgtime'] / 3600)."小时\n";
-			$str .= "当前已托管时间：".round($time / 60)."分钟\n";
-			$str .= "托管获得经验：".round($exp)."\n";
-			$str .= "随机获得物品";
-			echo $str;
-		}	
-	}
-}
-
-
-
-
-//自动托管
-if($action == "auto")
-{
-	//时间限制(只有在22:00 到 10：00 可以托管)
-	$err = "";
-	$times = date("H:i:s");
-	$timearr = explode(":",$times);
-	if($timearr[0] >= 10 && $timearr[0] < 22)
-	{
-		$date = date("Y-m-d");
-		$autotime = strtotime($date." 22:00:00");
-		//得到开始托管的时间
-	}
-	else
-	{
-		$autotime = time();
-	}
-	$pets = intval($_REQUEST['pets']);
-	$time = intval($_REQUEST['time']);
-	$mes = intval($_REQUEST['mes']);
-	$time1 = $autotime + $time;
-	if($time1 >= 24)
-	{
-		$time1 = $time1 - 24;
-	}
-	if($time1 >= 10 && $time1 < 22)
-	{
-		unLockItem($user['mbid']);
-		die("7");//超出托管结束时间。请重新选择时间!
-	}
-	if($pets <=0 )
-	{
-		unLockItem($user['mbid']);
-		die("1");//请选择要托管宠物
-	}/**/
-	$i = 0;
-	foreach($petsAll as $p)
-	{
-		if($p['tgflag'] > 0)
-		{
-			$i++;
-		}
-	}
-	if($i >= 3)
-	{
-		unLockItem($user['mbid']);
-		die("5");//托管个数已达上限
-	}
-	if($i >= 1 && $i < 3 && $i == $user['tgmax'])
-	{
-		unLockItem($user['mbid']);
-		die("6");//托管个数您目前的上限，您可以能过购买托管所扩充卷扩充您的托管所！
-	}
-	
-	foreach($petsAll as $pet)
-	{	
-		if($pet['id'] == $pets)
-		{
-			if($pet['level'] < 10){
-				unLockItem($user['mbid']);
-				die('199');
-			}
-			if(!empty($pet['tgflag']))
-			{
-				$time = time() - $pet['tgstime'];
-				if($pet['tgstime'] > $now)
-				{
-					unLockItem($user['mbid']);
-					die("8");//等待中
-				}
-				else
-				{
-					if($time < $pet['tgtime'])
-					{
-						unLockItem($user['mbid']);
-						die("3");//玩家当前所选宠物已经在托管！
-					}
-					else
-					{
-						unLockItem($user['mbid']);
-						die("4");//当前宠物托管已完成，请先取回再托管!
-					}
-				}
-			}
-		}
-	}
-	if($pets >0 && $time > 0 && !empty($mes))
-	{
-		//得到要消耗的托管时间
-		if($mes == "1")
-		{
-			$times = $time;
-		}
-		else if($mes == "2")
-		{
-			$times = 2* $time;
-		}
-		else if($mes == "3")
-		{
-			$times = 3*$time;
-		}
-		$tgtime = $time * 3600;
-		//判断用户是否有足够的托管时间
-		if($user['tgtime'] < $times)
-		{
-			unLockItem($user['mbid']);
-			die("2");//托管失败，您的托管时间不足！您可以购买“托管卷”来增加时间。
-		}
-		//减去玩家的托管时间
-		$sql = "UPDATE player
-				SET tgtime = tgtime - {$times}
-				WHERE id = {$_SESSION['id']} AND tgtime >= $times";
-		$_pm['mysql'] -> query($sql);
-		
-		$result = mysql_affected_rows($_pm['mysql'] -> getConn());
-		if($result != 1){
-			unLockItem($mbid);
-			die("托管时间不足");
-		}
-		//更新玩家该宠物的状态
-		$sql = "UPDATE userbb 
-				SET tgflag = 2,tgstime = {$autotime},tgmes = {$mes},tgtime = {$tgtime}
-				WHERE id = {$pets}";
-		$_pm['mysql'] -> query($sql);
-		$err = 10;
-	}
-	echo $err;
-}
-unLockItem($user['mbid']);
-$_pm['mem']->memClose();
-unLockItem($user['mbid']);
-
-//根据宠物的等级随机给道具
-//$level 宠物的等级
 
 function giveprops($level)
 {
 	global $tuoguan;
-	foreach ($tuoguan as $k => $v)
+	$config = false;
+	foreach ($tuoguan as $range => $value)
 	{
-		$lv = explode("-",$k);
-		//根据宠物的等级等到该宠物的道具
-		if($level <= $lv[1] && $level >= $lv[0])
+		$levels = explode('-', $range);
+		if (count($levels) == 2 && $level >= intval($levels[0]) && $level <= intval($levels[1]))
 		{
-			$arr = explode(",",$v);
+			$config = $value;
 			break;
 		}
 	}
-	foreach($arr as $arrs)
+	if ($config === false) return false;
+
+	$reward = false;
+	foreach (explode(',', $config) as $itemConfig)
 	{
-		$info[] = explode(":",$arrs);
-	}
-	foreach($info as $infos)
-	{
-		if(rand(1,$infos[1]) == 1)
+		$info = explode(':', $itemConfig);
+		if (count($info) != 3) continue;
+		$chance = intval($info[1]);
+		if ($chance < 1) continue;
+		if (rand(1, $chance) == 1)
 		{
-			$props['id'] = $infos[0];
-			$props['sum'] = $infos[2];
+			$reward = array('id'=>intval($info[0]), 'sum'=>intval($info[2]));
 		}
 	}
-	return $props;
+	return $reward;
+}
+
+$uid = intval($_SESSION['id']);
+$action = isset($_REQUEST['action']) ? strval($_REQUEST['action']) : '';
+$allowedActions = array('getinfo', 'times', 'timesdo', 'change', 'tuoguan', 'offpets', 'offpet', 'show', 'auto');
+if ($uid < 1 || !in_array($action, $allowedActions, true))
+{
+	die('数据有误！');
+}
+
+$mutatingActions = array('timesdo', 'tuoguan', 'offpet', 'auto');
+if (in_array($action, $mutatingActions, true))
+{
+	$timeKey = 'tuoguan_action_'.$uid;
+	$lastTime = isset($_SESSION[$timeKey]) ? intval($_SESSION[$timeKey]) : 0;
+	if ($lastTime > 0 && time() - $lastTime < 1)
+	{
+		die('服务器繁忙，请稍候操作！');
+	}
+	$_SESSION[$timeKey] = time();
+}
+
+$db = $_pm['mysql'];
+$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+
+if ($action == 'getinfo')
+{
+	$pet = $id > 0 ? tgGetPet($uid, $id, false) : false;
+	if (!is_array($pet) || intval($pet['tgflag']) == 0) tgFail('1');
+	$modes = array(1=>'休息', 2=>'武力修炼', 3=>'冒险修炼');
+	$mode = isset($modes[intval($pet['tgmes'])]) ? $modes[intval($pet['tgmes'])] : '未知';
+	$statusNames = array(0=>'未托管', 1=>'托管中', 2=>'托管完成', 3=>'等待中');
+	$status = tgPetStatus($pet, time());
+	$str = '托管时间：'.(intval($pet['tgtime']) / 3600).'小时&nbsp;托管方式:'.$mode.
+		'&nbsp;托管状态：'.$statusNames[$status];
+	die($str);
+}
+
+if ($action == 'times')
+{
+	$pet = $id > 0 ? tgGetPet($uid, $id, false) : false;
+	if (!is_array($pet) || intval($pet['tgflag']) == 0) tgFail('1');
+	$status = tgPetStatus($pet, time());
+	if ($status == 3) tgFail('2');
+	if ($status == 2) tgFail('3');
+	$elapsed = time() - intval($pet['tgstime']);
+	$remaining = intval($pet['tgtime']) - $elapsed;
+	$crystal = intval(round($remaining * 100 / 3600));
+	die('立即加速完成，需要消耗水晶：'.$crystal.'，您确定加速吗？');
+}
+
+if ($action == 'timesdo')
+{
+	if ($id < 1) tgFail('数据有误！');
+	getLock($uid);
+	$pet = tgGetPet($uid, $id, true);
+	$playerExt = $db->getOneRecord('SELECT sj FROM player_ext WHERE uid='.$uid.' FOR UPDATE');
+	if (!is_array($pet) || !is_array($playerExt) || intval($pet['tgflag']) == 0 || intval($pet['muchang']) != 1)
+	{
+		tgFail('数据有误！', true);
+	}
+	$status = tgPetStatus($pet, time());
+	if ($status == 3) tgFail('等待的宠物不能加速！', true);
+	if ($status == 2) tgFail('托管完成，不需要加速！', true);
+
+	$elapsed = time() - intval($pet['tgstime']);
+	$remaining = intval($pet['tgtime']) - $elapsed;
+	$crystal = intval(round($remaining * 100 / 3600));
+	if ($crystal > 0)
+	{
+		$sql = 'UPDATE player_ext SET sj=sj-'.$crystal.' WHERE uid='.$uid.' AND sj>='.$crystal;
+		if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+		{
+			tgFail('1', true);
+		}
+	}
+	$newStart = time() - intval($pet['tgtime']);
+	$sql = 'UPDATE userbb SET tgstime='.$newStart.' WHERE uid='.$uid.' AND id='.$id.' AND tgflag>0';
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		tgFail('数据有误！', true);
+	}
+	tgCommit();
+	die('加速完成，您是否取回您的宠物？');
+}
+
+if ($action == 'change')
+{
+	$pet = $id > 0 ? tgGetPet($uid, $id, false) : false;
+	if (!is_array($pet)) tgFail('10');
+	die(strval(tgPetStatus($pet, time())));
+}
+
+if ($action == 'tuoguan')
+{
+	tgStart($uid, false);
+}
+
+if ($action == 'auto')
+{
+	tgStart($uid, true);
+}
+
+if ($action == 'offpets')
+{
+	$pet = $id > 0 ? tgGetPet($uid, $id, false) : false;
+	if (!is_array($pet)) tgFail('0');
+	$status = tgPetStatus($pet, time());
+	if ($status == 0) tgFail('1');
+	if ($status == 3) tgFail('4');
+	if ($status == 1) tgFail('3');
+	tgFail('2');
+}
+
+if ($action == 'offpet')
+{
+	if ($id < 1) tgFail('11');
+	getLock($uid);
+	$user = $db->getOneRecord('SELECT maxbag FROM player WHERE id='.$uid.' FOR UPDATE');
+	$pet = tgGetPet($uid, $id, true);
+	if (!is_array($user) || !is_array($pet) || intval($pet['tgflag']) == 0 || intval($pet['muchang']) != 1)
+	{
+		tgFail('11', true);
+	}
+
+	$mode = intval($pet['tgmes']);
+	$duration = intval($pet['tgtime']);
+	if ($duration <= 0 || $mode < 1 || $mode > 3)
+	{
+		tgFail('0', true);
+	}
+	$elapsed = time() - intval($pet['tgstime']);
+	if ($elapsed < 0) $elapsed = 0;
+	if ($elapsed > $duration) $elapsed = $duration;
+	$ticks = intval($elapsed / 300);
+
+	$multiplier = 1;
+	if ($mode == 2) $multiplier = 2;
+	else if ($mode == 3) $multiplier = 2.5;
+	$exp = intval(round(intval($pet['level']) * (floatval($pet['czl']) / 40) * 2500 * $ticks * $multiplier));
+
+	$rewards = array();
+	if ($mode == 3 && $ticks > 0)
+	{
+		for ($i=0; $i<$ticks; $i++)
+		{
+			$reward = giveprops(intval($pet['level']));
+			if (!is_array($reward) || $reward['id'] < 1 || $reward['sum'] < 1) continue;
+			if (!isset($rewards[$reward['id']])) $rewards[$reward['id']] = 0;
+			$rewards[$reward['id']] += $reward['sum'];
+		}
+	}
+
+	$bagRows = $db->getRecords(
+		'SELECT id,pid,sums,sell,bsum,psum,pyb,zbing,zbpets FROM userbag WHERE uid='.$uid.' FOR UPDATE'
+	);
+	if (!is_array($bagRows)) $bagRows = array();
+	$usedSlots = 0;
+	$stackByPid = array();
+	foreach ($bagRows as $bagRow)
+	{
+		if (intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0) $usedSlots++;
+		if (intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0 &&
+			intval($bagRow['bsum']) == 0 &&
+			intval($bagRow['psum']) == 0 && intval($bagRow['pyb']) == 0 &&
+			intval($bagRow['zbpets']) == 0 && !isset($stackByPid[intval($bagRow['pid'])]))
+		{
+			$stackByPid[intval($bagRow['pid'])] = intval($bagRow['id']);
+		}
+	}
+
+	$newSlots = 0;
+	foreach ($rewards as $propsId => $sum)
+	{
+		if (!isset($stackByPid[$propsId])) $newSlots++;
+	}
+	if ($usedSlots + $newSlots > intval($user['maxbag']))
+	{
+		tgFail('12', true);
+	}
+
+	foreach ($rewards as $propsId => $sum)
+	{
+		if (isset($stackByPid[$propsId]))
+		{
+			$sql = 'UPDATE userbag SET sums=sums+'.intval($sum).' WHERE uid='.$uid.
+				' AND id='.$stackByPid[$propsId];
+		}
+		else
+		{
+			$sql = 'INSERT INTO userbag (pid,sums,uid) VALUES ('.intval($propsId).','.intval($sum).','.$uid.')';
+		}
+		if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+		{
+			tgFail('奖励物品发放失败，请重试！', true);
+		}
+	}
+
+	if ($exp > 0)
+	{
+		$task = new task();
+		$task->saveExps($exp, $id, $uid);
+	}
+
+	$sql = 'UPDATE userbb SET tgflag=0,tgstime=0,tgtime=0,tgmes=0'.
+		' WHERE uid='.$uid.' AND id='.$id.' AND tgflag>0';
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		tgFail('宠物托管状态更新失败，请重试！', true);
+	}
+	$afterPet = tgGetPet($uid, $id, false);
+	tgCommit();
+
+	$log = 'id:'.$id.'得经验:'.$exp.'level:'.$pet['level'].'->'.(is_array($afterPet) ? $afterPet['level'] : $pet['level']).
+		'托管方式:'.$mode.'托管时间:'.($elapsed / 3600).'成长:'.$pet['czl'];
+	$db->query('INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES ('.time().','.$uid.','.$uid.','.
+		$db->quote($log).',30)');
+	die('10');
+}
+
+if ($action == 'show')
+{
+	$pet = $id > 0 ? tgGetPet($uid, $id, false) : false;
+	if (!is_array($pet)) tgFail('请选择一个宠物!');
+	if (intval($pet['tgflag']) == 0) tgFail('该宠物还没有托管或者已经取回！');
+	if (time() < intval($pet['tgstime'])) tgFail('还没有到托管时间，您不能查看！');
+
+	$elapsed = time() - intval($pet['tgstime']);
+	if ($elapsed > intval($pet['tgtime'])) $elapsed = intval($pet['tgtime']);
+	if ($elapsed < 0) $elapsed = 0;
+	$ticks = intval($elapsed / 300);
+	$multiplier = intval($pet['tgmes']) == 1 ? 1 : (intval($pet['tgmes']) == 2 ? 2 : 2.5);
+	$exp = intval(round(intval($pet['level']) * (floatval($pet['czl']) / 40) * 2500 * $ticks * $multiplier));
+	$str = '托管宠物：'.$pet['name']."\n";
+	$str .= '托管前宠物等级：'.$pet['level']."\n";
+	$str .= '托管时间：'.(intval($pet['tgtime']) / 3600)."小时\n";
+	$str .= '当前已托管时间：'.round($elapsed / 60)."分钟\n";
+	$str .= '托管获得经验：'.$exp."\n";
+	$str .= '随机物品将在取回时结算';
+	die($str);
 }
 ?>

@@ -61,7 +61,7 @@ $a = getLock($_SESSION['id']);
 if(!is_array($a))
 {
 	realseLock();
-	unLockItem($id);
+	unLockItem(1);
 	die('服务器繁忙，请稍候再试！');
 }
 switch ($num)

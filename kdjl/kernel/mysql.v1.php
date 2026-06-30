@@ -42,7 +42,7 @@ class mysql{
 				$this->err='Connect error: ' . @mysql_error();
 			}
 		}
-		@mysql_select_db($_mysql['db']);
+		@mysql_select_db($_mysql['db'], self::$linkHandle);
 		
 		$this->query("SET NAMES utf8mb4;"); 
 		$this->query("SET CHARACTER_SET_CLIENT=utf8mb4;"); 
@@ -52,6 +52,37 @@ class mysql{
 	public function last_id()
 	{
 		return mysql_insert_id(self::$linkHandle);
+	}
+
+	public function escape($value)
+	{
+		$this->safeConn();
+		return mysql_real_escape_string($value, self::$linkHandle);
+	}
+
+	public function quote($value)
+	{
+		return "'" . $this->escape($value) . "'";
+	}
+
+	public function columnExists($table, $column)
+	{
+		if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column))
+		{
+			return false;
+		}
+		$column = $this->escape($column);
+		$rs = $this->getOneRecord("SHOW COLUMNS FROM `{$table}` LIKE '{$column}'");
+		return is_array($rs);
+	}
+
+	public function addColumnIfMissing($table, $column, $definition)
+	{
+		if (!$this->columnExists($table, $column))
+		{
+			return $this->query("ALTER TABLE `{$table}` ADD `{$column}` {$definition}");
+		}
+		return true;
 	}
 	
 	// get all record.
@@ -80,8 +111,8 @@ class mysql{
 				$ret[$i++] = $rs;
 			}
 
-			if ($type==1) $this->effectRows = @mysql_num_rows();
-			else if ($type==2) $this->effectRows = @mysql_affected_rows();
+			if ($type==1) $this->effectRows = @mysql_num_rows($qd);
+			else if ($type==2) $this->effectRows = @mysql_affected_rows(self::$linkHandle);
 			else $this->effectRows = FALSE;
 
 			@mysql_free_result($qd);
@@ -117,8 +148,8 @@ class mysql{
 		if ($qd !== FALSE)
 		{
 			$ret = @mysql_fetch_assoc($qd);
-			if ($type==1) $this->effectRows = @mysql_num_rows();
-			else if ($type==2) $this->effectRows = @mysql_affected_rows();
+			if ($type==1) $this->effectRows = @mysql_num_rows($qd);
+			else if ($type==2) $this->effectRows = @mysql_affected_rows(self::$linkHandle);
 			else $this->effectRows = FALSE;
 
 			@mysql_free_result($qd);
@@ -142,7 +173,7 @@ class mysql{
 		}*/
 
 		
-		if ( ($hd=mysql_query($sql)) === FALSE)
+		if ( ($hd=mysql_query($sql, self::$linkHandle)) === FALSE)
 		{
 			$this->errMsg = 'Query error:' . @mysql_error();
 			return FALSE;

@@ -13,9 +13,9 @@ error_reporting(7);
 require_once('../config/config.game.php');
 header('Content-Type:text/html;charset=gbk');
 secStart($_pm['mem']);
-$action = $_GET['action'];
+$action = isset($_GET['action']) ? $_GET['action'] : '';
 
-if($action = 'go'){
+if($action === 'go'){
 	$check = 1;
 	$arr = $_pm['mysql'] -> getOneRecord("SELECT active_lastvtime FROM player_ext WHERE uid = {$_SESSION['id']}");
 	if(!is_array($arr) || empty($arr)){

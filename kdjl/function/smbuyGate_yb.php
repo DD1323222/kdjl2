@@ -1,4 +1,7 @@
 <?php
+require_once(dirname(__FILE__).'/smbuyGate.php');
+exit;
+
 /**
 *@Version: %version%
 *@Copyright: %copyright%

@@ -14,7 +14,9 @@ if (empty($_SESSION['username'])) {
     die("<script type='text/javascript'>window.location='../passport/login.php';</script>");
 }
 $db=new mysql();
-$rs = $db->getOneRecord("SELECT name,lastvtime FROM player WHERE name='{$_SESSION['username']}'  and name<>'' limit 0,1");
+$usernameSql = $db->escape($_SESSION['username']);
+$sessionId = intval($_SESSION['id']);
+$rs = $db->getOneRecord("SELECT name,lastvtime FROM player WHERE name='{$usernameSql}'  and name<>'' limit 0,1");
 if (is_array($rs))
 {
     require_once("../function/loginGate.php");
@@ -27,7 +29,7 @@ if (is_array($rs))
     $uIP = get_real_ip();
     $time = time();
     $_SESSION['vip']=0;
-    $sql = "select merge,now_Achievement_title from player_ext where uid = {$_SESSION['id']}";
+    $sql = "select merge,now_Achievement_title from player_ext where uid = {$sessionId}";
     $arr_merge =$db->getOneRecord($sql);
     if ($arr_merge['merge'] > 0) {
         $_SESSION['vip'] = 2;
@@ -59,10 +61,11 @@ if (is_array($rs))
     }
 
 
-    $sql = "INSERT INTO logins (uname,uIP,times) VALUES ('{$_SESSION['username']}','{$uIP}',{$time})";
+    $uIPSql = $db->escape($uIP);
+    $sql = "INSERT INTO logins (uname,uIP,times) VALUES ('{$usernameSql}','{$uIPSql}',{$time})";
     $_pm['mysql']->query($sql);
     ###########################################################################################
-    $uid = $_SESSION['id'];
+    $uid = $sessionId;
     $row = $_pm['mysql']->getOneRecord('select logintime,onlinetime from player_ext where uid=' . $uid);
     if (!is_array($row)) {
         $_pm['mysql']->query('insert into player_ext(uid,bbshow,onlinetime,logintime) values(' . $uid . ',5,0,' . $time . ')');
@@ -80,7 +83,7 @@ if (is_array($rs))
     $_pm['mem']->set(array('k' => 'friend_visit_' . $uid, 'v' => "$time"));
     echo "<script type='text/javascript'>window.location.href='/index.php';</script>";
 } else {
-    echo "<script type='text/javascript'>window.location.href='reg.php';</script>";
+    echo "<script type='text/javascript'>window.location.href='reg1.php';</script>";
 }
 
 
@@ -99,7 +102,7 @@ function get_real_ip()
             $ip = FALSE;
         }
         for ($i = 0; $i < count($ips); $i++) {
-            if (!eregi("^(10|172\.16|192\.168)\.", $ips[$i])) {
+            if (!preg_match("/^(10|172\.16|192\.168)\./i", $ips[$i])) {
                 $ip = $ips[$i];
                 break;
             }

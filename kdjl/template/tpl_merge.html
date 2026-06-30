@@ -958,9 +958,8 @@ function chuanchen1(){
 								onSuccess: function(e) {
 								var y=e.responseText;
 								
-								if(y=='1001014' || y=='1004' || y=='1014'){
-									window.parent.document.getElementById("gw").src="./function/Merge_Mod.php?show=1";
-									window.parent.Alert('背包空间不够，物品丢失!');
+								if(y=='100' || y=='101' || y=='100101' || y=='1001014' || y=='1004' || y=='1014'){
+									window.parent.Alert('背包空间不足，传承材料尚未退还，请清理后重试！');
 								}else if(y=='4'){
 									window.parent.document.getElementById("gw").src="./function/Merge_Mod.php?show=1";
 									window.parent.Alert('成功取出宠物!');

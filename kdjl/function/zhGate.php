@@ -45,7 +45,7 @@ if($err=mysql_error())
 {
 	if(strpos($err,'czl_ss')!==false)
 	{
-		$_pm['mysql']->query('alter table player_ext add czl_ss int(11) null default 0;');
+		$_pm['mysql']->addColumnIfMissing('player_ext', 'czl_ss', 'int(11) null default 0');
 	}
 	$zhCzl['czl_ss']=0;
 }

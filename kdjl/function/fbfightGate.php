@@ -523,7 +523,10 @@ if(is_array($rs) && is_array($gs))
 		
 	$ftgw = $_SESSION['fight'.$_SESSION['id']];
 	//======================== 装备效果结束 ===============================
-	$aobj->skillack += $att['ack'];
+	if(!$aobj->fixedDamage)
+	{
+		$aobj->skillack += $att['ack'];
+	}
 
 	if (!is_array($ftgw))	// 插入用户的战斗记录及参战的怪物数据。
 	{   
@@ -1036,11 +1039,11 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 		}else{
 			 $str.='#'.$rs['s_vary'].','.$rs['s_uhp'].','.$rs['s_ump'].'#'.$mmonsterContinueFlag;
 		}
-		if(!empty($att['ack']))
+		if(!$aobj->fixedDamage && !empty($att['ack']))
 		{
 			$str .= '#<ack>伤害加深：'.$att['ack'];
 		}
-		$str .= "*".$Crit;	//是否暴击
+		$str .= "*".($aobj->fixedDamage ? 0 : $Crit);	//是否暴击
 		$ack_type = 0;
 		$str .= "*".$ack_type;	//五行攻击
 		echo $str;

@@ -191,6 +191,13 @@ else
 }
 if(is_array($vipsparr)){
 	foreach($vipsparr as $rs){	
+		if(!empty($rs['timelimit'])){
+			$limitarr = explode('|',$rs['timelimit']);
+			$nowtime = date('YmdHi');
+			if((!empty($limitarr[0]) && $nowtime < $limitarr[0]) || (!empty($limitarr[1]) && $nowtime > $limitarr[1])){
+				continue;
+			}
+		}
 		$vipshop .= '<tr>
 		<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$rs['varyname'].'.gif" /></td>
                         <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$rs[name].'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['vip'].';">'.$rs['name'].'</td>
@@ -292,8 +299,14 @@ if(is_array($tm)){
 		$v = '';
 		foreach($p as $v){
 			$va = explode(':',$v);
-			$sql = 'SELECT id,varyname,name,zhekouyb FROM props WHERE zhekouyb > 0 AND id = '.$va[0];
+			$sql = 'SELECT id,varyname,name,zhekouyb,timelimit FROM props WHERE zhekouyb > 0 AND stime > 0 AND id = '.$va[0];
 			$res = $_pm['mysql'] -> getOneRecord($sql);
+			if(!is_array($res)) continue;
+			if(!empty($res['timelimit'])){
+				$limitarr = explode('|',$res['timelimit']);
+				$nowtime = date('YmdHi');
+				if((!empty($limitarr[0]) && $nowtime < $limitarr[0]) || (!empty($limitarr[1]) && $nowtime > $limitarr[1])) continue;
+			}
 			/*$sql = 'SELECT sum(nums) as nums FROM yblog WHERE title ='.$va[0].' AND DATE_FORMAT(buytime,"%Y%m%d%H%i%s") > '.$tarr[0].' AND DATE_FORMAT(buytime,"%Y%m%d%H%i%s") < '.$tarr[1];
 			
 			$ybarr = $_pm['mysql'] -> getOneRecord($sql);*/

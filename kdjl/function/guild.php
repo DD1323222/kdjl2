@@ -3,7 +3,7 @@ header('Content-Type:text/html;charset=gbk');
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$op = $_GET['op'];
+$op = isset($_GET['op']) ? $_GET['op'] : '';
 //guild_update_mem();exit;
 if($op == 'show'){
 	$id = intval($_GET['id']);
@@ -555,18 +555,20 @@ if($op == 'show'){
 	die('ok');
 }else if($op == 'giveProps'){
 	$gid = intval($_GET['gid']);
-	$pname = $_GET['pname'];
+	$pname = isset($_GET['pname']) ? $_GET['pname'] : '';
+	$pnameSql = $_pm['mysql']->escape($pname);
 	$psum = intval($_GET['psum']);
+	$uid = intval($_SESSION['id']);
 	if($gid == 0 || $psum <= 0 || empty($pname)){
 		die('');
 	}
 	
-	$ugc = $_pm['mysql'] -> getOneRecord("SELECT contribution FROM guild_members WHERE member_id = {$_SESSION['id']} AND guild_id = $gid");
+	$ugc = $_pm['mysql'] -> getOneRecord("SELECT contribution FROM guild_members WHERE member_id = $uid AND guild_id = $gid");
 	if (!is_array($ugc)) {
 		die('1');//不在此家族，不能捐献！
 	}
 	
-	$pcheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM props WHERE name = '$pname'");
+	$pcheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM props WHERE name = '$pnameSql'");
 	if (!is_array($pcheck)) {
 		die('2');//没有这个物品，请检查您的输入是否有误！
 	}
@@ -603,16 +605,16 @@ if($op == 'show'){
 		if ($csums > $psum) {
 			$csums = $psum;
 		}
-		$_pm['mysql'] -> query("UPDATE userbag SET sums = sums - $csums WHERE uid = {$_SESSION['id']} AND pid = {$pcheck['id']} AND sums >= $csums");
+		$_pm['mysql'] -> query("UPDATE userbag SET sums = sums - $csums WHERE uid = $uid AND pid = {$pcheck['id']} AND sums >= $csums");
 		if (mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
 			die('5');//您没有足够的数量
 		}else{
 			//加荣誉
 			$honor = $give_honor * $csums;
-			$_pm['mysql'] -> query("UPDATE guild_members SET contribution = contribution + $honor WHERE member_id = {$_SESSION['id']} AND guild_id = $gid");
+			$_pm['mysql'] -> query("UPDATE guild_members SET contribution = contribution + $honor WHERE member_id = $uid AND guild_id = $gid");
 			//加入到家族包裹
 			if (is_array($guild_bag)) {
-				$_pm['mysql'] -> query("UPDATE guild_bag SET sums = sums + $csums WHERE pid = {$pcheck['id']} AND $gid = $gid");
+				$_pm['mysql'] -> query("UPDATE guild_bag SET sums = sums + $csums WHERE pid = {$pcheck['id']} AND guild_id = $gid");
 			}else{
 				$_pm['mysql'] -> query("INSERT INTO guild_bag(pid,sums,guild_id) VALUES({$pcheck['id']},$csums,$gid)");
 			}
@@ -890,7 +892,7 @@ if($op == 'show'){
 	$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE (challenger_id = $gid OR defenser_id = $gid) AND flags = 0");
 	$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE (challenger_id = {$check['guild_id']} OR defenser_id = {$check['guild_id']}) AND flags = 0");
 	die('10');
-}else if($op = 'select_guild'){
+}else if($op == 'select_guild'){
 	$ar = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = {$_SESSION['id']}");
 	die($ar['guild_id']);
 }

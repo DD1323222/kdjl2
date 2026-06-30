@@ -13,8 +13,6 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
 $err = 0;
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$bags		= $_pm['user']->getUserBagById($_SESSION['id']);
 del_bag_expire();
 // Check bid.
 $bid = intval($_REQUEST['bid']); // table: userbag -> id
@@ -34,54 +32,74 @@ if ($_pm['user']->check(array('int' => $bid, 'int' => $n)) === FALSE) {
 	die('2');
 }
 
-$wp = false;
-foreach ($bags as $k => $v)
-{
-	if ($v['uid'] == $_SESSION['id'] && $v['id'] == $bid) 
-	{
-		$wp = $v; 
-		break;
-	}
-}
+$uid = intval($_SESSION['id']);
+$db = &$_pm['mysql'];
+$db->query('START TRANSACTION');
+$wp = $db->getOneRecord("SELECT id,sell,vary,sums,zbing FROM userbag WHERE uid={$uid} and id={$bid} FOR UPDATE");
 
 if (!is_array($wp))
 {
+	$db->query('ROLLBACK');
 	unLockItem($bid);
 	die('3');
 }
 else if(!empty($wp['zbing']))
 {
+	$db->query('ROLLBACK');
 	unLockItem($bid);
 	die("10");//装备在身上的不能卖出。
 }
 else
 {
 	if ($n > $wp['sums']) {
+		$db->query('ROLLBACK');
 		unLockItem($bid);
 		die('10');
 	}
 
 	if ($wp['vary'] == 2)	//	Can't repeat!
 	{
+		if($n != 1)
+		{
+			$db->query('ROLLBACK');
+			unLockItem($bid);
+			die('2');
+		}
 		$money = $wp['sell'];
-		$_pm['mysql']->query("DELETE FROM userbag
-					 WHERE uid={$_SESSION['id']} and id={$bid}
+		$db->query("DELETE FROM userbag
+					 WHERE uid={$uid} and id={$bid} and sums>=1 and zbing=0
 				  ");
 	}
 	else
 	{	
 		$money = $wp['sell']*$n;
-		$_pm['mysql']->query("UPDATE userbag
+		$db->query("UPDATE userbag
 					   SET sums=sums-{$n}
-					 WHERE uid={$_SESSION['id']} and id={$bid} and sums>={$n}
+					 WHERE uid={$uid} and id={$bid} and sums>={$n} and zbing=0
 				  ");
 	}
-	$user['money'] += $money;
-
-	$_pm['mysql']->query("UPDATE player 
-				   SET money={$user['money']}
-				 WHERE id={$_SESSION['id']} and {$user['money']} > 0
-			  ");
+	if(mysql_affected_rows($db->getConn()) != 1)
+	{
+		$db->query('ROLLBACK');
+		unLockItem($bid);
+		die('3');
+	}
+	if($money > 0)
+	{
+		$db->query("UPDATE player SET money=money+{$money} WHERE id={$uid}");
+		if(mysql_affected_rows($db->getConn()) != 1)
+		{
+			$db->query('ROLLBACK');
+			unLockItem($bid);
+			die('3');
+		}
+	}
+	if(!$db->query('COMMIT'))
+	{
+		$db->query('ROLLBACK');
+		unLockItem($bid);
+		die('3');
+	}
 }
 //$_pm['user']->updateMemUser($_SESSION['id']);
 //$_pm['user']->updateMemUserbag($_SESSION['id']);

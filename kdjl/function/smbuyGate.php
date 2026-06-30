@@ -17,15 +17,14 @@ define('HTTP_CONTENT_STARTED',"\r\n\r\n");
 //---------------------------
 //通过判断域名来确定是否需要向平台购买元宝
 $Domain=explode('.',$_SERVER['HTTP_HOST']);
-$DomainName1=$Domain[1];
-$DomainName2=$Domain[2];
+$DomainName1=isset($Domain[1]) ? $Domain[1] : '';
+$DomainName2=isset($Domain[2]) ? $Domain[2] : '';
 //---------------------------
-$user	= $u->getUserById($_SESSION['id']);
-$bags    = $u->getUserBagById($_SESSION['id']);
-if($user===FALSE) {$err=1;}
-
 $bid = intval($_REQUEST['bid']); // table: props => id
 $n	 = intval($_REQUEST['n']); 
+$buyChannel = isset($_REQUEST['channel']) && $_REQUEST['channel'] === 'limit' ? 'limit' : 'yb';
+
+if($bid < 1 || $n < 1 || $n > 100) die('2');
 
 require_once('../sec/dblock_fun.php');
 $a = getLock($_SESSION['id']);
@@ -41,31 +40,41 @@ if(!is_array($a)){
 	die('服务器繁忙，请稍候再试！');
 }
 
-if($n <= 0)
+$user = $u->getUserById($_SESSION['id']);
+$bags = $u->getUserBagById($_SESSION['id']);
+if($user === false)
 {
 	realseLock();
-	die('2');
+	die('1');
 }
-
-if( !is_int($bid) || $bid<1 || $n<1) $err = 2;
 
 /*$wp= $m->dataGet(array('k' => MEM_PROPS_KEY, 
 					   'v' => "if(\$rs['id'] == '{$bid}' && \$rs['yb']>0) \$ret=\$rs;"
 				 ));*/
-$wp = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $bid and (yb > 0 or zhekouyb > 0)");
+$priceField = $buyChannel === 'limit' ? 'zhekouyb' : 'yb';
+$wp = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $bid and {$priceField} > 0");
+if(!is_array($wp))
+{
+	realseLock();
+	die('3');
+}
 if($wp['stime']<=0)
+	{
+	realseLock();
 	die('don"t be evil.');
-if($wp['zhekouyb'] > 0){
+	}
+$isLimitedBuy = false;
+if($buyChannel === 'limit'){
 	$zk = unserialize($_pm['mem']->get('zhekou_'.$wp['id'].'_num'));
 	
 	$time = date('Y-m-d H:i:s');
 	$sql = 'SELECT value2,contents FROM welcome WHERE code = "timelimitbuy"';
 	$tm = $_pm["mysql"] -> getOneRecord($sql);
-	$tarr = explode('|',$tm['value2']);
 	if(!is_array($tm)){
 		realseLock();
 		die('活动未开启1！');
 	}
+	$tarr = explode('|',$tm['value2']);
 	if($time < $tarr[0] || $time > $tarr[1]){
 		realseLock();
 		die('活动未开启2！');
@@ -76,6 +85,7 @@ if($wp['zhekouyb'] > 0){
 		foreach($pa as $pv){
 			$parr = explode(':',$pv);
 			if($parr[0] == $wp['id']){
+				$isLimitedBuy = true;
 				$s = $parr[1] - $zk;//echo $s.'<br />'.$n.'<br />'.$zk.'<br />';print_r($parr[1]);
 				if($s < $n){
 					realseLock();
@@ -90,6 +100,10 @@ if($wp['zhekouyb'] > 0){
 				}
 				
 			}
+		}
+		if(!$isLimitedBuy){
+			realseLock();
+			die('该商品已从抢购商城下架！');
 		}
 	//}
 	
@@ -123,10 +137,7 @@ else if( ($wp['vary']==2 && ($n+$bagnum)>$user['maxbag']) || (($bagnum+1)>$user[
 else
 {
 	
-	$price = $wp['yb']*$n;
-	if(empty($price)){
-		$price = $wp['zhekouyb']*$n;
-	};
+	$price = ($buyChannel === 'limit' ? $wp['zhekouyb'] : $wp['yb'])*$n;
 	if(empty($price))
 	{
 		realseLock();
@@ -134,6 +145,7 @@ else
 	}
 	
 	$nowCoin = $user['yb'];
+	$externalPayment = false;
 
 	
 	//--------------------------
@@ -218,6 +230,7 @@ else
 			}else{
 				$sql='INSERT INTO `shop_order` SET `uid`="'.$_SESSION['id'].'", `uname`="'.$_SESSION['username'].'", `pid`="'.$wp['id'].'", `pnum`="'.$n.'", `create_time`='.time().', `flag`=1,fee="'.$price.'",order_id="'.$ordid.'";';
 				$db->query($sql);
+				$externalPayment = true;
 			}
 		}
 		//-----------------------------
@@ -279,6 +292,7 @@ else
 				{
 					echo "购买成功";
 					$err='';
+					$externalPayment = true;
 					break;	
 				}
 				if(strpos($rets,'false|') !==false)
@@ -291,6 +305,7 @@ else
 					
 					echo "购买成功";
 					$err='';
+					$externalPayment = true;
 					break;		
 				}
 				else
@@ -308,12 +323,12 @@ else
 		//----------------------------
 		$now = time();
 		$number = $n;
-		
-		
-		
-		$db->query("insert into yblog(title,nickname,yb,buytime,pname,nums)
-				    values(".$wp['id'].",'{$_SESSION['username']}','{$price}',unix_timestamp(),'{$wp['name']}',{$n})
-				  "); // save buy log.
+		$purchaseOk = true;
+		$logUsername = $db->escape($_SESSION['username']);
+		$logPropName = $db->escape($wp['name']);
+		if($db->query("insert into yblog(title,nickname,yb,buytime,pname,nums)
+				    values(".$wp['id'].",'{$logUsername}','{$price}',unix_timestamp(),'{$logPropName}',{$n})
+				  ") === false) $purchaseOk = false; // save buy log.
 		
 		######################################在这里增加积分 谭炜 11.10###########################################
 		//开放积分（玩家累计消耗100元宝增1分）
@@ -347,7 +362,7 @@ else
 		{ 
 			for ($i=0; $i<$n; $i++)
 			{
-			    $db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+			    if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -356,31 +371,25 @@ else
 								   1,
 								   unix_timestamp()
 								  );
-						  ");
+						  ") === false) $purchaseOk = false;
 			}
 		}
 		else
 		{		
-			$arrobj = new arrays();
-			$ret = false;
-			if(is_array($bags))
-			foreach($bags as $k=>$v)
-			{
-				if($v['uid']==$_SESSION['id'] && $v['pid']==$bid) $ret=$v;
-			}
+			$ret = $db->getOneRecord("SELECT id FROM userbag WHERE uid={$_SESSION['id']} and pid={$bid} and zbing=0 LIMIT 1 FOR UPDATE");
 			
 			if (is_array($ret))
 			{
 
-				$db->query("UPDATE userbag
+				if($db->query("UPDATE userbag
 							   SET sums=sums+{$n},stime=".time()."
 							 WHERE id={$ret['id']}
-						  ");
+						  ") === false) $purchaseOk = false;
 						  
 			}
 			else //create new data
 			{
-				$db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -388,7 +397,7 @@ else
 									1,
 									{$n},
 								   unix_timestamp());
-						  ");
+						  ") === false) $purchaseOk = false;
 						
 			}
 		}
@@ -399,9 +408,34 @@ else
 		if(is_array($multi)){
 			$vip = $vip * $multi['days'];
 		}
-		$db->query("update player set yb={$user['yb']},useyb={$useyb},score=score + {$score},vip = vip + {$vip},vipyb = {$vipyb} where id={$_SESSION['id']}");
+		if($externalPayment)
+		{
+			$balanceUpdate = "yb={$user['yb']}";
+			$balanceWhere = '';
+		}
+		else
+		{
+			$balanceUpdate = "yb=yb-{$price}";
+			$balanceWhere = " and yb >= {$price}";
+		}
+		if($db->query("update player set {$balanceUpdate},useyb={$useyb},score=score + {$score},vip = vip + {$vip},vipyb = {$vipyb} where id={$_SESSION['id']}{$balanceWhere}") === false)
+		{
+			$purchaseOk = false;
+		}
+		else if(mysql_affected_rows($db->getConn()) != 1)
+		{
+			$db->query('ROLLBACK');
+			$m->memClose();
+			die('10');
+		}
+		if(!$purchaseOk)
+		{
+			$db->query('ROLLBACK');
+			$m->memClose();
+			die('3');
+		}
 		//内存数据加个数
-		if($wp['zhekouyb'] > 0){
+		if($isLimitedBuy){
 			$zk+=$n;
 			$_pm['mem'] -> set(array('k' =>'zhekou_'.$wp['id'].'_num', 'v' => $zk));
 		}

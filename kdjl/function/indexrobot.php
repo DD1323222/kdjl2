@@ -5,7 +5,8 @@ require_once('config/config.game.php');
 if($_SESSION['id']<1&&isset($_GET['id']))
 {
 	$ip=get_real_ip();
-	if($u=$_pm['mysql']->getOneRecord('select id from player where wg="'.$ip.'" limit 1')&&$ip!='125.69.81.43'&&$ip!='58.215.75.179')
+	$u = $_pm['mysql']->getOneRecord('select id from player where wg="'.$_pm['mysql']->escape($ip).'" limit 1');
+	if(is_array($u) && $ip!='125.69.81.43' && $ip!='58.215.75.179')
 	{
 		die('-'.$u['id']);
 	}
@@ -16,13 +17,13 @@ if($_SESSION['id']<1&&isset($_GET['id']))
 	$_SESSION['vip']=0;
 	$bc=rand(1,5);
 	$key = $_SESSION['id'] . "chat";
-	if ($_REQUEST[PHPSESSID]=='' || empty($_REQUEST[PHPSESSID]))
+	if (!isset($_REQUEST['PHPSESSID']) || $_REQUEST['PHPSESSID']==='')
 	{
-		$_REQUEST[PHPSESSID] = session_id();
+		$_REQUEST['PHPSESSID'] = session_id();
 	}
 
 	
-	$crc = crc32($_REQUEST[PHPSESSID]);
+	$crc = crc32($_REQUEST['PHPSESSID']);
 	if ($_pm['mem']->get($key) === false)
 	{
 		$_pm['mem']->add( array('k'=>$key, 'v'=>$crc) );
@@ -113,7 +114,7 @@ function get_real_ip(){
 			array_unshift($ips, $ip); $ip = FALSE; 
 		}
 		for ($i = 0; $i < count($ips); $i++) {
-			if (!eregi ("^(10|172\.16|192\.168)\.", $ips[$i])) {
+			if (!preg_match("/^(10|172\.16|192\.168)\./i", $ips[$i])) {
 				$ip = $ips[$i];
 				break;
 			}

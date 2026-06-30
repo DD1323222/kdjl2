@@ -1092,7 +1092,11 @@ class task
 											 FROM userbb
 											WHERE id={$tid} and uid=$uid
 										 ");
-		$this->saveGetOther($bb, $exp);
+		$result = $this->saveGetOther($bb, $exp);
+		if ($result === false)
+		{
+			return false;
+		}
 		return '经验' . $exp;
 	}
 	
@@ -1152,6 +1156,7 @@ class task
 		}
 		global $_pm;
 		if (!is_array($bb)) return false;
+		if (intval($bb['level']) >= 130) return false;
 
 		$willexp = $bb['nowexp']+$exp;
 		if ($willexp >= $bb['lexp'])
@@ -1167,12 +1172,13 @@ class task
 			
 			if (is_array($czz))
 			{
+				$kx = explode(',', $bb['kx']);
+				while (count($kx) < 5) $kx[] = 0;
 				if($bb['wx']==7){
 					$maxlvlRow=$_pm['mysql']->getOneRecord('select max_level from super_jh where pet_id='.$init['id']);
 					
 					if($maxlvlRow&&$bb['level']>=$maxlvlRow['max_level'])
 					{
-						$_pm['mysql']->query('rollback');
 						return false;
 					}
 				}

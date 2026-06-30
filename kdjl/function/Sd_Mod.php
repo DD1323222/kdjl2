@@ -217,16 +217,35 @@ $taskword= taskcheck($user['task'], 2);
 $rs= $pd;
 // Fix parameter.
 if (is_array($petsAlls) && !empty($petsAlls)) { //only if statement is added by Zheng.Ping
+	$matchedPetConfig = false;
+	$nameMatchedPetConfig = false;
     foreach($petsAlls as $x=>$y)
     {
         if ($y['name'] == $rs['name'])
         {
-            $rs['remakelevel']	= $y['remakelevel'];
-            $rs['remakeid']		= $y['remakeid'];
-            $rs['remakepid']	= $y['remakepid'];
-            break;
+			if ($nameMatchedPetConfig === false)
+			{
+				$nameMatchedPetConfig = $y;
+			}
+			if ($rs['remakelevel'] == $y['remakelevel'] &&
+				$rs['remakeid'] == $y['remakeid'] &&
+				$rs['remakepid'] == $y['remakepid'])
+			{
+				$matchedPetConfig = $y;
+				break;
+			}
         }
     }
+	if ($matchedPetConfig === false)
+	{
+		$matchedPetConfig = $nameMatchedPetConfig;
+	}
+	if (is_array($matchedPetConfig))
+	{
+		$rs['remakelevel'] = $matchedPetConfig['remakelevel'];
+		$rs['remakeid'] = $matchedPetConfig['remakeid'];
+		$rs['remakepid'] = $matchedPetConfig['remakepid'];
+	}
 }
 // 获得进化资料。默认为第一个宝宝。
 // Get plus level info. $pd.
@@ -304,7 +323,7 @@ if($err=mysql_error())
 {
 	if(strpos($err,'czl_ss')!==false)
 	{
-		$_pm['mysql']->query('alter table player_ext add czl_ss int(11) null default 0;');
+		$_pm['mysql']->addColumnIfMissing('player_ext', 'czl_ss', 'int(11) null default 0');
 		$a=$_pm['mysql']->getOneRecord("select hecheng_nums,czl_ss from player_ext where uid='{$_SESSION['id']}'");
 	}
 }

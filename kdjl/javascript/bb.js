@@ -85,6 +85,10 @@ function sjJn(sid)
 					{
 						window.parent.Alert('宝宝的等级太低，还不能领悟高层技能！');return;
 					}
+					else if (parseInt(t.responseText)==4)
+					{
+						window.parent.Alert('\u6280\u80fd\u5df2\u7ecf\u8fbe\u5230\u6700\u9ad8\u7b49\u7ea7\uff01');return;
+					}
 					else if (parseInt(t.responseText)==1)
 					{
 						window.parent.Alert('恭喜！您消耗了一个技能升级卷轴书，技能升级成功!');

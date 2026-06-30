@@ -17,7 +17,7 @@ secStart($_pm['mem']);
 
 $user	 = $_pm['user']->getUserById($_SESSION['id']);
 $_REQUEST['name'] = trim($_REQUEST['name']);
-$tu	= mysql_real_escape_string($_REQUEST['name']);
+$tu	= $_pm['mysql']->escape($_REQUEST['name']);
 define("MEM_BLACKLIST_KEY","db_blacklist");
 $blacklist = unserialize($_pm['mem'] -> get(MEM_BLACKLIST_KEY));
 if ($tu=='' or empty($tu)) die('请正确输入玩家角色名！');

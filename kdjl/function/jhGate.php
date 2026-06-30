@@ -6,7 +6,7 @@
 
 *@Write Date: 2008.05.19
 *@Update Date: 2008.05.27
-*@Usage: jinhua  user bb.
+*@Usage: jinhua user bb.
 *@Memo: Add two format of jinhua for bb.
 */
 session_start();
@@ -14,269 +14,316 @@ session_start();
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-
-$srctime = 2;
-#################增加一个间隔时间################
-$time = $_SESSION['paitimes'.$_SESSION['id']];
-
-if(empty($time))
-{	
-	$_SESSION['paitimes'.$_SESSION['id']] = time();
-}
-else
+function jhFail($code, $id, $rollback)
 {
-	$nowtime = time();
-	$ctime = $nowtime - $time;
-	if($ctime < $srctime)
+	global $_pm;
+	if ($rollback)
 	{
-		unLockItem($id);
-		die("100");//没有达到间隔时间
+		$_pm['mysql']->query('ROLLBACK');
 	}
-	else
-	{
-		$_SESSION['paitimes'.$_SESSION['id']] = time();
-	}
-}
-
-$id	   = intval($_REQUEST['id']); // table: userbb => id
-$style = intval($_REQUEST['n']); // style of jinhua.
-$pids = intval($_REQUEST['pids']);//使用的必须材料
-
-$cishu=$_pm['mysql']->getOneRecord("select chouqu_chongwu from player_ext where uid={$_SESSION['id']}");
-if(strpos($cishu['chouqu_chongwu'],','.$id.',')!==false)
-{
-	die("该宠物抽取过成长,不能进行进化!");
-}
-
-if(lockItem($id) === false)
-{
 	unLockItem($id);
-	die('已经在处理了！');
+	die($code);
 }
 
-if ($id<1 || ($style!=1 && $style!=2))
+$uid = intval($_SESSION['id']);
+$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+$style = isset($_REQUEST['n']) ? intval($_REQUEST['n']) : 0;
+$bhid = isset($_GET['bhid']) ? intval($_GET['bhid']) : 0;
+
+if ($id < 1 || ($style != 1 && $style != 2))
 {
-	unLockItem($id);
 	die('0');
 }
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$userbb		= $_pm['user']->getUserPetById($_SESSION['id']);
-$userbag	= $_pm['user']->getUserBagById($_SESSION['id']);
-$bb			= unserialize($_pm['mem']->get(MEM_BB_KEY));
-
-$bhid=intval($_GET['bhid']);
-$bhEffect=false;
-$bhPNewNum=0;
-foreach($userbag as $v)
+$srctime = 2;
+$timeKey = 'paitimes'.$uid;
+$time = isset($_SESSION[$timeKey]) ? intval($_SESSION[$timeKey]) : 0;
+if ($time > 0 && time() - $time < $srctime)
 {
-	if($v['id']==$bhid&&$v['sums']>0)
-	{
-		$bhEffect=intval(str_replace('keepczl:','',$v['effect']));
-		$bhPNewNum=$v['sums']-1;
-		if($bhEffect<150)
-		{
-			$bhEffect=false;
-		}
-	}
+	die('100');
 }
+$_SESSION[$timeKey] = time();
 
-//JinHua(1,2309,748)
-if ($user['money'] < 1000)
+if (lockItem($id) === false)
 {
-	unLockItem($id);
-	die("5");
+	die('已经在处理了！');
 }
 
-
-if (is_array($bb) && is_array($userbb) && is_array($userbag))
+$bb = unserialize($_pm['mem']->get(MEM_BB_KEY));
+if (!is_array($bb))
 {
-	foreach ($bb as $k => $v)
-	{
-		foreach ($userbb as $uk => $uv)
-		{
-			if ($uv['name'] == $v['name'] && $uv['id']==$id) // From bb base find user current bb.
-			{
-				if ($v['remakeid'] == '0,0' && $v['remakepid']=='0,0'){
-				echo 4;exit();
-				}
-				$tt		= split(',',$v['remakeid']);
-				$pid	= $tt[$style-1];
-				
-				$tt		= split(',',$v['remakepid']);
-				$propsid= $tt[$style-1];
-				
-				$tt		= split(',',$v['remakelevel']);
-				$levels = $tt[$style-1];
-				unset($tt);
-				$cbb = $uv;
-				break;
-			}
-		}
-	}
-
- 	foreach ($bb as $k => $v)
-	{
-		if ($v['id'] == $pid) {$sbb = $v; break;}
-	}
-	
-	$propsids = explode('|',$propsid);
-	
-	// Check
-	$true = 0;
-	foreach ($userbag as $t => $ts)
-	{
-		if (in_array($ts['pid'] ,$propsids) && $ts['sums']>0)
-		{
-			$propsid = $ts['pid'];
-			$true = 1;break;
-		}
-	}
-
-	if ($true ==0)
-	{
-		unLockItem($id);
-		die('2');
-	}
-
-	if ($cbb['level'] < $levels){
-		unLockItem($id);
-		die('3');
-	}
-
-	if($cbb['wx']>6)
-	{
-		unLockItem($id);
-		die('五行属于：金、木、水、火、土、神的才可以进行此操作！');
-	}
-
-	if ($cbb['remaketimes'] == 10){
-		unLockItem($id);
-		die('6');
-	}
-
-	// Start update info.成长率获得公式：实际成长率=原有成长率+rand(0.1,0.5)+取1位小数[(宠物当前等级－进化等级)/200]
-	//  [remakelevel] => 30    [remakeid] => 11    [remakepid] => 74
-	if (is_array($sbb))
-	{
-		$imgstand = $sbb['imgstand'];
-		$imgack   = $sbb['imgack'];
-		$imgdie   = $sbb['imgdie'];
-		$name	  = $sbb['name'];
-		$ds		  = explode(',', $sbb['czl']);
-		//$czl	  = round( (rand($ds[0]*10,$ds[1]*10)/10 + round((($cbb['level']-$cbb['remakelevel'])/200),1)),1);
-		$_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary) VALUES(unix_timestamp(),{$_SESSION['id']},{$_SESSION['id']},'进化,使用的道具为:".$pids.",被进化宝宝id:".$id.",被进化宝宝名:".$cbb['name'].",得到:".$name."',99)");
-		if($pids != 1221 && $pids != 1222)
-		{
-			if ($style == 1)
-			{
-				if($cbb['czl'] < 50)
-				{
-					$czl	= round(  ($cbb['czl']+rand(1,5)/10+ round((($cbb['level']-$levels)/200),1)), 1);
-				}
-				else if($cbb['czl'] >= 50 && $cbb['czl'] < 80)
-				{
-					$czl	= $cbb['czl']+ rand(1,3)/10;
-				}
-				else{
-					$czl	= round(($cbb['czl']+0.1),1);
-				}
-			}
-			else if ($style == 2)
-			{	//实际成长率=原有成长率+rand(0.5,1.0)+取1位小数[(宠物当前等级－进化等级)/200]
-				if($cbb['czl'] < 50)
-				{
-					$czl	= round(  ($cbb['czl']+rand(5,10)/10+ round((($cbb['level']-$levels)/200),1)), 1);
-				}
-				else if($cbb['czl'] >= 50 && $cbb['czl'] < 70)
-				{
-					$czl	= $cbb['czl']+rand(4,7)/10;
-				}
-				else if($cbb['czl'] >= 70 && $cbb['czl'] < 80)
-				{
-					$czl	= $cbb['czl']+rand(3,5)/10;
-				}
-				else if($cbb['czl'] >= 80 && $cbb['czl'] < 90)
-				{
-					$czl	= $cbb['czl']+rand(2,3)/10;
-				}
-				else{
-					$czl	= $cbb['czl']+rand(1,3)/10;
-				}
-			}
-			//通过进化系统时，如果原来成长大于(等于)50.0，则进化后成长率不发生任何改变
-			if($czl >= 150.0)
-			{
-				if($bhEffect)
-				{
-					if($czl>$bhEffect)
-					{
-						$czl=$bhEffect;						
-					}
-					$_pm['mysql']->query("UPDATE userbag SET sums=".$bhPNewNum." WHERE id=".$bhid);
-				}else{
-					$czl = 150.0;
-				}
-			}
-		}
-		else if($pids == 1221)
-		{
-			$czl = $cbb['czl']+(rand(1,3))/10;
-		}
-		else if($pids == 1222)
-		{
-			$czl = $cbb['czl']+(rand(3,6))/10;
-		}
-		
-		$rml 	= $sbb['remakelevel'];
-		$rmid   = $sbb['remakeid'];
-		$rmpid  = $sbb['remakepid'];
-		$times  = isset($cbb['remaketimes'])?(intval($cbb['remaketimes'])+1):1;
-		
-		// Update pets data.
-		$_pm['mysql']->query("UPDATE userbb
-					   SET imgstand='{$sbb['imgstand']}',
-						   imgack='{$sbb['imgack']}',
-						   imgdie='{$sbb['imgdie']}',
-						   name='{$sbb['name']}',
-						   czl='{$czl}',
-						   remakelevel='{$rmid}',
-						   remakepid='{$rmpid}',
-						   cardimg='{$sbb['cardimg']}',
-						   effectimg='{$sbb['effectimg']}',
-						   remaketimes='{$times}'
-					 WHERE uid={$_SESSION['id']} and id={$cbb['id']}
-				  ");
-				  
-		// del props for remake made.
-		$_pm['mysql']->query("UPDATE userbag
-					   SET sums=abs(sums-1)
-					 WHERE pid={$propsid} and sums>0 and uid={$_SESSION['id']} and id={$ts['id']} and sums > 0
-				 ");
-	
-		// 减少用户金币.
-		$user['money'] = $user['money']-1000;
-		$_pm['mysql']->query("UPDATE player
-					   SET money='{$user['money']}'
-					 WHERE id={$_SESSION['id']}
-				  ");
-		unLockItem($id);
-		die('1');
-	}else{
-		unLockItem($id);
-		die('00');
-	}
-}
-else {
-	unLockItem($id);
-	die('000');
+	jhFail('000', $id, false);
 }
 
-//$_pm['user']->updateMemUser($_SESSION['id']);
-//$_pm['user']->updateMemUserbag($_SESSION['id']);
-//$_pm['user']->updateMemUserbb($_SESSION['id']);
+$db = $_pm['mysql'];
+if (!$db->query('START TRANSACTION'))
+{
+	jhFail('000', $id, false);
+}
 
-$_pm['mem']->memClose();
-unset($m, $u, $db, $userbag, $bb, $user);
+$user = $db->getOneRecord("SELECT id,money FROM player WHERE id={$uid} FOR UPDATE");
+$cbb = $db->getOneRecord("SELECT * FROM userbb WHERE uid={$uid} AND id={$id} FOR UPDATE");
+$cishu = $db->getOneRecord("SELECT chouqu_chongwu FROM player_ext WHERE uid={$uid} FOR UPDATE");
+
+if (!is_array($user) || !is_array($cbb))
+{
+	jhFail('000', $id, true);
+}
+if (is_array($cishu) && strpos($cishu['chouqu_chongwu'], ','.$id.',') !== false)
+{
+	jhFail('该宠物抽取过成长,不能进行进化!', $id, true);
+}
+if (intval($user['money']) < 1000)
+{
+	jhFail('5', $id, true);
+}
+
+$currentBb = false;
+$nameMatchedBb = false;
+foreach ($bb as $v)
+{
+	if ($cbb['name'] == $v['name'])
+	{
+		if ($nameMatchedBb === false)
+		{
+			$nameMatchedBb = $v;
+		}
+		if ($cbb['remakelevel'] == $v['remakelevel'] &&
+			$cbb['remakeid'] == $v['remakeid'] &&
+			$cbb['remakepid'] == $v['remakepid'])
+		{
+			$currentBb = $v;
+			break;
+		}
+	}
+}
+if ($currentBb === false)
+{
+	$currentBb = $nameMatchedBb;
+}
+if (!is_array($currentBb))
+{
+	jhFail('000', $id, true);
+}
+if ($currentBb['remakeid'] == '0,0' && $currentBb['remakepid'] == '0,0')
+{
+	jhFail('4', $id, true);
+}
+
+$branch = $style - 1;
+$remakeIds = explode(',', $currentBb['remakeid']);
+$remakePids = explode(',', $currentBb['remakepid']);
+$remakeLevels = explode(',', $currentBb['remakelevel']);
+if (!isset($remakeIds[$branch]) || !isset($remakePids[$branch]) ||
+	!isset($remakeLevels[$branch]) || trim($remakeLevels[$branch]) === '')
+{
+	jhFail('00', $id, true);
+}
+
+$pid = intval($remakeIds[$branch]);
+$levels = intval($remakeLevels[$branch]);
+$propsids = array();
+foreach (explode('|', $remakePids[$branch]) as $propsid)
+{
+	$propsid = intval($propsid);
+	if ($propsid > 0)
+	{
+		$propsids[$propsid] = $propsid;
+	}
+}
+if ($pid < 1 || empty($propsids))
+{
+	jhFail('4', $id, true);
+}
+
+$sbb = false;
+foreach ($bb as $v)
+{
+	if (intval($v['id']) == $pid)
+	{
+		$sbb = $v;
+		break;
+	}
+}
+if (!is_array($sbb))
+{
+	jhFail('00', $id, true);
+}
+
+$material = $db->getOneRecord(
+	"SELECT id,pid,sums FROM userbag
+	  WHERE uid={$uid} AND pid IN (".implode(',', $propsids).") AND sums>0
+	  ORDER BY id LIMIT 1 FOR UPDATE"
+);
+if (!is_array($material))
+{
+	jhFail('2', $id, true);
+}
+
+if (intval($cbb['level']) < $levels)
+{
+	jhFail('3', $id, true);
+}
+if (intval($cbb['wx']) > 6)
+{
+	jhFail('五行属于：金、木、水、火、土、神的才可以进行此操作！', $id, true);
+}
+if (intval($cbb['remaketimes']) >= 10)
+{
+	jhFail('6', $id, true);
+}
+
+$bhEffect = false;
+$protector = false;
+if ($bhid > 0)
+{
+	$protector = $db->getOneRecord(
+		"SELECT b.id,b.sums,p.effect
+		   FROM userbag AS b INNER JOIN props AS p ON p.id=b.pid
+		  WHERE b.id={$bhid} AND b.uid={$uid} AND b.sums>0
+		  FOR UPDATE"
+	);
+	if (is_array($protector))
+	{
+		$bhEffect = intval(str_replace('keepczl:', '', $protector['effect']));
+		if ($bhEffect < 150)
+		{
+			$bhEffect = false;
+		}
+	}
+}
+
+$actualPropsId = intval($material['pid']);
+$useProtector = false;
+if ($actualPropsId != 1221 && $actualPropsId != 1222)
+{
+	if ($style == 1)
+	{
+		if ($cbb['czl'] < 50)
+		{
+			$czl = round($cbb['czl'] + rand(1, 5) / 10 + round(($cbb['level'] - $levels) / 200, 1), 1);
+		}
+		else if ($cbb['czl'] < 80)
+		{
+			$czl = $cbb['czl'] + rand(1, 3) / 10;
+		}
+		else
+		{
+			$czl = round($cbb['czl'] + 0.1, 1);
+		}
+	}
+	else
+	{
+		if ($cbb['czl'] < 50)
+		{
+			$czl = round($cbb['czl'] + rand(5, 10) / 10 + round(($cbb['level'] - $levels) / 200, 1), 1);
+		}
+		else if ($cbb['czl'] < 70)
+		{
+			$czl = $cbb['czl'] + rand(4, 7) / 10;
+		}
+		else if ($cbb['czl'] < 80)
+		{
+			$czl = $cbb['czl'] + rand(3, 5) / 10;
+		}
+		else if ($cbb['czl'] < 90)
+		{
+			$czl = $cbb['czl'] + rand(2, 3) / 10;
+		}
+		else
+		{
+			$czl = $cbb['czl'] + rand(1, 3) / 10;
+		}
+	}
+
+	if ($czl >= 150.0)
+	{
+		if ($bhEffect !== false)
+		{
+			$useProtector = true;
+			if ($czl > $bhEffect)
+			{
+				$czl = $bhEffect;
+			}
+		}
+		else
+		{
+			$czl = 150.0;
+		}
+	}
+}
+else if ($actualPropsId == 1221)
+{
+	$czl = $cbb['czl'] + rand(1, 3) / 10;
+}
+else
+{
+	$czl = $cbb['czl'] + rand(3, 6) / 10;
+}
+
+$times = intval($cbb['remaketimes']) + 1;
+$petUpdated = $db->query(
+	"UPDATE userbb SET
+		imgstand=".$db->quote($sbb['imgstand']).",
+		imgack=".$db->quote($sbb['imgack']).",
+		imgdie=".$db->quote($sbb['imgdie']).",
+		name=".$db->quote($sbb['name']).",
+		czl=".$db->quote($czl).",
+		remakelevel=".$db->quote($sbb['remakelevel']).",
+		remakeid=".$db->quote($sbb['remakeid']).",
+		remakepid=".$db->quote($sbb['remakepid']).",
+		cardimg=".$db->quote($sbb['cardimg']).",
+		effectimg=".$db->quote($sbb['effectimg']).",
+		remaketimes={$times}
+	 WHERE uid={$uid} AND id={$id}"
+);
+if (!$petUpdated || mysql_affected_rows($db->getConn()) != 1)
+{
+	jhFail('000', $id, true);
+}
+
+$materialUpdated = $db->query(
+	"UPDATE userbag SET sums=sums-1
+	  WHERE id=".intval($material['id'])." AND uid={$uid}
+	    AND pid={$actualPropsId} AND sums>0"
+);
+if (!$materialUpdated || mysql_affected_rows($db->getConn()) != 1)
+{
+	jhFail('2', $id, true);
+}
+
+if ($useProtector)
+{
+	$protectorUpdated = $db->query(
+		"UPDATE userbag SET sums=sums-1
+		  WHERE id=".intval($protector['id'])." AND uid={$uid} AND sums>0"
+	);
+	if (!$protectorUpdated || mysql_affected_rows($db->getConn()) != 1)
+	{
+		jhFail('000', $id, true);
+	}
+}
+
+$moneyUpdated = $db->query(
+	"UPDATE player SET money=money-1000 WHERE id={$uid} AND money>=1000"
+);
+if (!$moneyUpdated || mysql_affected_rows($db->getConn()) != 1)
+{
+	jhFail('5', $id, true);
+}
+
+if (!$db->query('COMMIT'))
+{
+	jhFail('000', $id, true);
+}
+
+$logNote = '进化,使用的道具为:'.$actualPropsId.',被进化宝宝id:'.$id.
+	',被进化宝宝名:'.$cbb['name'].',得到:'.$sbb['name'];
+$db->query(
+	"INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
+	 VALUES(unix_timestamp(),{$uid},{$uid},".$db->quote($logNote).",99)"
+);
+
 unLockItem($id);
+die('1');
 ?>

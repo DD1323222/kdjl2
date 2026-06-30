@@ -568,7 +568,7 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 	{
 		$echo_str = $nhp . ',' . $nmp. ',' . $bb.'#'.$newhp . ',' . $gw.'#' . $drops . '#' . $word;	
 	}
-	$echo_str .= "*".$Crit;	//是否暴击
+	$echo_str .= "*".($aobj->fixedDamage ? 0 : $Crit);	//是否暴击
 	$ack_type = 0;
 	$echo_str .= "*".$ack_type;	//五行攻击
 	echo $echo_str;

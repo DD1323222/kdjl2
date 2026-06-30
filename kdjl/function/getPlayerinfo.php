@@ -6,9 +6,9 @@
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$u = $_REQUEST['u'];
+$u = isset($_REQUEST['u']) ? $_REQUEST['u'] : '';
 $u = iconv('gbk','iso-8859-2',$u);
-$u = @mysql_real_escape_string($_REQUEST['u']);
+$u = $_pm['mysql']->escape(isset($_REQUEST['u']) ? $_REQUEST['u'] : '');
 if ($u=='') die('玩家不存在！');
 
 $rs = $_pm['mysql']->getOneRecord("SELECT b.username as username,

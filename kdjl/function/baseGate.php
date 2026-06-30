@@ -55,15 +55,16 @@ if(lockItem($bid) === false)
 }
 
 $parr = $_pm['user']->getUserItemById($_SESSION['id'],$bid);
-$n	 = intval($_REQUEST['n']);		// 物品数量
-if($n <= 0)
+$n = isset($_REQUEST['n']) ? intval($_REQUEST['n']) : 0; // 物品数量
+$op = isset($_REQUEST['op']) ? $_REQUEST['op'] : '';
+if(!is_array($parr) || $n <= 0)
 {
 	unLockItem($bid);
 	die("10");
 }
 $bagsums = $_pm['mysql'] -> getOneRecord("SELECT count(id) as sum FROM userbag WHERE zbing = 0 and sums > 0 and uid = {$_SESSION['id']}");
 $cksums = $_pm['mysql'] -> getOneRecord("SELECT count(id) as sum FROM userbag WHERE zbing = 0 and bsum > 0 and uid = {$_SESSION['id']}");
-if ($n <= $parr['sums'] && $_REQUEST['op'] == 's')
+if ($n <= $parr['sums'] && $op == 's')
 {
 	if( ($parr['vary']==2 && ($n+$cksums['sum'])>$user['maxbase']) || 
 	(($cksums['sum']+1) > $user['maxbase']) )
@@ -76,20 +77,26 @@ if ($n <= $parr['sums'] && $_REQUEST['op'] == 's')
 	$_pm['mysql']->query('START TRANSACTION');
 	$_pm['mysql']->query("UPDATE userbag
 							 SET sums=sums-{$n},bsum=bsum+{$n}
-						   WHERE id={$bid} and sums >= $n and zbing = 0
+						   WHERE id={$bid} and uid={$_SESSION['id']} and sums >= $n and zbing = 0
 						");
 	$result = mysql_affected_rows($_pm['mysql'] -> getConn());
 	if($result != 1){
+		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($bid);
 		die("10");
 	}
 /**************提交事务*************/
-    $_pm['mysql']->query('COMMIT');
+	if (!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($bid);
+		die('10');
+	}
 
 }
-else if($n <= $parr['bsum'] && $_REQUEST['op'] == 'g')
+else if($n <= $parr['bsum'] && $op == 'g')
 {
-	if( ($wp['vary']==2 && ($n+$bagsums['sum'])>$user['maxbag']) || 
+	if( ($parr['vary']==2 && ($n+$bagsums['sum'])>$user['maxbag']) || 
 	(($bagsums['sum']+1) > $user['maxbag']) ){
 		unLockItem($bid);
 		die('5');
@@ -98,16 +105,22 @@ else if($n <= $parr['bsum'] && $_REQUEST['op'] == 'g')
 /****打开MYSQL事务，禁止自动提交****/	
 	$_pm['mysql']->query('START TRANSACTION');
 	$_pm['mysql']->query("UPDATE userbag
-							 SET sums=sums+{$n},bsum=abs(bsum-{$n})
-						   WHERE id={$bid} and bsum >= $n and zbing = 0
+							 SET sums=sums+{$n},bsum=bsum-{$n}
+						   WHERE id={$bid} and uid={$_SESSION['id']} and bsum >= $n and zbing = 0
 						");
 /**************提交事务*************/
 	$result = mysql_affected_rows($_pm['mysql'] -> getConn());
 	if($result != 1){
+		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($bid);
 		die("10");
 	}
-                $_pm['mysql']->query('COMMIT');
+	if (!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($bid);
+		die('10');
+	}
 
 }
 else{

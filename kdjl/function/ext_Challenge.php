@@ -6,7 +6,7 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
 $user = $_pm['user']->getUserById($_SESSION['id']);
-$uname	  = @mysql_real_escape_string($_REQUEST['u']);
+$uname	  = $_pm['mysql']->escape(isset($_REQUEST['u']) ? $_REQUEST['u'] : '');
 $rs = $_pm['mysql']->getOneRecord("SELECT mbid
 					    FROM player
 					   WHERE nickname='{$uname}'

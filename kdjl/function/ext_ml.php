@@ -41,19 +41,23 @@ if($_GET['action'] == 'ml'){
 	$html .= '</table>';
 	die($html);
 }
+$uname = isset($_REQUEST['uname']) ? trim($_REQUEST['uname']) : '';
+$pname = isset($_REQUEST['pname']) ? trim($_REQUEST['pname']) : '';
+$unameSql = $_pm['mysql']->escape($uname);
+$pnameSql = $_pm['mysql']->escape($pname);
 $sums = intval($_GET['sums']);
 if($sums < 1 || empty($uname) || empty($pname)){
 	die('a');//填写完整
 }
 
-$ucheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '$uname' and password != '00000000000000000000000000000000'");
+$ucheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM player WHERE nickname = '$unameSql' and password != '00000000000000000000000000000000'");
 if(empty($ucheck)){
 	die('b');//用户名填写不正确
 }
 if($ucheck['id'] == $_SESSION['id']){
 	die('e');
 }
-$pcheck = $_pm['mysql'] -> getOneRecord("SELECT userbag.id as bid,name,effect FROM props,userbag WHERE userbag.pid = props.id AND name = '$pname' AND varyname = 17 AND sums >= $sums AND uid = {$_SESSION['id']}");
+$pcheck = $_pm['mysql'] -> getOneRecord("SELECT userbag.id as bid,name,effect FROM props,userbag WHERE userbag.pid = props.id AND name = '$pnameSql' AND varyname = 17 AND sums >= $sums AND uid = {$_SESSION['id']}");
 if(empty($pcheck)){
 	die('c');//数量和名称不对
 }

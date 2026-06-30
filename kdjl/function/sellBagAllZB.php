@@ -14,106 +14,70 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
 $err = 0;
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$bags		= $_pm['user']->getUserBagById($_SESSION['id']);
-
-if($_SESSION['id']){
-    $sql = "select `pid`,`id` from userbag where uid='".$_SESSION['id']."' and vary = '2' and sums>'0' and zbing = '0'";
-}
-
-$res = $_pm['mysql']->getRecords($sql);
-
+$uid = intval($_SESSION['id']);
+if($uid < 1) die('1');
 
 del_bag_expire();
+$db = &$_pm['mysql'];
+$db->query('START TRANSACTION');
+$items = $db->getRecords("SELECT b.id,b.sell
+                          FROM userbag b
+                          INNER JOIN props p ON p.id=b.pid
+                         WHERE b.uid={$uid}
+                           and b.vary=2
+                           and b.sums>0
+                           and b.zbing=0
+                           and p.varyname=9
+                         FOR UPDATE");
 
-
-while(list($resK,$resV) = each($res)){
-    $isZBTrue = false;//判断是不是装备，如果不是装备不能卖。
-    while(list($kUserBagid,$vUserBagid) = each($resV)){
-        if($kUserBagid == 'pid'){
-            $propSql = "select varyname from props where id='".$vUserBagid."'";
-            $resProp = $_pm['mysql']->getRecords($propSql);
-            if($resProp[0]["varyname"] == 9){
-                $isZBTrue = true;
-            }
-            
-        }
-        if($kUserBagid == 'id' && $isZBTrue){
-            // Check bid.
-            $bid = intval($vUserBagid); // table: userbag -> id
-            $n	 = intval(1);
-            if(lockItem($bid) === false)
-            {
-            	die('已经在处理了！');
-            }
-            if($n <= 0)
-            {
-            	unLockItem($bid);
-            	die('2');
-            }
-            
-            if ($_pm['user']->check(array('int' => $bid, 'int' => $n)) === FALSE) {
-            	unLockItem($bid);
-            	die('2');
-            }
-            
-            $wp = false;
-            foreach ($bags as $k => $v)
-            {
-            	if ($v['uid'] == $_SESSION['id'] && $v['id'] == $bid) 
-            	{
-            		$wp = $v; 
-            		break;
-            	}
-            }
-            
-            if (!is_array($wp))
-            {
-            	unLockItem($bid);
-            	die('3');
-            }
-            else if(!empty($wp['zbing']))
-            {
-            	unLockItem($bid);
-            	die("10");//装备在身上的不能卖出。
-            }
-            else
-            {
-            	if ($n > $wp['sums']) {
-            		unLockItem($bid);
-            		die('10');
-            	}
-            
-            	if ($wp['vary'] == 2)	//	Can't repeat!
-            	{
-            		$money = $wp['sell'];
-            		$_pm['mysql']->query("DELETE FROM userbag
-            					 WHERE uid={$_SESSION['id']} and id={$bid}
-            				  ");
-            	}
-            	else
-            	{	
-            		$money = $wp['sell']*$n;
-            		$_pm['mysql']->query("UPDATE userbag
-            					   SET sums=sums-{$n}
-            					 WHERE uid={$_SESSION['id']} and id={$bid} and sums>={$n}
-            				  ");
-            	}
-            	$user['money'] += $money;
-            
-            	$_pm['mysql']->query("UPDATE player 
-            				   SET money={$user['money']}
-            				 WHERE id={$_SESSION['id']} and {$user['money']} > 0
-            			  ");
-            }
-        }
-        
-    }
+if(!is_array($items) || count($items) == 0)
+{
+	$db->query('ROLLBACK');
+	$_pm['mem']->memClose();
+	echo $err;
+	exit;
 }
-//$_pm['user']->updateMemUser($_SESSION['id']);
-//$_pm['user']->updateMemUserbag($_SESSION['id']);
-$_pm['mem']->memClose();
 
+$ids = array();
+$money = 0;
+foreach($items as $item)
+{
+	$ids[] = intval($item['id']);
+	$money += max(0, intval($item['sell']));
+}
+$idList = implode(',', $ids);
+$db->query("DELETE FROM userbag
+             WHERE uid={$uid}
+               and id IN ({$idList})
+               and vary=2
+               and sums>0
+               and zbing=0");
+
+if(mysql_affected_rows($db->getConn()) != count($ids))
+{
+	$db->query('ROLLBACK');
+	$_pm['mem']->memClose();
+	die('3');
+}
+
+if($money > 0)
+{
+	$db->query("UPDATE player SET money=money+{$money} WHERE id={$uid}");
+	if(mysql_affected_rows($db->getConn()) != 1)
+	{
+		$db->query('ROLLBACK');
+		$_pm['mem']->memClose();
+		die('3');
+	}
+}
+
+if(!$db->query('COMMIT'))
+{
+	$db->query('ROLLBACK');
+	$_pm['mem']->memClose();
+	die('3');
+}
+
+$_pm['mem']->memClose();
 echo $err;
-unLockItem($bid);
 ?>

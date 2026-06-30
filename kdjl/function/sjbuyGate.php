@@ -33,12 +33,16 @@ if($n <= 0)
 	die('2');
 }
 
-if( !is_int($bid) || $bid<1 || $n<1) die(2);
+if($bid<1 || $n>100)
+{
+	unLockItem($bid);
+	die('2');
+}
 
 /*$wp= $m->dataGet(array('k' => MEM_PROPS_KEY, 
 					   'v' => "if(\$rs['id'] == '{$bid}' && \$rs['yb']>0) \$ret=\$rs;"
 				 ));*/
-$wp = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $bid and sj > 0");
+$wp = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $bid and sj > 0 and stime > 0");
 //增加自动上下架的功能
 if(!empty($wp['timelimit'])){
 	$limitarr = explode('|',$wp['timelimit']);
@@ -88,13 +92,20 @@ else
 	}
 	else
 	{   
+		$db->query('START TRANSACTION');
+		$db->query("UPDATE player_ext SET sj=sj-{$price} WHERE uid={$_SESSION['id']} and sj >= {$price}");
+		if(mysql_affected_rows($db->getConn()) != 1)
+		{
+			$db->query('ROLLBACK');
+			unLockItem($bid);
+			die('10');
+		}
+		$purchaseOk = true;
 		//----------------------------
 		$now = time();
 		$number = $n;
 		
-		$db -> query("INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES (".time().",{$_SESSION['id']},{$_SESSION['id']},'购买道具{$wp['name']} {$n} 个',101)");
-		
-		$user['sj'] = $nowCoin-$price;
+		if($db->query("INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES (".time().",{$_SESSION['id']},{$_SESSION['id']},'购买道具{$wp['name']} {$n} 个',101)") === false) $purchaseOk = false;
 		
 		#########################################################
 
@@ -102,7 +113,7 @@ else
 		{ 
 			for ($i=0; $i<$n; $i++)
 			{
-			    $db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+			    if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -111,7 +122,7 @@ else
 								   1,
 								   unix_timestamp()
 								  );
-						  ");
+						  ") === false) $purchaseOk = false;
 			}
 		}
 		else
@@ -127,15 +138,15 @@ else
 			if (is_array($ret))
 			{
 
-				$db->query("UPDATE userbag
+				if($db->query("UPDATE userbag
 							   SET sums=sums+{$n},stime=".time()."
 							 WHERE id={$ret['id']}
-						  ");
+						  ") === false) $purchaseOk = false;
 						  
 			}
 			else //create new data
 			{
-				$db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				if($db->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -143,12 +154,16 @@ else
 									1,
 									{$n},
 								   unix_timestamp());
-						  ");
+						  ") === false) $purchaseOk = false;
 						
 			}
 		}
-		/*$db->query("update player set yb={$user['yb']},useyb={$useyb},score=score + {$score},active_useyb={$active_useyb},active_score=active_score+{$active_score} where id={$_SESSION['id']}");*/
-		$db->query("update player_ext set sj={$user['sj']} where uid={$_SESSION['id']}");
+		if($purchaseOk) $db->query('COMMIT');
+		else
+		{
+			$db->query('ROLLBACK');
+			$err = 3;
+		}
 	}	// end inner else
 }
 unset($user,$wp);

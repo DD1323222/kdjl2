@@ -1,4 +1,7 @@
 <?php
+require_once(dirname(__FILE__).'/smbuyGate.php');
+exit;
+
 /*
 *说明：整合各种消费流程，有的需要向平台请求用元宝购买，有的直接在游戏中的玩家账户上扣除元宝进行购买。
 *By Huizheng Yu

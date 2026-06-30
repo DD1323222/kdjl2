@@ -9,198 +9,249 @@
 *@Usage: Save and Get pets of user
 */
 
-
 require_once('../config/config.game.php');
-if($_REQUEST['from'] != 1)
+require_once('../sec/dblock_fun.php');
+
+$from = isset($_REQUEST['from']) ? intval($_REQUEST['from']) : 0;
+if ($from != 1)
 {
 	secStart($_pm['mem']);
 }
-$id = intval($_REQUEST['id']); // table: userbb => id
-$op = $_REQUEST['op'];
 
-
-if ($_pm['user']->check(array('int' => $id)) === false) die('数据错误1！'); // 错误的数据。
-
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-
-
-
-$userbb  = $_pm['user']->getUserPetById($_SESSION['id']);
-$mc		 = 0;
-$bagmc	 = 0;
-if($op =='z' && $id == $user['mbid']){
-	die('已经是主战！');
-}
-if (!is_array($userbb) || !is_array($user)) die('数据错误2！');
-
-$valid = false;
-foreach ($userbb as $k => $v)
+function mcStop($message)
 {
-	if ($v['muchang'] == 1) $mc++;
-	else if($v['muchang'] == 0) $bagmc++;
-	if ($v['id'] == $id) $valid=true;
+	global $_pm;
+	$_pm['mysql']->query('ROLLBACK');
+	die($message);
 }
-if ($valid === false) die('数据错误3！');
 
-// Set main fight pets
-
-if ($op =='z' && $id != $user['mbid'])
+function mcCommit()
 {
-
-	//设主战宠物的时候要判断他当前的任务是不是不可以切换宠物的任务
-	$sql = "SELECT taskid FROM tasklog WHERE uid = {$_SESSION['id']} and taskid = 9999";
-	$arr = $_pm['mysql'] -> getOneRecord($sql);
-	if(is_array($arr))
+	global $_pm;
+	if (!$_pm['mysql']->query('COMMIT'))
 	{
-		die("10");//不能切换主战。
+		$_pm['mysql']->query('ROLLBACK');
+		die('操作提交失败，请重试！');
 	}
-	foreach($userbb as $v){
-		if($v['id'] == $id && $v['muchang'] != 0 ){
-			die('在牧场的宝宝不能设为主战哦！');
-		}
-	}
-	$_pm['mysql']->query("UPDATE player 
-				   SET fightbb={$id},mbid={$id}
-				 WHERE id={$_SESSION['id']}
-			  ");
-	//$_pm['user']->updateMemUser($_SESSION['id']);
-	if($_REQUEST['from'] == 1)
-	{
-		die("OK");
-	}
-	die('更改主战宝宝成功!');
 }
-else if($op =='change' && $id != $user['mbid'])
-{
-	foreach($userbb as $v){
-		if($v['id'] == $id && $v['muchang'] != 0 ){
-			die('在牧场的宝宝不能设为主战哦！');
-		}
-	}
-	$_pm['mysql']->query("UPDATE player 
-				   SET mbid={$id},task = '',tasklog = ''
-				 WHERE id={$_SESSION['id']}
-			  ");
-			  
-	$_pm['mysql']->query("DELETE FROM tasklog WHERE uid = {$_SESSION['id']} and taskid = 9999
-			  ");
-	die("更改主战宝宝成功！");
-}
-// Save pets
-if ($op=='s' && $mc<$user['maxmc'] && $bagmc>1 && $user['mbid'] != $id)
-{
-	
-	$_pm['mysql']->query("UPDATE userbb
-				   SET muchang=1
-				 WHERE uid={$_SESSION['id']} and id={$id}
-			  ");
-	if(mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
-		die('已经在牧场！');
-	}
-	//$_pm['user']->updateMemUserbb($_SESSION['id']);
-	die("操作成功!");
-} 
-else if ($op == 'g' && $bagmc<3)
-{
-	if(!empty($user['fieldpwd'])&&empty($_SESSION['loginField'.$_SESSION['id']])){
-	  die('请先登录 !');
-	}
-	$res = $_pm['mysql']-> getOneRecord("SELECT * FROM userbb  WHERE uid={$_SESSION['id']} and id={$id} and (chchengsx is null or chchengsx = '')");
-	if(!is_array($res))
-	{
-		die("传承中不能取出");
-	}
-	$_pm['mysql']->query("UPDATE userbb
-				   SET muchang=0
-				 WHERE uid={$_SESSION['id']} and id={$id}
-			  ");
-	if(mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
-		die('此宠物已经携带！');
-	}
-	//$_pm['user']->updateMemUserbb($_SESSION['id']);
-	die("操作成功!");
-}
-// del
-else if ($op == 'd' && $user['mbid'] != $id)
-{
-	if($user['money']<10000){
-		die('您没有足够多的金币哦！');
-	}
-	//print_r($user);
-    $pwd = htmlspecialchars(mysql_escape_string($_REQUEST['pwd']));
-    if(empty($pwd) && !empty($user['fieldpwd']))
-    {
-        die("请输入密码！");//请输入密码！
-    }
-    $pwd = abs(crc32(md5($pwd)));
-    if($pwd != $user['fieldpwd']  && !empty($user['fieldpwd']))
-    {
-        die("1");//密码错误！
-    }
-    //exit;
-	//增加日志。5.13
-	$time = time();
-	$bb = $_pm['mysql'] -> getOneRecord("SELECT * FROM userbb WHERE id = {$id}"); 
-	if(!empty($bb['zb']))
-	{
-		$str = "装备：";
-		//4:291791,9:268156,5:424046,6:300872,3:328876,1:379748,2:334791,7:308728
-		$arr = explode(",",$bb['zb']);
-		foreach($arr as $v)
-		{
-			$bagid = explode(":",$v);
-			$newarr = $_pm['mysql'] -> getOneRecord("SELECT pid FROM userbag WHERE id = {$bagid[1]}");
-			$str .= $newarr['pid'].',';
-		}
-	}
-	$str .= "等级：".$bb['level'];
-	$str .=",成长：".$bb['czl'];
-	$str .=",名字：".$bb['name'];
-	$_pm['mysql'] -> query("INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) values({$time},{$_SESSION['id']},{$_SESSION['id']},'{$str}',16)");
-	// del sk. 
-	$_pm['mysql']->query("DELETE FROM skill
-				 WHERE bid={$id}
-			  ");
-	// del zb.
-	$_pm['mysql']->query("DELETE FROM userbag
-				 WHERE uid={$_SESSION['id']} and zbpets={$id}
-			  ");
-	// del bb.
-	$_pm['mysql']->query("DELETE FROM userbb
-				 WHERE uid={$_SESSION['id']} and id={$id}
-			  ");
-	//$_pm['user']->updateMemUserbb($_SESSION['id']);
-	//$_pm['user']->updateMemUsersk($_SESSION['id']);
-	//$_pm['user']->updateMemUserbag($_SESSION['id']);
 
-	die("操作成功!");
-}
-$_pm['mem']->memClose();
-unset($db);
+$uid = intval($_SESSION['id']);
+$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+$op = isset($_REQUEST['op']) ? strval($_REQUEST['op']) : '';
+$validOps = array('z', 'change', 's', 'g', 'd');
 
-if($bagmc==3)
+if ($uid < 1 || $id < 1 || !in_array($op, $validOps, true))
 {
-	if($op == 's' && $user['mbid'] == $id)
-	{
-		die('该宠物为主战宠物，无法寄养！');
-	}
-	if($op == 'g' || $op == 's')
-	{
-		die('此宠物已经携带！');
-	}
-	else
-	{
-		die('您最多同时只能携带3个宝宝！');
-	}
-	
+	die('数据错误1！');
 }
-else if($mc==$user['maxmc'])
+
+getLock($uid);
+$db = $_pm['mysql'];
+$user = $db->getOneRecord('SELECT * FROM player WHERE id='.$uid.' FOR UPDATE');
+$userbb = $db->getRecords('SELECT * FROM userbb WHERE uid='.$uid.' ORDER BY level DESC FOR UPDATE');
+
+if (!is_array($user) || !is_array($userbb))
 {
-	die('您的宠物寄养空间已满，不能寄养更多宝宝！');
+	mcStop('数据错误2！');
 }
-else if($bagmc==1)
+
+$mc = 0;
+$bagmc = 0;
+$target = false;
+foreach ($userbb as $pet)
 {
-	die('您必须携带一个宝宝，以便参加战斗!');
+	if (intval($pet['muchang']) == 1) $mc++;
+	else if (intval($pet['muchang']) == 0) $bagmc++;
+	if (intval($pet['id']) == $id) $target = $pet;
 }
-die("操作失败!");
+
+if (!is_array($target))
+{
+	mcStop('数据错误3！');
+}
+
+if ($op == 'z')
+{
+	if ($id == intval($user['mbid']))
+	{
+		mcStop('已经是主战！');
+	}
+	if (intval($target['muchang']) != 0 || intval($target['tgflag']) != 0)
+	{
+		mcStop('在牧场的宝宝不能设为主战哦！');
+	}
+
+	$task = $db->getOneRecord('SELECT taskid FROM tasklog WHERE uid='.$uid.' AND taskid=9999');
+	if (is_array($task))
+	{
+		mcStop('10');
+	}
+
+	$sql = 'UPDATE player SET fightbb='.$id.',mbid='.$id.' WHERE id='.$uid;
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		mcStop('操作失败!');
+	}
+	mcCommit();
+	die($from == 1 ? 'OK' : '更改主战宝宝成功!');
+}
+
+if ($op == 'change')
+{
+	if ($id == intval($user['mbid']))
+	{
+		mcStop('已经是主战！');
+	}
+	if (intval($target['muchang']) != 0 || intval($target['tgflag']) != 0)
+	{
+		mcStop('在牧场的宝宝不能设为主战哦！');
+	}
+
+	$sql = 'UPDATE player SET mbid='.$id.',task="",tasklog="" WHERE id='.$uid;
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		mcStop('操作失败!');
+	}
+	if (!$db->query('DELETE FROM tasklog WHERE uid='.$uid.' AND taskid=9999'))
+	{
+		mcStop('操作失败!');
+	}
+	mcCommit();
+	die('更改主战宝宝成功！');
+}
+
+if ($op == 's')
+{
+	if ($id == intval($user['mbid']))
+	{
+		mcStop('该宠物为主战宠物，无法寄养！');
+	}
+	if (intval($target['muchang']) != 0 || intval($target['tgflag']) != 0)
+	{
+		mcStop('已经在牧场或处于其他处理中！');
+	}
+	if ($mc >= intval($user['maxmc']))
+	{
+		mcStop('您的宠物寄养空间已满，不能寄养更多宝宝！');
+	}
+	if ($bagmc <= 1)
+	{
+		mcStop('您必须携带一个宝宝，以便参加战斗!');
+	}
+
+	$sql = 'UPDATE userbb SET muchang=1 WHERE uid='.$uid.' AND id='.$id.
+		' AND muchang=0 AND tgflag=0';
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		mcStop('宠物状态已经变化，请刷新后重试！');
+	}
+	mcCommit();
+	die('操作成功!');
+}
+
+if ($op == 'g')
+{
+	if (!empty($user['fieldpwd']) && empty($_SESSION['loginField'.$uid]))
+	{
+		mcStop('请先登录 !');
+	}
+	if (intval($target['muchang']) != 1)
+	{
+		mcStop('此宠物已经携带或处于其他处理中！');
+	}
+	if (intval($target['tgflag']) != 0)
+	{
+		mcStop('托管中的宠物不能取出！');
+	}
+	if ($bagmc >= 3)
+	{
+		mcStop('您最多同时只能携带3个宝宝！');
+	}
+	if (!empty($target['chchengsx']))
+	{
+		mcStop('传承中不能取出');
+	}
+
+	$sql = 'UPDATE userbb SET muchang=0 WHERE uid='.$uid.' AND id='.$id.
+		' AND muchang=1 AND tgflag=0 AND (chchengsx IS NULL OR chchengsx="")';
+	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+	{
+		mcStop('宠物状态已经变化，请刷新后重试！');
+	}
+	mcCommit();
+	die('操作成功!');
+}
+
+if ($id == intval($user['mbid']))
+{
+	mcStop('主战宠物不能丢弃！');
+}
+if (intval($target['muchang']) != 0 && intval($target['muchang']) != 1)
+{
+	mcStop('处理中的宠物不能丢弃！');
+}
+if (intval($target['tgflag']) != 0 || !empty($target['chchengsx']))
+{
+	mcStop('托管或传承中的宠物不能丢弃！');
+}
+if (intval($target['muchang']) == 0 && $bagmc <= 1)
+{
+	mcStop('您必须携带一个宝宝，以便参加战斗!');
+}
+if (intval($user['money']) < 10000)
+{
+	mcStop('您没有足够多的金币哦！');
+}
+
+$pwd = isset($_REQUEST['pwd']) ? htmlspecialchars(mysql_escape_string($_REQUEST['pwd'])) : '';
+if ($pwd === '' && !empty($user['fieldpwd']))
+{
+	mcStop('请输入密码！');
+}
+$pwd = abs(crc32(md5($pwd)));
+if (!empty($user['fieldpwd']) && $pwd != $user['fieldpwd'])
+{
+	mcStop('1');
+}
+
+$equipment = $db->getRecords(
+	'SELECT pid FROM userbag WHERE uid='.$uid.' AND zbpets='.$id.' FOR UPDATE'
+);
+$equipmentText = '';
+if (is_array($equipment) && count($equipment) > 0)
+{
+	$equipmentIds = array();
+	foreach ($equipment as $item)
+	{
+		$equipmentIds[] = intval($item['pid']);
+	}
+	$equipmentText = '装备：'.implode(',', $equipmentIds).',';
+}
+$logText = $equipmentText.'等级：'.$target['level'].',成长：'.$target['czl'].',名字：'.$target['name'];
+
+if (!$db->query('UPDATE player SET money=money-10000 WHERE id='.$uid.' AND money>=10000') ||
+	mysql_affected_rows($db->getConn()) != 1)
+{
+	mcStop('金币扣除失败，请重试！');
+}
+if (!$db->query('DELETE FROM skill WHERE bid='.$id))
+{
+	mcStop('宠物技能删除失败，请重试！');
+}
+if (!$db->query('DELETE FROM userbag WHERE uid='.$uid.' AND zbpets='.$id))
+{
+	mcStop('宠物装备删除失败，请重试！');
+}
+if (!$db->query('DELETE FROM userbb WHERE uid='.$uid.' AND id='.$id) ||
+	mysql_affected_rows($db->getConn()) != 1)
+{
+	mcStop('宠物删除失败，请重试！');
+}
+
+mcCommit();
+$db->query(
+	'INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES ('.time().','.$uid.','.$uid.','.
+	$db->quote($logText).',16)'
+);
+die('操作成功!');
 ?>

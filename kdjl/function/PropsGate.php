@@ -30,7 +30,6 @@ if($n <= 0)
 
 if(lockItem($bid) === false)
 {
-	unLockItem($bid);
 	die('已经在处理了！');
 }
 
@@ -39,8 +38,8 @@ if ($_pm['user']->check(array('int' => $bid, 'int' => $n)) === false || $n>100){
 	die('2');
 }
 $mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-$wp = $mempropsid[$bid];
-if($wp['sell'] < 0 || $wp['buy'] < 0 || $wp['yb'] != 0 || $rs['prestige'] != 0)
+$wp = is_array($mempropsid) && isset($mempropsid[$bid]) ? $mempropsid[$bid] : false;
+if(!is_array($wp) || $wp['sell'] < 0 || $wp['buy'] < 0 || $wp['yb'] != 0 || $wp['prestige'] != 0)
 {
 	unLockItem($bid);
 	die('3');
@@ -56,7 +55,8 @@ if (!is_array($wp)) {
 if ($wp['buy']==0 || 
 	$wp['id']==0 || 
 	$wp['varyname']==9 || 
-	intval($wp['yb'])>0) {
+	intval($wp['yb'])>0 ||
+	intval($wp['prestige'])>0) {
 	unLockItem($bid);
 	die("2");
 }
@@ -83,12 +83,22 @@ else
 	}
 	else
 	{   
-		if ($wp['vary']==2) //不能叠加
+		$_pm['mysql']->query('START TRANSACTION');
+		$_pm['mysql']->query("UPDATE player
+						   SET money=money-{$price}
+						 WHERE id={$_SESSION['id']} and money >= {$price}");
+		if (mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 		{
+			$_pm['mysql']->query('ROLLBACK');
+			$err = 10;
+		}
+		else if ($wp['vary']==2) //不能叠加
+		{
+			$purchaseOk = true;
 			for ($i=0; $i<$n; $i++) // Add to memory.
 			{
 			    //$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				if ($_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -97,7 +107,13 @@ else
 								   1,
 								   unix_timestamp()
 								  );
-						  ");
+						  ") === false) $purchaseOk = false;
+			}
+			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
+			else
+			{
+				$_pm['mysql']->query('ROLLBACK');
+				$err = 3;
 			}
 		}
 		else
@@ -109,15 +125,15 @@ else
 									");
 			if (is_array($ret))
 			{
-				$_pm['mysql']->query("UPDATE userbag 
+				$purchaseOk = $_pm['mysql']->query("UPDATE userbag 
 							   SET sums=sums+{$n} 
 							 WHERE uid={$_SESSION['id']} and id={$ret['id']} and sums+{$n}>0
-						  ");
+						  ") !== false;
 			}
 			else //create new data
 			{
 				//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+				$purchaseOk = $_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
 								   {$user['id']},
 								   {$bid},
@@ -126,13 +142,15 @@ else
 								   {$n},
 								   ".time()."
 								  );
-						  ");					
+						  ") !== false;					
+			}
+			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
+			else
+			{
+				$_pm['mysql']->query('ROLLBACK');
+				$err = 3;
 			}
 		}
-		$_pm['mysql']->query("UPDATE player 
-					   SET money=money-{$price}
-					 WHERE id={$_SESSION['id']} and money >= $price
-				  ");
 	}	// end inner else
 }
 //$_pm['user']->updateMemUser($_SESSION['id']);
