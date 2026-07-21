@@ -248,7 +248,7 @@ function MasterTeam(user)
     		 	asynchronous:true        
 			}
 			
-		var ajax=new Ajax.Request('../function/Team_createMod.php?op=1&u='+user, opt);
+		var ajax=new Ajax.Request('../function/Team_createMod.php?op=1&u='+encodeURIComponent(user), opt);
 }
 
 function goOut()
@@ -306,11 +306,11 @@ function detect()
     		 	},
     		 	asynchronous:true        
 			}
-	var ajax=new Ajax.Request('../function/getPlayerinfo.php?op=g&u='+cUser, opt);
+	var ajax=new Ajax.Request('../function/getPlayerinfo.php?op=g&u='+encodeURIComponent(cUser), opt);
 }
 function detectview()
 {
-  window.location.href='../function/Pets_Mod.php?uid='+cUser;
+  window.location.href='../function/Pets_Mod.php?uid='+encodeURIComponent(cUser);
 }
 
 
@@ -358,6 +358,10 @@ function player_fight()
 					{
 						window.parent.Alert(cUser+'处于新手保护状态,无法挑战');
 					}
+					else if(tstr==2)
+					{
+						window.parent.Alert(cUser+'拒绝挑战,无法挑战');
+					}
 					else // 开始挑战。
 					{
 						window.parent.$('gw').src='./function/Challenge_Mod.php?p='+bid+'&cp='+tstr;
@@ -370,7 +374,7 @@ function player_fight()
     		 	},
     		 	asynchronous:true        
 			}
-	var ajax=new Ajax.Request('../function/ext_Challenge.php?u='+cUser, opt);
+	var ajax=new Ajax.Request('../function/ext_Challenge.php?u='+encodeURIComponent(cUser), opt);
 }
 function pk()
 {
@@ -459,7 +463,12 @@ function pk1(id)
 		var opt = {
 					method: 'get',
 					 onSuccess: function(t) {
-						var tstr = parseInt(t.responseText);
+						if(t.responseText=='01')
+						{
+							parent.Alert('切换失败(组队副本有战斗进度时不允许)!');
+							return;
+						}
+						var tstr = parseInt(t.responseText,10);
 						if(tstr%3 == 1)
 						{
 							$('sign').innerHTML='普通';
@@ -494,20 +503,7 @@ function startFatting(bbid,level,lid,obj){
 
 function Setbbs(bbid,level,lid,obj)	// Get pets.
 {
-	var mbid;
-	var opt = {
-					method: 'get',
-					 onSuccess: function(t) {
-						mbid = parseInt(t.responseText);
-					},
-					on404: function(t) {
-					},
-					onFailure: function(t) {
-					},
-					asynchronous:true        
-			}
-	var ajax=new Ajax.Request('/function/mapGate.php?type=6', opt);
-	if(bbid == mbid)
+	if(bbid == bid)
 	{
 		return;
 	}

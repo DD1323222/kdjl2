@@ -14,22 +14,72 @@ require_once('../config/config.game.php');
 
 secStart($_pm['mem']);
 
-$uid = $_GET['uid'];
+function petsModHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function petsModJsSingle($value)
+{
+	$value = str_replace("\\", "\\\\", (string)$value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	return $value;
+}
+
+function petsModImage($value)
+{
+	return kdjlPropsImageName($value);
+}
+
+function petsModBbImage($value, $fallback)
+{
+	return kdjlBbImageName($value, $fallback);
+}
+
+$uid = (isset($_GET['uid']) && !is_array($_GET['uid'])) ? trim($_GET['uid']) : '';
 if(!empty($uid)){
-	$sql = sprintf("select id from player where nickname='".$_REQUEST['uid']."' limit 1");
+	$uidSql = $_pm['mysql']->escape($uid);
+	$sql = "select id from player where nickname='".$uidSql."' limit 1";
 	$res  = $_pm['mysql']->getOneRecord($sql);
-	$userid=$res[id];
+	$userid = is_array($res) ? intval($res['id']) : 0;
 }else{
-	$userid= $_SESSION['id'];
+	$userid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+}
+if($userid <= 0)
+{
+	die("");
 }
 $user		= $_pm['user']->getUserById($userid);
 $petsAll	= $_pm['user']->getUserPetById($userid);
 $bag		= $_pm['user']->getUserBagById($userid);
 $sk			= $_pm['user']->getUserPetSkillById($userid);
-$skillsys	= unserialize($_pm['mem']->get(MEM_SKILLSYS_KEY));
+$skillsys	= kdjlSafeMemValue($_pm['mem']->get(MEM_SKILLSYS_KEY), array());
+if(!is_array($user)) die('');
+if(!is_array($petsAll)) $petsAll = array();
+if(!is_array($skillsys)) $skillsys = array();
+$userDefaults = array('mbid'=>0, 'nickname'=>'', 'headimg'=>0, 'vary'=>'', 'sex'=>'', 'money'=>0, 'yb'=>0, 'vip'=>0);
+foreach($userDefaults as $userKey => $userValue)
+{
+	if(!isset($user[$userKey])) $user[$userKey] = $userValue;
+}
+$user['mbid'] = intval($user['mbid']);
+$user['headimg'] = intval($user['headimg']);
+$user['money'] = intval($user['money']);
+$user['yb'] = intval($user['yb']);
+$user['vip'] = intval($user['vip']);
+$pets = array();
+$pets_look = array();
+$str = array();
+$petszb_look = array();
+$jnbook = '';
+$mbid = isset($user['mbid']) ? intval($user['mbid']) : 0;
+$selid = 0;
+$selidinit = 0;
+$pdinit = array();
 
 
-if (isset($_REQUEST['pid']) && intval($_REQUEST['pid'])>0)
+if (isset($_REQUEST['pid']) && !is_array($_REQUEST['pid']) && intval($_REQUEST['pid'])>0)
 	 $pid = intval($_REQUEST['pid']);
 else $pid=0;
 $kk = 0;
@@ -38,6 +88,12 @@ if(is_array($petsAll))
 {
 	foreach ($petsAll as $k =>$rs) // Will filter in muchang pets for current user.
 	{
+		if(!is_array($rs)) continue;
+		if(!isset($rs['muchang'])) $rs['muchang'] = 0;
+		if(!isset($rs['id'])) $rs['id'] = 0;
+		if(!isset($rs['name'])) $rs['name'] = '';
+		if(!isset($rs['level'])) $rs['level'] = 0;
+		if(!isset($rs['cardimg'])) $rs['cardimg'] = '';
 		$ii = $kk;
 		if ($rs['muchang'] != 0) continue;
 		if($pid == 0 && $rs['id'] == $user['mbid'])
@@ -58,53 +114,92 @@ if(is_array($petsAll))
 			}
 			else $sel = 50;
 		}
+		if($selidinit == 0)
+		{
+			$selidinit= $rs['id'];
+			$pdinit= $rs;
+			if($mbid <= 0) $mbid = $rs['id'];
+		}
 		$sellv = $sel / 100;
 		//opacity: 1; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=100,finishOpacity=100);
-		
+
 		$kk++;
-		$pets[$ii] = "<img onclick='Setbb({$rs['id']},this,{$user['mbid']});' src='".IMAGE_SRC_URL."/bb/{$rs['cardimg']}' style='cursor:hand;opacity: ".$sellv."; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=".$sel.",finishOpacity=100);' id='i{$kk}'>";
-		$pets_look[$ii] = "<img src='".IMAGE_SRC_URL."/bb/{$rs['cardimg']}' style='cursor:hand;opacity: ".$sellv."; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=".$sel.",finishOpacity=100);' id='i{$kk}'>";
-		$str[$ii] = "<em><a onclick='Setbb({$rs['id']},this,{$user['mbid']});'>".$rs['name']."<br />LV ".$rs['level']."</a></em>";
+		$cardImg = petsModBbImage($rs['cardimg'], 'k1.gif');
+		$nameHtml = petsModHtml($rs['name']);
+		$pets[$ii] = "<img onclick='Setbb(".$rs['id'].",this,".$user['mbid'].");' src='".IMAGE_SRC_URL."/bb/".$cardImg."' style='cursor:hand;opacity: ".$sellv."; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=".$sel.",finishOpacity=100);' id='i".$kk."'>";
+		$pets_look[$ii] = "<img src='".IMAGE_SRC_URL."/bb/".$cardImg."' style='cursor:hand;opacity: ".$sellv."; filter : progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=".$sel.",finishOpacity=100);' id='i".$kk."'>";
+		$str[$ii] = "<em><a onclick='Setbb(".$rs['id'].",this,".$user['mbid'].");'>".$nameHtml."<br />LV ".intval($rs['level'])."</a></em>";
 		if ($ii==3) break;
 	}
 }
 if(!isset($_GET['uid'])){
 // save mbid.
-$_pm['mysql']->query("UPDATE player
-						 SET mbid={$user['mbid']}
-					   WHERE id={$_SESSION['id']}
-					");
-// refresh cache
-$_pm['user']->updateMemUser($_SESSION['id']);
+	if($mbid > 0)
+	{
+		$_pm['mysql']->query("UPDATE player
+							 SET mbid={$mbid}
+						   WHERE id={$userid}
+						");
+		// refresh cache
+		$_pm['user']->updateMemUser($userid);
+	}
 }
 if(!is_array($pd))
 {
-	
+	if(!is_array($pdinit) || empty($pdinit))
+	{
+		$_pm['mem']->memClose();
+		die('');
+	}
 	$pd		= $pdinit;
 }
 $selid	= $selidinit;
+$petDefaults = array(
+	'id'=>0, 'name'=>'', 'imgstand'=>'', 'kx'=>'', 'level'=>0, 'wx'=>0,
+	'hp'=>0, 'srchp'=>0, 'mp'=>0, 'srcmp'=>0, 'ac'=>0, 'mc'=>0,
+	'hits'=>0, 'miss'=>0, 'speed'=>0, 'czl'=>0, 'nowexp'=>0, 'lexp'=>0,
+	'subyl'=>0, 'subsl'=>0, 'subdl'=>0, 'subxl'=>0, 'subhl'=>0,
+	'subfl'=>0, 'subkl'=>0, 'remaketimes'=>0
+);
+foreach($petDefaults as $petKey => $petValue)
+{
+	if(!isset($pd[$petKey])) $pd[$petKey] = $petValue;
+}
+$numericPetFields = array('id','level','wx','hp','srchp','mp','srcmp','ac','mc','hits','miss','speed','czl','nowexp','lexp','subyl','subsl','subdl','subxl','subhl','subfl','subkl','remaketimes');
+foreach($numericPetFields as $petKey) $pd[$petKey] = intval($pd[$petKey]);
 $petszb = array();
-$alltakeoff;
-$petAllPid;
-$petAllUserPid;
+$alltakeoff = '';
+$petAllPid = '';
+$petAllUserPid = '';
 if (is_array($bag))
 {
 	foreach ($bag as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		if(!isset($rs['varyname'])) $rs['varyname'] = 0;
+		if(!isset($rs['zbing'])) $rs['zbing'] = 0;
+		if(!isset($rs['zbpets'])) $rs['zbpets'] = 0;
 		if ($rs['varyname'] == 9 && $rs['zbing'] == 1 && $rs['zbpets'] == $pd['id'])
 		{
-			if ($rs['requires'] != '') 
+			if(!isset($rs['id'])) $rs['id'] = 0;
+			if(!isset($rs['pid'])) $rs['pid'] = 0;
+			if(!isset($rs['postion'])) $rs['postion'] = 0;
+			if(!isset($rs['name'])) $rs['name'] = '';
+			if(!isset($rs['img'])) $rs['img'] = '';
+			if ($rs['requires'] != '')
 			{
-				$t = split(',', 
+				$t = explode(',',
 					       str_replace(array('lv','wx'), array('等级','五行'), $rs['requires'])
 					      );
-				$wx = str_replace($_props['wxs'], $_props['wxd'], $t[1]);
+				$wx = isset($t[1]) ? str_replace($_props['wxs'], $_props['wxd'], $t[1]) : '';
 			}
 			else $t[0]= $wx= '无';
-			
+
 			$zbeffect = zbAttrib($rs['effect']);
-			$petszb[$rs['postion']] = '<img  src="'.IMAGE_SRC_URL.'/props/'.$rs['img'].'" border=0  onmouseover="showTip('.$rs['id'].','.$pd['id'].',1,2,'.$rs['postion'].')"  onmouseout="window.parent.UnTip()" ondblclick="takeoff('.$rs['pid'].','.$pd['id'].','.$rs['id'].')" style="cursor:pointer" onclick="copyWord(\''.$rs[name].'\');"/>';
-			$petszb_look[$rs['postion']] = '<img  src="'.IMAGE_SRC_URL.'/props/'.$rs['img'].'" border=0  onmouseover="showTip('.$rs['id'].','.$pd['id'].',1,2,'.$rs['postion'].')"  onmouseout="window.parent.UnTip()" style="cursor:pointer" onclick="copyWord(\''.$rs[name].'\');"/>';
+			$nameJs = petsModHtml(petsModJsSingle($rs['name']));
+			$propImg = petsModImage($rs['img']);
+			$petszb[$rs['postion']] = '<img  src="'.IMAGE_SRC_URL.'/props/'.$propImg.'" border=0  onmouseover="showTip('.$rs['id'].','.$pd['id'].',1,2,'.$rs['postion'].')"  onmouseout="window.parent.UnTip()" ondblclick="takeoff('.$rs['pid'].','.$pd['id'].','.$rs['id'].')" style="cursor:pointer" onclick="copyWord(\''.$nameJs.'\');"/>';
+			$petszb_look[$rs['postion']] = '<img  src="'.IMAGE_SRC_URL.'/props/'.$propImg.'" border=0  onmouseover="showTip('.$rs['id'].','.$pd['id'].',1,2,'.$rs['postion'].')"  onmouseout="window.parent.UnTip()" style="cursor:pointer" onclick="copyWord(\''.$nameJs.'\');"/>';
 			$petAllPid = $petAllPid.$rs['pid']."a";
 			$petAllUserPid = $petAllUserPid.$rs['id']."b";
 		}
@@ -112,18 +207,24 @@ if (is_array($bag))
 	$petAllPid = "'".$petAllPid."'";
 	$petAllUserPid = "'".$petAllUserPid."'";
 	$alltakeoff = '<h2><input style="position:absolute;left:90px;top:255px;" type="button" value="秒脱" onclick="alltakeoff('.$petAllPid.','.$pd['id'].','.$petAllUserPid.')" /></h2>';
-}	
+}
 
 if(empty($petszb[0])){
 	$petszb[0] = '<img src="'.IMAGE_SRC_URL.'/props/zbsx.gif" />';
 }
+if(empty($petszb_look[0])){
+	$petszb_look[0] = '<img src="'.IMAGE_SRC_URL.'/props/zbsx.gif" />';
+}
 if(empty($petszb[11])){
 	$petszb[11] = '<img src="'.IMAGE_SRC_URL.'/props/zbsx.gif" />';
 }
+if(empty($petszb_look[11])){
+	$petszb_look[11] = '<img src="'.IMAGE_SRC_URL.'/props/zbsx.gif" />';
+}
 for ($i=1; $i<=10; $i++)
 {
-	if ($petszb[$i] == '') $petszb[$i] = $_props['postion'][$i];
-	if ($petszb_look[$i] == '') $petszb_look[$i] = $_props['postion'][$i];
+	if (empty($petszb[$i])) $petszb[$i] = $_props['postion'][$i];
+	if (empty($petszb_look[$i])) $petszb_look[$i] = $_props['postion'][$i];
 }
 
 // Get jn in here.
@@ -133,16 +234,23 @@ else
 	$jnlist='';
 	foreach ($sk as $k => $rs)
 	{
-		if (!is_array($rs) || $rs['bid'] != $selid) continue;
-		//print_r($rs);
+		if (!is_array($rs)) continue;
+		$rsDefaults = array('bid'=>0, 'sid'=>0, 'name'=>'', 'level'=>0);
+		foreach($rsDefaults as $rsKey => $rsValue) if(!isset($rs[$rsKey])) $rs[$rsKey] = $rsValue;
+		$rs['bid'] = intval($rs['bid']);
+		$rs['sid'] = intval($rs['sid']);
+		$rs['level'] = intval($rs['level']);
+		if ($rs['bid'] != $selid) continue;
+		//print_r(rrs);
 		if ($rs['level']==10 || $pd['level']<$rs['level'] || $uid) $uplevel='';
 		else
 		{
 			$uplevel='<input type="button" value="升级" onclick="sjJn(\''.$rs['sid'].'\');" />';
 		}
 
-		
-		$jnlist .= '<li><span onclick="copyWord(\''.$rs[name].'\');" onmouseover="showSkillTip('.$rs['bid'].','.$rs['sid'].')"  onmouseout="window.parent.UnTip()"> '.$uplevel.$rs['name'].'&nbsp;&nbsp;'.$rs['level']. ' 级 </span> </li>';
+
+		$skillName = isset($rs['name']) ? $rs['name'] : '';
+		$jnlist .= '<li><span onclick="copyWord(\''.petsModHtml(petsModJsSingle($skillName)).'\');" onmouseover="showSkillTip('.$rs['bid'].','.$rs['sid'].')"  onmouseout="window.parent.UnTip()"> '.$uplevel.petsModHtml($skillName).'&nbsp;&nbsp;'.intval($rs['level']).' 级 </span> </li>';
 	}
 }
 
@@ -152,31 +260,43 @@ else
 {
 	foreach ($bag as $k => $rs)
 	{
+		if(!is_array($rs) || !isset($rs['pid']) || !isset($rs['sums'])) continue;
 		foreach ($skillsys as $x => $y)
-		{	
+		{
+			if(!is_array($y) || !isset($y['pid'],$y['wx'],$y['id'],$y['name'])) continue;
 			if ($rs['pid'] == $y['pid'] && ($y['wx'] == $pd['wx'] || $y['wx'] == 0) && $rs['sums']!=0)
 			{
-				$jnbook .= '<option value="'.$y['id'].'">'.$y['name'].'</option>';
+				$jnbook .= '<option value="'.$y['id'].'">'.petsModHtml($y['name']).'</option>';
 			}
 		}
 	}
 }
 
-$bbshow = $_pm['mysql'] -> getOneRecord("SELECT bbshow FROM player_ext WHERE uid = {$_SESSION['id']}");
-if(!is_array($bbshow))
+$bbshownums = 0;
+if(empty($uid))
 {
-	$_pm['mysql'] -> query("INSERT INTO player_ext (uid,bbshow) VALUES({$_SESSION['id']},5)");
-	$bbshownums = 5;
-}
-else
-{
-	$bbshownums = $bbshow['bbshow'];
+	$bbshow = $_pm['mysql'] -> getOneRecord("SELECT bbshow FROM player_ext WHERE uid = {$userid}");
+	if(!is_array($bbshow))
+	{
+		$_pm['mysql'] -> query("INSERT INTO player_ext (uid,bbshow) VALUES({$userid},5) ON DUPLICATE KEY UPDATE bbshow=bbshow");
+		$bbshownums = 5;
+	}
+	else
+	{
+		$bbshownums = $bbshow['bbshow'];
+	}
 }
 if ($jnbook == '') $jnbook= '<option value="0">包裹中没有技能书</option>';
 
 if ($pd['kx']=='') $kx= array();
 else $kx = explode(",", $pd['kx']);
-$att =getzbAttrib($selid);
+$kx = array_pad($kx, 5, '');
+$att =getzbAttrib($selid,false,'',$userid);
+if(!is_array($att)) $att = array();
+foreach(array('hp','mp','ac','mc','hits','miss','speed') as $attKey)
+{
+	$att[$attKey] = isset($att[$attKey]) ? intval($att[$attKey]) : 0;
+}
 $_pm['mem']->memClose();
 //@Load template.
 if(!empty($uid)){
@@ -196,15 +316,15 @@ if($uid)
 }
 else
 {
-	$pet1 = $pets[1]?$pets[1]:$empty;
-	$pet2 = $pets[2]?$pets[2]:$empty;
+	$pet1 = isset($pets[1]) ? $pets[1] : $empty;
+	$pet2 = isset($pets[2]) ? $pets[2] : $empty;
 }
 
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	//$empty = '<img src="'.IMAGE_SRC_URL.'/ui/muchang/cwzl26.gif" />';
-	
+	//rempty = '<img src="'.IMAGE_SRC_URL.'/ui/muchang/cwzl26.gif" />';
+
 	$src = array(
 				 '#nickname#',
 				  '#bbname#',//add by DuHao
@@ -251,15 +371,15 @@ if (file_exists($tn))
 				 '#two1#',
 				 '#three1#',
 				 '#level#',
-            	 '#wx#',
-            	 '#hp#',
-            	 '#mp#',
-            	 '#ac#',
-            	 '#mc#',
-            	 '#hits#',
-            	 '#miss#',
-            	 '#speed#',
-             	 '#czl#',
+	 '#wx#',
+	 '#hp#',
+	 '#mp#',
+	 '#ac#',
+	 '#mc#',
+	 '#hits#',
+	 '#miss#',
+	 '#speed#',
+	 '#czl#',
 				 '#nowexp#',
 				 '#lexp#',
 				 '#zbsx#',
@@ -268,19 +388,19 @@ if (file_exists($tn))
 				 '#alltakeoff#'
 				);
 	$des = array(
-				 $user['nickname'].'<br/>宝贝：<font color=green>'.$pd['name'].'</font>',
-				  $pd['name'],//add by DuHao
+				 petsModHtml($user['nickname']).'<br/>宝贝：<font color=green>'.petsModHtml($pd['name']).'</font>',
+				  petsModHtml($pd['name']),//add by DuHao
 				 '2'.$user['headimg'],
-				 $user['vary'],
-				 $user['sex'],
+				 petsModHtml($user['vary']),
+				 petsModHtml($user['sex']),
 				 count($petsAll),
 				 0,
 				 $user['money'],
-				 $user['yb']?$user['yb']:0,
-				 empty($uid)?$pets[0]:$pets_look[0],
+				 isset($user['yb']) && $user['yb'] ? $user['yb'] : 0,
+				 empty($uid) ? (isset($pets[0]) ? $pets[0] : $empty) : (isset($pets_look[0]) ? $pets_look[0] : $empty),
 				 $pet1,
 				 $pet2,
-				 $pd['imgstand'],
+				 petsModBbImage($pd['imgstand'], 'z1.gif'),
 				 empty($uid)?$petszb[1]:$petszb_look[1],
 				 empty($uid)?$petszb[2]:$petszb_look[2],
 				 empty($uid)?$petszb[3]:$petszb_look[3],
@@ -292,11 +412,11 @@ if (file_exists($tn))
 				 empty($uid)?$petszb[9]:$petszb_look[9],
 				 empty($uid)?$petszb[10]:$petszb_look[10],
 				 $jnlist,
-				 $kx[0],
-				 $kx[1],
-				 $kx[2],
-				 $kx[3],
-				 $kx[4],
+				 petsModHtml($kx[0]),
+				 petsModHtml($kx[1]),
+				 petsModHtml($kx[2]),
+				 petsModHtml($kx[3]),
+				 petsModHtml($kx[4]),
 				 $pd['subyl'],
 				 $pd['subsl'],
 				 $pd['subdl'],
@@ -309,9 +429,9 @@ if (file_exists($tn))
 				 $jnbook,
 				 $bbshownums,
 				 $mbid,
-				 $str[0],
-				 $str[1]?$str[1]:$empty1,
-				 $str[2]?$str[2]:$empty1,
+				 isset($str[0]) ? $str[0] : $empty1,
+				 isset($str[1]) ? $str[1] : $empty1,
+				 isset($str[2]) ? $str[2] : $empty1,
 				 $pd['level'],
 				 getWx($pd['wx']),
 				 ($pd['hp']+$att['hp']).'/'.($pd['srchp']+$att['hp']),
@@ -324,7 +444,7 @@ if (file_exists($tn))
 				 $pd['czl'],
 				 $pd['nowexp'],
 				 $pd['lexp'],
-				 $petszb[0],
+				 empty($uid)?$petszb[0]:$petszb_look[0],
 				 $user['vip'],
 				 empty($uid)?$petszb[11]:$petszb_look[11],
 				 $alltakeoff

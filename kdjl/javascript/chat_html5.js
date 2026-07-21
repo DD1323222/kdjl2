@@ -2,6 +2,8 @@ var ws = null;
 var chatType = 0;//聊天类型
 var wpUserName = null;//私聊对象
 var logined = "";
+var reconnectTimer = null;
+var reconnectEnabled = true;
 var smileIconMaxNumInOne = 5;//一次最多几个表情
 $j(function () {
     
@@ -12,20 +14,36 @@ function tmsg(str) {
 };
 function closeHandler() {
     drop = 0;
-    this.tmsg("您断线了，30秒后自动重连。", 0);
+    clearInterval(heartNum);
+    heartNum = 0;
+    logined = false;
+    if(!reconnectEnabled) return;
+    tmsg("您断线了，30秒后自动重连。", 0);
     recvMsg("CT|<font color=\"#c0c0c0\">您断线了，30秒后自动重连,或者手动刷新。</font>");
-    setTimeout(this.reConnect, 30000);
-    this.logined = false;
+    if(reconnectTimer === null) reconnectTimer = setTimeout(reConnect, 30000);
 };
 function reConnect() {
+    if(!reconnectEnabled) return;
+    if(ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    if(reconnectTimer !== null){
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    drop = 0;
     // 打开一个 web socket
     var str = getSetting();
     var ip = str.split('|')[0];
 	var port = str.split('|')[2];
-    ws = new WebSocket("ws://"+ip+":"+port);
+    try{
+        ws = new WebSocket("ws://"+ip+":"+port);
+    }catch(e){
+        ws = null;
+        closeHandler();
+        return;
+    }
     ws.onopen = function () {
         // Web Socket 已连接上，使用 send() 方法发送数据
-
+        drop = 0;
         tmsg("an|连接成功，正在登陆。");
         loginChat();
         
@@ -40,7 +58,6 @@ function reConnect() {
     ws.onclose = function () {
         // 关闭 websocket
         tmsg("an|连接已关闭...");
-        clearInterval(heartNum);
         closeHandler();
     };;
 
@@ -54,39 +71,36 @@ function talk(param1) {
     //  return;
     // };
    
-    this.tmsg("will send " + param1 + "-" + this.lastSendMsgTime, 1);
-    if (!this.logined) {
+    tmsg("will send " + param1, 1);
+    if (!logined || !ws || ws.readyState !== 1) {
         recvMsg("SM|" + "抱歉,您没有登录!");
         //  this.tmsg("请先登录!", 0);
         return;
     };
     if (param1 != "") {
-        if (param1.substr(0, 2) == "#!" || param1.substr(0, 1) == "!" || param1.substr(0, 2) == "!!" || param1.substr(0, 1) == "#") {
-            if (!ExternalInterface.call("callGMCommand", param1.substr(2))) {
-                this.tmsg("操作失败!", 0);
-            }
-            else {
-                this.tmsg("操作成功!", 0);
-            };
+        if (param1.substr(0, 2) == "#!") {
+            if (typeof(callGMCommand) == "function" && callGMCommand(param1.substr(2))) tmsg("操作成功!", 0);
+            else tmsg("操作失败!", 0);
+            return;
         };
         if (param1.substr(0, 2) == "//") {
             _loc2_ = param1.split(" ", 2);
             _loc3_ = _loc2_[0].substr(2);
-            this.wpUserName = _loc3_;
+            wpUserName = _loc3_;
             //  this.tmsg("设置密聊对象为：" + this.wpUserName, 0);
-            _loc2_[1] = param1.substr(this.wpUserName.length + 2, 41);
+            _loc2_[1] = param1.substr(wpUserName.length + 2, 41);
             param1 = !!_loc2_[1] ? _loc2_[1] : "";
             //    this.cbWP.selected = true;
             //    setHWP(true, this.wpUserName);
         };
-        if (this.chatType == 2) {
+        if (chatType == 2) {
             ws.send("SGCHAT " + param1 + "\r\n");
         }
-        else if (this.chatType == 3) {
+        else if (chatType == 3) {
             ws.send("GCHAT " + param1 + "\r\n");
         }
-        else if (this.wpUserName != "" && this.chatType == 1) {
-            ws.send("WP " + this.wpUserName + " " + param1);
+        else if (wpUserName != "" && chatType == 1) {
+            ws.send("WP " + wpUserName + " " + param1);
         }
         else {
             ws.send("CHAT " + param1 + "\r\n");
@@ -97,6 +111,7 @@ function talk(param1) {
 };
 //登录聊天
 function loginChat() {
+    if(!ws || ws.readyState !== 1) return;
     var str = getSetting();
     var ip = str.split('|')[0];
     var key = str.split('|')[1];
@@ -106,19 +121,28 @@ function loginChat() {
 };
 var heartNum = 0;
 function heartTime() {
+    if(!ws || ws.readyState !== 1) return;
+    drop++;
+    if(drop >= 4){
+        try{ws.close();}catch(e){closeHandler();}
+        return;
+    }
     ws.send("W 1");
 };
 var drop = 0;
 function DecisionOffline() {
-    drop++;
-    if (drop >= 4) {
-        //一分钟没有接到心跳回应，就判定掉线了，这里的判定可根据情况自己修改
-        closeHandler();
-    };
+    drop = 0;
 };
+
+function isBlockedChatMessage(msg){
+    if(typeof(blacks) === "undefined" || !blacks || typeof(msg) !== "string") return false;
+    var match = msg.match(/\$([^`]+)`/);
+    return !!(match && typeof(blacks[match[1]]) !== "undefined");
+}
 function onDataEvent(param1) {
-
-
+    while (param1.length > 0 && (param1.charCodeAt(param1.length - 1) == 13 || param1.charCodeAt(param1.length - 1) == 10 || param1.charCodeAt(param1.length - 1) == 0)) {
+        param1 = param1.substr(0, param1.length - 1);
+    };
     var strArray = param1.split("|");
     if (strArray[0] == "W") {
         // this.lab_status.text = ".";
@@ -130,19 +154,18 @@ function onDataEvent(param1) {
         return;
     };
     var command = strArray[0];
-    var msg = strArray[1];
-    while (msg.charCodeAt(msg.length - 1) == 13 || msg.charCodeAt(msg.length - 1) == 10) {
-        return;
+    var msg = strArray.slice(1).join("|");
+    while (msg.length > 0 && (msg.charCodeAt(msg.length - 1) == 13 || msg.charCodeAt(msg.length - 1) == 10 || msg.charCodeAt(msg.length - 1) == 0)) {
         msg = msg.substr(0, msg.length - 1);
-        if (msg.length == 0) {
-            return;
-        };
     };
 
     if (command == "L") {
         recvMsg("SM|" + "连接服务器成功！");
         whenConnect();
         logined = true;
+        drop = 0;
+        if(typeof(dealUserList) === "function") dealUserList(msg);
+        clearInterval(heartNum);
         heartNum = setInterval(heartTime, 15000);//心跳包
 
 
@@ -154,12 +177,15 @@ function onDataEvent(param1) {
         recvMsg("UA|" + msg);
     }
     else if (command == "WP") {
+        if(isBlockedChatMessage(msg)) return;
         recvMsg("WP|" + this.showmsg("<font color=\'#0000FF\'>" + this.colorUser_SL(this.smileText(msg, /\[\$(\d+)\]/), /\$([^`]+)\`/, "#ff0000") + "</font>\n"));
     }
     else if (command == "GC") {
+        if(isBlockedChatMessage(msg)) return;
         recvMsg("GC|" + this.showmsg("<font color=\'#4E7BE7\'>" + this.colorUser(this.smileText(msg, /\[\$(\d+)\]/), /\$([^`]+)\`/, "#ff0000") + "</font>\n"));
     }
     else if (command == "SG") {
+        if(isBlockedChatMessage(msg)) return;
         recvMsg("SG|" + this.showmsg("<font color=\'#009900\'>" + this.colorUser(this.smileText(msg, /\[\$(\d+)\]/), /\$([^`]+)\`/, "#ff0000") + "</font>\n"));
     }
     else if (command == "SYSI") {
@@ -169,17 +195,24 @@ function onDataEvent(param1) {
         recvMsg("SI|" + ("<font color=\'#FF0000\'>[系统公告]：" + msg + "</font>\n"));
     }
     else if (command == "SYSM") {
+        if(msg.indexOf("\u88ab\u5f3a\u5236\u65ad\u7ebf") >= 0){
+            reconnectEnabled = false;
+            if(reconnectTimer !== null){
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+        }
         recvMsg("SM|" + msg);
     }
     else if (command == "SYS") {
         recvMsg("SI|" + ("<font color=\'#C95C14\'>[系 统]：" + this.colorUser(this.smileText(msg, /\[\$(\d+)\]/), /\$([^`]+)\`/, "#ff0000") + "</font>\n"));
     }
     else if (command == "LE") {
-        recvMsg("SM|" + strArray[1]);
+        recvMsg("SM|" + msg);
     }
     else if (command == "SYSN") {
         try {
-            AsCallBack(msg.substr(0, msg.length - 1));
+            AsCallBack(msg);
         }
         catch (error) {
         };
@@ -193,6 +226,7 @@ function onDataEvent(param1) {
         recvMsg("CT|" + this.showmsg(this.colorUser(msg.replace(myPattern, "\"javascript:showBb(\'$1\',window.event);void(0);\""), /\$([^`]+)\`/, "#ff0000")));
     }
     else if (command == "C" || command == "CT") {
+        if(isBlockedChatMessage(msg)) return;
         spstr = "`说：";
         pos = msg.indexOf(spstr) + spstr.length;
         if (msg.substr(pos, 2) == "!!") {
@@ -207,7 +241,7 @@ function onDataEvent(param1) {
         recvMsg("CT|" + this.showmsg(this.colorUser(this.smileText(msg, /\[\$(\d+)\]/), /\$([^`]+)\`/, "#ff0000") + "\n"));
     }
     else {
-        recvMsg("SM|src = " + src);
+        recvMsg("SM|src = " + param1);
     }
     command = "";
 };

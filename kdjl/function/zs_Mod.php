@@ -14,27 +14,61 @@ require_once('../config/config.game.php');
 
 secStart($_pm['mem']);
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$petsAll	= $_pm['user']->getUserPetById($_SESSION['id']);
-$bag		= $_pm['user']->getUserBagById($_SESSION['id']);
+function zsModHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function zsModImage($value)
+{
+	$value = basename((string)$value);
+	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
+}
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$user		= $_pm['user']->getUserById($uid);
+$petsAll	= $_pm['user']->getUserPetById($uid);
+$bag		= $_pm['user']->getUserBagById($uid);
+if(!is_array($user)) die('');
+if(!is_array($petsAll)) $petsAll = array();
+if(!is_array($bag)) $bag = array();
+$zspets = array('', '');
+$zsoption = '';
+$zsapetslist = '';
+$zsbblistid = '';
+$zsplist = '';
+$shop = '';
 /*if($user['name'] != 'tanwei2008' && $user['name'] != 'boss')
 {
 die("维护中，相关功能周一开放");
 }*/
 //die("维护中，相关功能周一开放");
 if (is_array($petsAll))
-{  
+{
 	$zskk=0;
 	foreach ($petsAll as $k => $rs)
 	{
-		if($rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") && $rs['muchang'] == 0)
+		if(!is_array($rs)) continue;
+		if(!isset($rs['id'])) $rs['id'] = 0;
+		if(!isset($rs['level'])) $rs['level'] = 0;
+		if(!isset($rs['name'])) $rs['name'] = '';
+		if(!isset($rs['muchang'])) $rs['muchang'] = 0;
+		if(!isset($rs['tgflag'])) $rs['tgflag'] = 0;
+		if(!isset($rs['wx'])) $rs['wx'] = 0;
+		if(!isset($rs['cardimg'])) $rs['cardimg'] = '';
+		$petId = intval($rs['id']);
+		$petLevel = intval($rs['level']);
+		$petNameHtml = zsModHtml($rs['name']);
+		$cardImg = zsModImage($rs['cardimg']);
+		if($rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") && $rs['muchang'] == 0 && intval($rs['tgflag']) == 0)
 		{
-			$zsoption .= "<option value='{$rs['id']}'>{$rs['name']}-{$rs['level']}</option>\n";
+			$zsoption .= "<option value='{$petId}'>{$petNameHtml}-{$petLevel}</option>\n";
 		}
-		if ($rs['muchang'] == 1 || $rs['level']<60 || $rs['wx'] != 6 || $rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") continue;
-		$zspets[$zskk++] = "<img src=''.IMAGE_SRC_URL.'/bb/{$rs['cardimg']}' onclick='Display({$rs['id']});' style='cursor:pointer;display:none;' id='cp{$zskk}'>";
-		$zsapetslist .= "<option value='{$rs['id']}'>{$rs['name']}-{$rs['level']}</option>\n";
-		$zsbblistid .= $bblistid?",'{$rs['id']}-{$rs['cardimg']}'":"'{$rs['id']}-{$rs['cardimg']}'";
+		if ($rs['muchang'] != 0 || intval($rs['tgflag']) != 0 || $rs['level']<60 || $rs['wx'] != 6 || $rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") continue;
+		$zspets[$zskk++] = "<img src='".IMAGE_SRC_URL."/bb/{$cardImg}' onclick='Display({$petId});' style='cursor:pointer;display:none;' id='cp{$zskk}'>";
+		$zsapetslist .= "<option value='{$petId}'>{$petNameHtml}-{$petLevel}</option>\n";
+		$zsbblistid .= $zsbblistid?",'{$petId}-{$cardImg}'":"'{$petId}-{$cardImg}'";
 		if ($zskk == 3) break;
 	}
 }
@@ -47,6 +81,11 @@ if (is_array($bag))
 	$i = 0;
 	foreach($bag as $k => $v)
 	{
+		if(!is_array($v)) continue;
+		if(!isset($v['id'])) $v['id'] = 0;
+		if(!isset($v['name'])) $v['name'] = '';
+		if(!isset($v['sums'])) $v['sums'] = 0;
+		if(!isset($v['usages'])) $v['usages'] = '';
 		$effarr = explode(":",$v['usages']);
 		if($effarr[0] != '涅盘')
 		{
@@ -56,7 +95,7 @@ if (is_array($bag))
 		// effect format: luck:B:10%:5000, shbb:5000
 		if(!empty($v['sums']))
 		{
-			$zsplist .= "<option value='{$v['id']}'>{$v['name']}-{$v['sums']}个</option>\n";
+			$zsplist .= "<option value='".intval($v['id'])."'>".zsModHtml($v['name'])."-".intval($v['sums'])."个</option>\n";
 		}
 	}
 }
@@ -72,7 +111,7 @@ $tn = $_game['template'] . 'tpl_zs.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array("#word#",
 				 "#zsone#",
 				 "#zstwo#",
@@ -106,9 +145,9 @@ function getPropsName($pid)
 	/*$rs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY,
 							'v' => "if(\$rs['id'] == {$pid}) \$ret=\$rs;"
 						));*/
-	$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-	$rs = $mempropsid[$pid];
+	$mempropsid = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
+	$rs = (is_array($mempropsid) && isset($mempropsid[$pid])) ? $mempropsid[$pid] : false;
 	if (is_array($rs)) return $rs['name'];
-	else return false;	
+	else return false;
 }
 ?>

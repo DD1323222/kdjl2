@@ -8,70 +8,61 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
-$_SESSION['insl'] = $_SESSION['id'];
+require_once(dirname(__FILE__).'/saolei_common.php');
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1)
+{
+	die('登录状态无效！');
+}
+$_SESSION['insl'] = $uid;
 $czlxz = 65;	//成长率限制
-$sql = "SELECT F_saolei_points FROM player_ext where uid = ".$_SESSION['id'];
+$sql = "SELECT F_saolei_points FROM player_ext where uid = ".$uid;
 $points = $_pm['mysql'] -> getOneRecord($sql);
+if(!is_array($points)) $points = array('F_saolei_points'=>1);
+if(!isset($points['F_saolei_points']) || intval($points['F_saolei_points']) < 1) $points['F_saolei_points'] = 1;
 $leinum = $points['F_saolei_points'] -1;
-$configWelcome = unserialize($_pm['mem']->get('db_welcome'));
-//$prize_info_best = unserialize($_pm['mem']->get('sl_prize_info'.$_SESSION['id']));
-$prize_info_best = unserialize($_pm['mem']->get('sl_prize_info'));
-$prize_info_best = $prize_info_best[$_SESSION['id']];
+$prize_info_best = slPrizeGetUserPool($_pm['mem'], $uid);
+function saoleiModHtml($value)
+{
+	return htmlspecialchars(strval($value), ENT_QUOTES, 'UTF-8');
+}
+function saoleiModImage($value)
+{
+	$value = basename(strval($value));
+	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
+}
 	//扫雷复活卡id 为 4038
-$sl_fhtime = $_pm['mysql'] -> getOneRecord(" SELECT sums FROM userbag WHERE pid = 4038 AND uid =  {$_SESSION['id']}");
-$sl_fhtime = empty($sl_fhtime)?0:$sl_fhtime['sums'];
+$sl_fhtime = $_pm['mysql'] -> getOneRecord(" SELECT SUM(sums) AS sums
+                                               FROM userbag
+                                              WHERE pid = 4038
+                                                AND uid = $uid
+                                                AND sums > 0
+                                                AND zbing = 0
+                                                AND (cantrade IS NULL OR cantrade<>3)");
+$sl_fhtime = empty($sl_fhtime['sums'])?0:intval($sl_fhtime['sums']);
 
 $gonggao = "<div id='sm' class='sm'><b>点击 <font color=red>?</font> 试试您的运气吧!</b></div>";
 if(!is_array($prize_info_best))
 {
-	$props = unserialize($_pm['mem']->get('db_props'));
-	if(is_array($configWelcome))
+	$config = slPrizeLoadBestConfig($_pm['mysql'], $_pm['mem']);
+	$props = slPrizeLoadProps($_pm['mysql'], $_pm['mem']);
+	$prize_info_best = slPrizeBuildUserPool($config, $props);
+	if(!slPrizePoolIsComplete($prize_info_best) || !slPrizeStoreUserPool($_pm['mem'], $uid, $prize_info_best))
 	{
-		foreach($configWelcome as $info)
-		{
-			if(substr($info['code'],0,14) == 'sl_prize_best_')
-			{
-				$prize_info[] = $info['contents'];
-			}
-		}
+		die('扫雷奖励配置暂不可用，请稍后重试！');
 	}
-	else
-	{
-		$sql = "SELECT contents FROM welcome WHERE code like '%sl_prize_best_%'";
-		$prize_info = $_pm['mysql'] -> getRecords($sql);
-		$res = $db->getRecords("select * from welcome");	//自动加载机制
-		$_pm['mem']->set(array('k' => 'db_welcome', 'v' => $res));
-	}
-	foreach($prize_info as $key=>$info)
-	{
-		$arr_key = $key+1;
-		$every_points = explode(',',$info);
-		$every_prize_id[$arr_key] = $every_points[array_rand($every_points)];
-	}
-	foreach($props as $info)
-	{
-		foreach($every_prize_id as $key => $val)
-		{
-			if($info['id'] == $val)
-			{
-				$prize_info_best[$key] = $info;
-			}
-		}
-	}
-	ksort($prize_info_best);
-	//存入内存逻辑
-	$prize_info_best_all = unserialize($_pm['mem']->get('sl_prize_info'));
-	$prize_info_best_all[$_SESSION['id']] = $prize_info_best;
-	$_pm['mem']->set(array('k' => 'sl_prize_info','v' => $prize_info_best_all));
 }
 //用户当前关数逻辑
 $i = 1;
 //每关奖品展示逻辑
-$prize_echo .= '<table id="everybox" width="140" ><tr>';
+$prize_echo = '<table id="everybox" width="140" ><tr>';
+$prize_look_pic = '';
 foreach($prize_info_best as $info)
 {
-	$prize_look_pic .= '<td width="33%"><font>第'.$i.'关</font><img width="40px" height="40px" title="'.$info['name'].'" src='.IMAGE_SRC_URL."/props/".$info['img']."  /></td>";
-	if( $i%3 == 0 && $i<=9)
+	$prizeNameHtml = saoleiModHtml(isset($info['name']) ? $info['name'] : '');
+	$prizeImgUrl = slPrizeImageUrl($info);
+	$prize_look_pic .= '<td width="33%"><font>第'.$i.'关</font><img width="40px" height="40px" title="'.$prizeNameHtml.'" src="'.$prizeImgUrl.'" /></td>';
+	if($i%3 == 0 && $i < 9)
 	{
 		$prize_echo .= $prize_look_pic."</tr><tr>";
 		$prize_look_pic = '';
@@ -91,43 +82,14 @@ $prize_echo .= '</tr>
 //每关奖品展示逻辑
 $sl_pic = '<table id="leiqu" width="283" height="283"><tr>';
 
-$tj01 = false;	//条件1,是否扫过1次,默认没有且扫雷成长满足要求
-$tj02 = false;	//条件2,是否使用过扫雷卡,默认没有
-
-$today_sl = unserialize($_pm['mem']->get('today_sl_user'));
-$today_sl_ticket_use = unserialize($_pm['mem']->get('today_is_use_ticket'));
-foreach($today_sl as $info)
-{
-	if($info == $_SESSION['id'])	//满足已经扫过1次
-	{
-		$tj01 = true;
-		break;
-	}
-}
-$czl = $_pm['mysql'] -> getOneRecord("SELECT userbb.czl FROM userbb,player WHERE player.id = '".$_SESSION['id']."' AND player.mbid = userbb.id");
+$tj01 = slTodayUserHas($_pm['mem'], $uid);
+$tj02 = slTodayTicketHas($_pm['mem'], $uid);
+$czl = $_pm['mysql'] -> getOneRecord("SELECT userbb.czl FROM userbb,player WHERE player.id = ".$uid." AND player.mbid = userbb.id AND userbb.uid = player.id");
+if(!is_array($czl)) $czl = array('czl'=>0);
 if(intval($czl['czl']) < $czlxz)
-{	
-	if(!in_array($_SESSION['id'],$today_sl))
-	{
-		$today_sl[] = $_SESSION['id'];
-		$_pm['mem']->set(array('k' => 'today_sl_user', 'v' => $today_sl));
-	}
+{
+	if(!slTodayUserSet($_pm['mem'], $uid, true)) die('扫雷状态暂不可用，请稍后重试！');
 	$tj01 = true;
-}
-
-if(!is_array($today_sl_ticket_use))
-{
-	$tj02 = false;
-}
-else
-{
-	foreach($today_sl_ticket_use as $info)
-	{
-		if($info == $_SESSION['id'])	//满足使用过
-		{
-			$tj02 = true;
-		}
-	}
 }
 if($tj01 && !$tj02 && $points['F_saolei_points'] == 1)
 {
@@ -155,6 +117,7 @@ $sl_pic .= '</tr></table>';
 //加载模块
 $fn='tpl_sl.html';
 $tn = $_game['template'] . $fn;
+$echo = '';
 if (file_exists($tn))
 {
 	$tpl = file_get_contents($tn);

@@ -63,6 +63,7 @@ h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%}
 .an_l p{line-height:20px;color:#BF7D1A;font-size:12px;padding:15px 0 0 10px;}
 .an_r li{color:#f00;margin:10px 0;}
 .answer p{line-height:20px;color:#BF7D1A;font-size:12px;padding:15px 0 0 10px; }
+.prestige_submit{background:url(../images/ui/shop/gm13.gif) no-repeat;width:39px;height:15px;padding:0;border:0;cursor:pointer;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:15px;letter-spacing:0;text-align:center;color:#772200;vertical-align:middle;}
 .intxt{border:#b4a449 1px solid;padding:2px;margin:0 10px 0 200px;}
 .stu{background:url(../images/i_bnt.gif) no-repeat 0 -34px;width:39px;height:17px;cursor:pointer;border:0 none;margin:1px 0}
 .eggs_panel{
@@ -148,7 +149,7 @@ h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%}
   <tr>
     <td width="97"><img src="../new_images/ui/king_18.jpg" border="0" width="97" height="65"/></td>
     <td width="268" align="left">说明：<br />
-      每日福利礼包，免费领取，用户每天可以通过皇宫日常奖励界面领取一次，随机开除不同道具。</td>
+      每日福利礼包，免费领取，用户每天可以通过皇宫日常奖励界面领取一次，随机开出不同道具。</td>
     <td width="37">&nbsp;</td>
     <td width="144">#dayprizestr#</td>
     <td width="69"><img src="../new_images/ui/king_19.jpg" border="0" width="39" height="17" id="daybtn" style="cursor:pointer" onclick="getPrize(1)" /></td>
@@ -195,7 +196,7 @@ h1,h2,h3,h4,h5,h6 {font-weight:normal; font-size:100%}
      贵族威望的作用：<br />
          （1）贵族威望越高，完成某些任务得到的经验和奖励会越高。（暂未开放）<br />
      当前威望：#prestige#<br />
-     贵族威望：#jprestige#<input type="text" id="num" name="num" class="intxt" /><input name="button" type="button" style="background-image:url(../images/ui/shop/gm13.gif);border:0px;width:39px;height:15px;color:#2F291D;cursor:pointer;"  onclick="prestige()" value="交纳"/></p> 
+     贵族威望：#jprestige#<input type="text" id="num" name="num" class="intxt" /><input name="button" type="button" class="prestige_submit" onclick="prestige()" value="交纳"/></p>
      
         </div>
         </div>

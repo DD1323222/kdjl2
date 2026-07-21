@@ -3,14 +3,6 @@
 @Usage: mysql database driver for php.
 @Copyright:www.webgame.com.cn
 */
-register_shutdown_function("shutdown");
-function shutdown(){	
-	if(isset($GLOBALS['_pm'])){
-		if(isset($GLOBALS['_pm']['mysql'])) $GLOBALS['_pm']['mysql']->close();				
-		if(isset($GLOBALS['_pm']['mem'])) $GLOBALS['_pm']['mem']->memClose();
-		$GLOBALS['_pm'] = NULL;
-	}
-}
 class mysql{
 
 	private static $linkHandle	=	0;
@@ -24,7 +16,7 @@ class mysql{
 		if(!is_resource(self::$linkHandle))
 			$this->mysqlConnect();
 	}
-    
+
 	private function mysqlConnect(){
 		global $_mysql;
 
@@ -32,23 +24,28 @@ class mysql{
 		{
 			self::$linkHandle = @mysql_connect($_mysql['host'], $_mysql['user'], $_mysql['pass']);
 			if (!self::$linkHandle) {
-				$this->err='Connect error: ' . @mysql_error();
+				$this->errMsg='Connect error: ' . @mysql_error();
+				return;
 			}
 		}
 		else if ($_mysql['contype'] == 1)
 		{
 			self::$linkHandle = @mysql_pconnect($_mysql['host'], $_mysql['user'], $_mysql['pass']);
 			if (!self::$linkHandle) {
-				$this->err='Connect error: ' . @mysql_error();
+				$this->errMsg='Connect error: ' . @mysql_error();
+				return;
 			}
 		}
-		@mysql_select_db($_mysql['db'], self::$linkHandle);
-		
-		$this->query("SET NAMES utf8mb4;"); 
-		$this->query("SET CHARACTER_SET_CLIENT=utf8mb4;"); 
-		$this->query("SET CHARACTER_SET_RESULTS=utf8mb4;");		
+		if(!@mysql_select_db($_mysql['db'], self::$linkHandle)){
+			$this->errMsg='Select db error: ' . @mysql_error(self::$linkHandle);
+			return;
+		}
+
+		@mysql_query("SET NAMES utf8mb4;", self::$linkHandle);
+		@mysql_query("SET CHARACTER_SET_CLIENT=utf8mb4;", self::$linkHandle);
+		@mysql_query("SET CHARACTER_SET_RESULTS=utf8mb4;", self::$linkHandle);
 	}
-	
+
 	public function last_id()
 	{
 		return mysql_insert_id(self::$linkHandle);
@@ -57,6 +54,7 @@ class mysql{
 	public function escape($value)
 	{
 		$this->safeConn();
+		if (is_array($value) || is_object($value)) $value = '';
 		return mysql_real_escape_string($value, self::$linkHandle);
 	}
 
@@ -84,7 +82,7 @@ class mysql{
 		}
 		return true;
 	}
-	
+
 	// get all record.
 	public function getRecords($sql, $type=0){
 		/*
@@ -104,6 +102,7 @@ class mysql{
 		$this->safeConn();
 		$qd	=	$this->query($sql);
 		$i	=	0;
+		$ret = array();
 		if ($qd !== FALSE)
 		{
 			while($rs=@mysql_fetch_assoc($qd))
@@ -119,8 +118,8 @@ class mysql{
 			return $ret;
 		}
 		else return FALSE;
-	} 
-	
+	}
+
 	// Get query effect rows.
 	public function getEffectRows(){
 		return $this->effectRows;
@@ -165,17 +164,17 @@ class mysql{
 		{
 			if((strpos(strtolower($sql),'update') !== false || strpos(strtolower($sql),'insert') !== false) && strpos(strtolower($sql),'tasklog') !== false)
 			{
-				
+
 				$dates = date("Y-m-d H:i:s");
 				$str = $_SERVER['REQUEST_URI']."------>".$dates.'----------->'.$sql.'=========='.__LINE__;
 				mysql_query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary) VALUES (".time().",111,111,'".$str."',111)");
 			}
 		}*/
 
-		
+
 		if ( ($hd=mysql_query($sql, self::$linkHandle)) === FALSE)
 		{
-			$this->errMsg = 'Query error:' . @mysql_error();
+			$this->errMsg = 'Query error:' . @mysql_error(self::$linkHandle);
 			return FALSE;
 		}
 		else
@@ -190,19 +189,19 @@ class mysql{
 
 	public function safeConn()
 	{
-		
+
 		if (!is_resource(self::$linkHandle))
 		{
 			$this->mysqlConnect();
-			if(!is_resource(self::$linkHandle)) 
+			if(!is_resource(self::$linkHandle))
 				die('<script>window.location.reload();</script>');
 		}
 	}
-   	public function close(){
+	public function close(){
 		@mysql_close(self::$linkHandle);
 		self::$linkHandle = NULL;
 	}
-	public function getConn(){		
+	public function getConn(){
 		return self::$linkHandle;
 	}
     // class destruct.

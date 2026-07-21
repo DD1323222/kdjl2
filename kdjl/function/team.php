@@ -1,11 +1,24 @@
-<?php 
+<?php
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 $s=new socketmsg();
+$userId = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($userId < 1) die('');
+$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+$requestId = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
+function teamJsString($value)
+{
+	$value = str_replace("\\", "\\\\", $value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	$value = str_replace("</", "<\\/", $value);
+	return $value;
+}
 //5.3
-$team=new team($_SESSION['team_id'],$s);
+$team=new team($teamId,$s);
 $team->checkMyTeam();
+$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
 if(isset($_GET['checkOnly']))
 {
 //header("refresh:27;url=".$_SERVER['REQUEST_URI']);
@@ -28,8 +41,9 @@ setTimeout("window.location.reload();",25000);
 /*********************************************************************************/
 if(isset($_GET['showAllTeamsTime']))
 {
-	if(!isset($_SESSION['team_id'])){
-		$echo = $team->getTeamList(intval($_GET['showAllTeamsTime']));
+	if($teamId < 1){
+		$showAllTeamsTime = (isset($_GET['showAllTeamsTime']) && !is_array($_GET['showAllTeamsTime'])) ? intval($_GET['showAllTeamsTime']) : 0;
+		$echo = $team->getTeamList($showAllTeamsTime);
 		if(isset($_GET['check']))
 		{
 			if($echo!='latest')
@@ -42,7 +56,7 @@ if(isset($_GET['showAllTeamsTime']))
 		}
 	}else{
 		$echo = $team->getMyTeamInfo();
-		$isleader=$team->isTeamLeader($_SESSION['id'],$_SESSION['team_id']);
+		$isleader=$team->isTeamLeader($userId,$teamId);
 	}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -66,12 +80,16 @@ li { display: inline; list-style-type: none; }
 
 <script language="javascript">
 var inteam=false;
-curtime=<?php echo time(); ?>;
-data='<?php echo $echo; ?>';
+var curtime=<?php echo time(); ?>;
+var data='<?php echo teamJsString($echo); ?>';
+function teamHtmlText(value)
+{
+	return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
 function activeButtons()
 {
-	var btn=document.getElmentsByTagName('input');
-	for(i=0;i<btn.length;i++)
+	var btn=document.getElementsByTagName('input');
+	for(var i=0;i<btn.length;i++)
 	{
 		if(btn[i].type=='button')
 		{
@@ -80,7 +98,7 @@ function activeButtons()
 	}
 }
 </script>
-<?php if (!isset($_SESSION['team_id'])){ ?>
+<?php if ($teamId < 1){ ?>
 <table border="0" style="border-bottom:1px solid #CCCCCC; color:#005500" cellpadding="0" cellspacing="0">
   <tr>
     <td align="center" height="21" width="95" style="border-bottom:1px solid #005500; ">队长</td>
@@ -89,24 +107,24 @@ function activeButtons()
   </tr>
 </table>
 <script language="javascript">
-datas=data.split('`');
+var datas=data.split('`');
 
 document.write('<ul>');
-for(i=0;i<datas.length;i++)
+for(var i=0;i<datas.length;i++)
 {
-	tmp=datas[i].split('|');
+	var tmp=datas[i].split('|');
 	if(tmp.length==3){
 		document.write('\
 		<li>\
             <div class="title" align="center">\
-            '+tmp[1]+'</div>\
+            '+teamHtmlText(tmp[1])+'</div>\
             <div class="title2" align="center">\
             '+tmp[2]+'</div>\
             <div class="title3" align="center">\
             <img src="../images/ui/team/anniu1.gif" style="cursor:pointer" width="69" height="17" onclick="parent.applyTeam('+tmp[0]+');this.disabled=true;" /></div>\
             </li>\
 			');
- 	 }
+	 }
 }
 document.write('</ul>');
 
@@ -124,10 +142,10 @@ setTimeout('cnew();',5000);
 <script language="javascript">
 var inteam=true;
 var isleader=<?php echo $isleader+0; ?>;
-var myuid=<?php echo $_SESSION['id']+0; ?>;
-var data=data.split('@');
+var myuid=<?php echo $userId; ?>;
+var data=(data || '@').split('@');
 
-document.write('<strong>'+data[0]+'</strong> 的队伍');
+document.write('<strong>'+teamHtmlText(data[0])+'</strong> 的队伍');
 
 </script>
 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="; color:#005500">
@@ -138,15 +156,15 @@ document.write('<strong>'+data[0]+'</strong> 的队伍');
   </tr>
 
 <script language="javascript">
-var datas=data[1].split('`');
-for(i=0;i<datas.length;i++)
+var datas=(data[1] || '').split('`');
+for(var i=0;i<datas.length;i++)
 {
-	tmp=datas[i].split('|');
-	
+	var tmp=datas[i].split('|');
+
 	if(tmp.length==3){
 		if(tmp[2]=='-1')
 		{
-			str='申请中';
+			var str='申请中';
 		}
 		else if(tmp[2]=='1')
 		{
@@ -159,7 +177,7 @@ for(i=0;i<datas.length;i++)
 			str='暂离';
 		}
 		document.write('  <tr>\
-		<td align="center" height="21">'+tmp[1]+'</td>\
+		<td align="center" height="21">'+teamHtmlText(tmp[1])+'</td>\
 		<td align="center">'+str+'</td>\
 		<td align="center">'+(
 			isleader&&myuid!=tmp[0]?
@@ -167,14 +185,14 @@ for(i=0;i<datas.length;i++)
 			:
 			'-')+'</td>\
 	  </tr>');
- 	 }
+	 }
 }
 </script>
 </table>
 <?php } ?>
 </body>
 </html>
-<?php 
+<?php
 	die();
 }
 
@@ -184,9 +202,9 @@ for(i=0;i<datas.length;i++)
 /*********************************************************************************/
 
 //$rs=$s->sendMsg('SYSN|'.iconv('utf-8','utf-8','这个消息发送给id为97和620的用户,如果他们在线则可以收到').'.',array(97,620));
-header("Content-type: text/css; charset=utf-8"); 
+header("Content-type: text/plain; charset=utf-8");
 
-$act=$_GET['act'];
+$act = (isset($_GET['act']) && !is_array($_GET['act'])) ? $_GET['act'] : '';
 switch($act)
 {
 	case 'create':
@@ -199,7 +217,7 @@ switch($act)
 		}
 		break;
 	case 'permit':
-		$rs=$team->permitTeam(intval($_GET['id']));
+		$rs=$team->permitTeam($requestId);
 		if($rs!==true)
 		{
 			die($rs);
@@ -208,7 +226,7 @@ switch($act)
 		}
 		break;
 	case 'unpermit':
-		$rs=$team->unpermitTeam(intval($_GET['id']));
+		$rs=$team->unpermitTeam($requestId);
 		if($rs!==true)
 		{
 			die($rs);
@@ -217,7 +235,7 @@ switch($act)
 		}
 		break;
 	case 'invite':
-		$rs=$team->inviteTeam(intval($_GET['id']));
+		$rs=$team->inviteTeam($requestId);
 		if($rs!==true)
 		{
 			die($rs);
@@ -226,7 +244,7 @@ switch($act)
 		}
 		break;
 	case 'apply':
-		$rs=$team->applyTeam(intval($_GET['id']));
+		$rs=$team->applyTeam($requestId);
 		if($rs!==true)
 		{
 			die($rs);
@@ -235,7 +253,7 @@ switch($act)
 		}
 		break;
 	case 'leave':
-		$rs=$team->leaveTeam(intval($_GET['id']));
+		$rs=$team->leaveTeam();
 		if($rs!==true)
 		{
 			die($rs);
@@ -253,14 +271,14 @@ switch($act)
 		}
 		break;
 	case 'kickMember':
-		$rs=$team->kickMember(intval($_GET['id']));
+		$rs=$team->kickMember($requestId);
 		if($rs!==true)
 		{
 			die($rs);
 		}else{
 			die("OK");
 		}
-		break;	
+		break;
 	case 'swapState':
 		$rs=$team->swapTeamState();
 		if($rs!==true)

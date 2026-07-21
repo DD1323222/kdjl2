@@ -3,37 +3,82 @@ require_once('../config/config.game.php');
 require_once('../sec/dblock_fun.php');
 secStart($_pm['mem']);
 
+$cqLocked = false;
+$cqTransactionActive = false;
+$cqPendingLogId = 0;
+$cqCommitted = false;
+function cqCleanupPendingLog()
+{
+	global $_pm,$cqPendingLogId,$cqCommitted;
+	if(!$cqCommitted && $cqPendingLogId > 0)
+	{
+		$_pm['mysql']->query('DELETE FROM gamelog WHERE id='.intval($cqPendingLogId).' AND vary=103');
+		$cqPendingLogId = 0;
+	}
+}
+function cqShutdown()
+{
+	global $_pm,$cqLocked,$cqTransactionActive;
+	if($cqTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$cqTransactionActive = false;
+	}
+	cqCleanupPendingLog();
+	if($cqLocked && function_exists('realseLock'))
+	{
+		realseLock();
+		$cqLocked = false;
+	}
+}
+register_shutdown_function('cqShutdown');
+
 function cqFail($message)
 {
-	global $_pm;
+	global $_pm,$cqTransactionActive;
 	$_pm['mysql']->query('ROLLBACK');
+	$cqTransactionActive = false;
+	cqCleanupPendingLog();
+	cqShutdown();
 	die($message);
 }
 
 function cqLog($note, $vary=103)
 {
-	global $_pm;
+	global $_pm,$cqPendingLogId;
 	$sql = 'INSERT INTO gamelog SET seller='.intval($_SESSION['id']).
 		',vary='.intval($vary).',pnote='.$_pm['mysql']->quote($note).',ptime='.time();
-	return $_pm['mysql']->query($sql);
+	if(!$_pm['mysql']->query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1) return false;
+	$cqPendingLogId = intval($_pm['mysql']->last_id());
+	return $cqPendingLogId > 0;
 }
 
-$uid = intval($_SESSION['id']);
-$petId = isset($_GET['pid']) ? abs(intval($_GET['pid'])) : 0;
-$p1 = isset($_GET['pid1']) ? abs(intval($_GET['pid1'])) : 0;
-$p2 = isset($_GET['pid2']) ? abs(intval($_GET['pid2'])) : 0;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$petId = (isset($_GET['pid']) && !is_array($_GET['pid'])) ? abs(intval($_GET['pid'])) : 0;
+$p1 = (isset($_GET['pid1']) && !is_array($_GET['pid1'])) ? abs(intval($_GET['pid1'])) : 0;
+$p2 = (isset($_GET['pid2']) && !is_array($_GET['pid2'])) ? abs(intval($_GET['pid2'])) : 0;
 
 if ($uid < 1 || $petId < 1)
 {
 	die('数据错误！');
 }
 
-getLock($uid);
+$a = getLock($uid);
+if(!is_array($a))
+{
+	realseLock();
+	die('服务器繁忙，请稍候再试！');
+}
+$cqLocked = true;
 $db = $_pm['mysql'];
-
+$cqTransactionActive = true;
+if (!$db->query('INSERT INTO player_ext(uid,bbshow) VALUES('.$uid.',5) ON DUPLICATE KEY UPDATE uid=uid'))
+{
+	cqFail('玩家数据不存在！');
+}
 $player = $db->getOneRecord('SELECT money FROM player WHERE id='.$uid.' FOR UPDATE');
 $bb = $db->getOneRecord(
-	'SELECT name,wx,level,czl,remaketimes FROM userbb WHERE uid='.$uid.' AND id='.$petId.' FOR UPDATE'
+	'SELECT name,wx,level,czl,remaketimes,muchang,tgflag FROM userbb WHERE uid='.$uid.' AND id='.$petId.' FOR UPDATE'
 );
 $playerExt = $db->getOneRecord(
 	'SELECT czl_ss,chouqu_chongwu FROM player_ext WHERE uid='.$uid.' FOR UPDATE'
@@ -46,6 +91,17 @@ if (!is_array($player) || !is_array($playerExt))
 if (!is_array($bb))
 {
 	cqFail('这个宠物不存在！');
+}
+if (intval($bb['muchang']) != 0 || intval($bb['tgflag']) != 0)
+{
+	cqFail('该宠物当前不能抽取成长！');
+}
+$equipped = $db->getOneRecord(
+	'SELECT id FROM userbag WHERE uid='.$uid.' AND zbpets='.$petId.' AND sums>0 LIMIT 1 FOR UPDATE'
+);
+if (is_array($equipped))
+{
+	cqFail('请先取下宠物身上的装备！');
 }
 if (strpos($playerExt['chouqu_chongwu'], ','.$petId.',') !== false)
 {
@@ -70,7 +126,8 @@ if (!empty($selectedIds))
 	$rows = $db->getRecords(
 		'SELECT b.id,b.pid,b.sums,p.effect FROM userbag AS b ' .
 		'INNER JOIN props AS p ON p.id=b.pid ' .
-		'WHERE b.uid='.$uid.' AND b.id IN ('.implode(',', $selectedIds).') FOR UPDATE'
+		'WHERE b.uid='.$uid.' AND b.id IN ('.implode(',', $selectedIds).') AND b.sums>0 AND b.zbing=0 ' .
+		'AND (b.cantrade IS NULL OR b.cantrade<>3) FOR UPDATE'
 	);
 	if (is_array($rows))
 	{
@@ -149,7 +206,8 @@ if ($stoneCount > 1)
 foreach ($useCounts as $bagId => $count)
 {
 	$sql = 'UPDATE userbag SET sums=sums-'.intval($count).
-		' WHERE id='.intval($bagId).' AND uid='.$uid.' AND sums>='.intval($count);
+		' WHERE id='.intval($bagId).' AND uid='.$uid.' AND sums>='.intval($count).
+		' AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)';
 	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 	{
 		cqFail('抽取道具扣除失败，请重试！');
@@ -230,12 +288,26 @@ if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 	cqFail('宠物成长状态更新失败，请重试！');
 }
 
+if (!cqLog('被抽取的宠物id='.$petId.',抽取了:'.abs($czl).',使用物品'.($wpLog == '' ? '无' : $wpLog)))
+{
+	cqFail('记录成长抽取日志失败！');
+}
+
 if (!$db->query('COMMIT'))
 {
 	$db->query('ROLLBACK');
+	$cqTransactionActive = false;
+	cqCleanupPendingLog();
+	cqShutdown();
 	die('成长抽取提交失败，请重试！');
 }
 
-cqLog('被抽取的宠物id='.$petId.',抽取了:'.abs($czl).',使用物品'.($wpLog == '' ? '无' : $wpLog));
+$cqCommitted = true;
+$cqTransactionActive = false;
+$_pm['mem']->del(MEM_USER_KEY);
+$_pm['mem']->del(MEM_USERBB_KEY);
+$_pm['mem']->del(MEM_USERSK_KEY);
+$_pm['mem']->del(MEM_USERBAG_KEY);
+cqShutdown();
 die('OK'.$czl);
 ?>

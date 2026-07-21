@@ -1,4 +1,4 @@
-<?php 
+<?php
 class multiMonster{
 	private $id="";
 	private $table_name='multi_monster';
@@ -10,17 +10,17 @@ class multiMonster{
 	public $listStr = "";
 	public $isFirstMultiMonster = false;
 	public $monsterTotalNum = 0;
-	
-	//,$_mapid		$this->mapid = $_mapid;	
+
+	//,$_mapid		$this->mapid = $_mapid;
 	public function multiMonster($_uid,&$_conn,&$_mem){
 		$this->mem = $_mem;
-		$this->uid = $_uid;
+		$this->uid = intval($_uid);
 		$this->conn = $_conn;
 		if(!$this->conn||!is_resource($this->conn)){
 			throw new Exception(__FILE__."->".__LINE__.": Need a mysql connection!");
 		}
 		$this->cleanup();
-	}	
+	}
 	private function cleanup(){
 		$sql = 'delete from '.$this->table_name.' where befall_time > 0 and (befall_time + '.$this->expire_time.') < UNIX_TIMESTAMP()';
 		if(!$this->execute($sql)){
@@ -36,9 +36,11 @@ class multiMonster{
 	public function finish(){
 		$sql = 'select props_got,befall_time from '.$this->table_name.' where uid='.$this->uid;
 		$propsRs= $this->getRow($sql);
-		if(!is_array($propsRs) || intval($propsRs['befall_time']) + $this->expire_time < time()) return array("","");//某种错误，因为玩家是15分钟前遇到的怪，这几乎是不可能的
+		$befallTime = (is_array($propsRs) && isset($propsRs['befall_time'])) ? intval($propsRs['befall_time']) : 0;
+		if(!is_array($propsRs) || $befallTime + $this->expire_time < time()) return array("","");//某种错误，因为玩家是15分钟前遇到的怪，这几乎是不可能的
 
-		$propsStr = explode('#|#',$propsRs['props_got']);
+		$propsGot = isset($propsRs['props_got']) ? $propsRs['props_got'] : '';
+		$propsStr = explode('#|#',$propsGot);
 		$rtn = array("","",0,0);
 		$con = "";
 		$con1 = "";
@@ -49,15 +51,18 @@ class multiMonster{
 					$rtn[0] .= $con.$tmp[0];
 					$rtn[1] .= $con1.$tmp[1];
 					$con = "，";
-					$con1 = ",";	
+					$con1 = ",";
 				}
 				$rtn[2] += $tmp[2];
 				$rtn[3] += $tmp[3];
 			}
 		}
-		unset($_SESSION['fight'.$_SESSION['id']]['lastMMid']);
+		if(isset($_SESSION['fight'.$this->uid]) && is_array($_SESSION['fight'.$this->uid]))
+		{
+			unset($_SESSION['fight'.$this->uid]['lastMMid']);
+		}
 /*
-if($rtn[0]=="") 
+if($rtn[0]=="")
 			$rtn[0] = "&nbsp;";
 		else
 			$rtn[0] .="&nbsp;";
@@ -66,9 +71,10 @@ if($rtn[0]=="")
 		return $rtn;
 	}
 	public function saveProps($props){
-		$this->query("update ".$this->table_name." set props_got=concat(props_got,'#|#','".$props."') where uid=".$this->uid,true);	
+		$props = mysql_real_escape_string($props,$this->conn);
+		$this->query("update ".$this->table_name." set props_got=concat(props_got,'#|#','".$props."') where uid=".$this->uid,true);
 	}
-	
+
 	private function updateListStr($list){
 		$str = "-";
 		if(!empty($list)){
@@ -77,7 +83,10 @@ if($rtn[0]=="")
 			$c = " style='color:#ff0000' ";
 			foreach($lists as $v){
 				$tmp = explode(",",$v);
-				$str .= "<tr><td width=180 $c>".$tmp[2]."&nbsp;&nbsp;&nbsp;&nbsp;Lvl:".$tmp[1]."</td></tr>";
+				if(count($tmp) < 3) continue;
+				$name = htmlspecialchars($tmp[2], ENT_QUOTES, 'UTF-8');
+				$level = intval($tmp[1]);
+				$str .= "<tr><td width=180 $c>".$name."&nbsp;&nbsp;&nbsp;&nbsp;Lvl:".$level."</td></tr>";
 				$c = "";
 			}
 			$str .= "</table>";
@@ -88,16 +97,16 @@ if($rtn[0]=="")
 	public function checkMyMonster(){
 		$sql = 'select monsters from '.$this->table_name.' where uid='.$this->uid;
 		$monsterStr = $this->getOne($sql);
-		
-		if($monsterStr===false) return false;		
-				
+
+		if($monsterStr===false) return false;
+
 		if(empty($monsterStr)||$monsterStr=='|'){
 			return "OK";
 		}
 		$this->monsterTotalNum = count(explode('|',$monsterStr));
 		return true;
 	}
-	
+
 	/*public function getMyMonsterList(){
 		$sql = 'select monsters from '.$this->table_name.' where uid='.$this->uid;
 		$monsterStr = $this->getOne($sql);
@@ -110,12 +119,14 @@ if($rtn[0]=="")
 	public function removeKilledMonster($id){
 		$sql = 'select monsters from '.$this->table_name.' where uid='.$this->uid;
 		$monsterStr = $this->getOne($sql);
+		if($monsterStr===false||$monsterStr===''||$monsterStr=='|') return;
 		$monsters = explode("|",$monsterStr);
+		if(count($monsters)<=0||$monsters[0]==='') return;
 		$tmp  = explode(",",$monsters[0]);
-		if(count($monsters)>0){	
+		if(count($monsters)>0&&count($tmp)>0){
 			if($id == $tmp[0]){
 				array_shift($monsters);
-				$this->query("update ".$this->table_name." set monsters='".implode("|",$monsters)."' where uid=".$this->uid,true);	
+				$this->query("update ".$this->table_name." set monsters='".implode("|",$monsters)."' where uid=".$this->uid,true);
 			}
 		}
 	}
@@ -123,10 +134,11 @@ if($rtn[0]=="")
 	private static $gpcs = NULL;
 	public $monsterCount=0;
 	private function getGPCs(){
-		if($this->gpcs==NULL||empty($this->gpcs)){
-			$this->gpcs = unserialize($this->mem->get(MEM_GPC_KEY));
+		if(self::$gpcs===NULL||empty(self::$gpcs)){
+			self::$gpcs = kdjlSafeMemValue($this->mem->get(MEM_GPC_KEY), array());
+			if(!is_array(self::$gpcs)) self::$gpcs = array();
 		}
-		return $this->gpcs;
+		return self::$gpcs;
 	}
 
 	public function getNextMonster(){
@@ -135,16 +147,18 @@ if($rtn[0]=="")
 			$this->allMonsterStr = $this->getOne($sql);
 		}
 		if($this->allMonsterStr === false ) return false;
-		if($this->allMonsterStr==""){
+		if($this->allMonsterStr==""||$this->allMonsterStr=="|"){
 			return false;
 		}
 		$this->monsterCount++;
-		$monsters = explode("|",$this->allMonsterStr);		
-		$tmp = explode(",",$monsters[0]);		
-		
+		$monsters = explode("|",$this->allMonsterStr);
+		if(count($monsters)<=0||$monsters[0]==='') return false;
+		$tmp = explode(",",$monsters[0]);
+		if(count($tmp)<=0||$tmp[0]==='') return false;
+
 		$gpcs = $this->getGPCs();
 		$gw =array();
-		
+
 		foreach($gpcs as $gpc){
 			if($gpc['id']==$tmp[0]){
 				$gw = $gpc;
@@ -161,9 +175,8 @@ if($rtn[0]=="")
 		$monsterAndMap = $this->mem->getHandle()->get('GPCs_in_MAP');
 		if(!$monsterAndMap){
 			$gpcs = $this->getGPCs();
-			$map = unserialize($this->mem->get(MEM_MAP_KEY));
+			$map = kdjlSafeMemValue($this->mem->get(MEM_MAP_KEY), array());
 			if(empty($gpcs)||empty($map)){
-				die("GPCs or maps not found!");
 				return false;
 			}
 			$monsters = false;
@@ -171,11 +184,16 @@ if($rtn[0]=="")
 			$mapgpcs=array();
 			$mapLvls=array();
 			foreach($map as $v){
-				$mapLvls[$v['id']] = explode(",",$v['level']);				
+				if(!is_array($v) || !isset($v['id'], $v['level'])) continue;
+				$mapId = intval($v['id']);
+				if($mapId < 1) continue;
+				$mapLvls[$mapId] = explode(",",$v['level']);
 			}
 			foreach($gpcs as $gpc){
-				foreach($mapLvls as $k=>$v){				
-					if($v[0]<=$gpc['level']&&$v[1]>=$gpc['level']&&(!is_array($mapgpcs[$k])||!in_array($gpc['name'],$mapgpcs[$k]))){
+				if(!is_array($gpc) || !isset($gpc['name'], $gpc['level'])) continue;
+				$gpcLevel = intval($gpc['level']);
+				foreach($mapLvls as $k=>$v){
+					if(count($v) >= 2 && intval($v[0])<=$gpcLevel&&intval($v[1])>=$gpcLevel&&(!isset($mapgpcs[$k])||!is_array($mapgpcs[$k])||!in_array($gpc['name'],$mapgpcs[$k]))){
 						$mapgpcs[$k][]= $gpc['name'];
 					}
 				}
@@ -187,29 +205,35 @@ if($rtn[0]=="")
 			$gpcs = NULL;
 			return $mapgpcs;
 		}
-		if(!is_array($monsterAndMap)) $monsterAndMap = unserialize($monsterAndMap);		
+		if(!is_array($monsterAndMap)) $monsterAndMap = kdjlSafeMemValue($monsterAndMap, array());
+		if(!is_array($monsterAndMap)) $monsterAndMap = array();
 		return $monsterAndMap;
 	}
 	public function getMultiMonster($mapId){
+		$mapId = intval($mapId);
+		if($mapId < 1) return false;
 		//return false;
 		/*
 		$curMonster = $this->getCurMonster();
-		if($curMonster=='OK'){			
+		if($curMonster=='OK'){
 			return 'OK';
 		}else if($curMonster!==false&&is_array($curMonster)&&!empty($curMonster)){
 			return $curMonster;
 		}
 		*/
-		$map = unserialize($this->mem->get(MEM_MAP_KEY));
+		$map = kdjlSafeMemValue($this->mem->get(MEM_MAP_KEY), array());
+		if(!is_array($map)) $map = array();
 		$monsters = false;
 		$chance = '';
 		foreach($map as $v){
-			if($v['id']==$mapId){				
-				$chance = $v['multi_monsters'];
+			if(!is_array($v) || !isset($v['id'])) continue;
+			if(intval($v['id'])==$mapId){
+				$chance = isset($v['multi_monsters']) ? $v['multi_monsters'] : '';
 				break;
 			}
 		}
 		$monsterAndMap=$this->getMonsterAndMap();
+		if(!is_array($monsterAndMap) || !isset($monsterAndMap[$mapId]) || $monsterAndMap[$mapId] === '') return false;
 		//$monsters = explode(",",$monsterAndMap[$mapId]);
 		$chances = explode("|",$chance);
 
@@ -224,49 +248,52 @@ if($rtn[0]=="")
 			}
 			$maxMonsterNum--;
 		}
-		if($_SESSION['username']=="leinchu"){
-			$monstersNum=3;
-		}
 		//$monstersNum=3;
-		
+
 		//echo '$monsters='.count($monsters).'<hr>';
 		//echo '$monstersNum='.$monstersNum.'<hr>';
-		
+
 		if($monstersNum<=0) return false;
-		
+
 		/*
 		$monsterStr = "";
 		$connector = "";
 		for($i=0;$i<$monstersNum;$i++){
 			$monsterStr .= $connector.$monsters[rand(0,count($monsters)-1)];
 			$connector = ",";
-		}		
+		}
 		*/
-		
-		$map = unserialize($this->mem->get(MEM_MAP_KEY));
+
+		$map = kdjlSafeMemValue($this->mem->get(MEM_MAP_KEY), array());
+		if(!is_array($map)) $map = array();
 
 		foreach($map as $v){
-			if($v['id']==$mapId){		
-				$mapLvls = explode(",",$v['level']);
+			if(!is_array($v) || !isset($v['id'])) continue;
+			if(intval($v['id'])==$mapId){
+				$mapLvls = isset($v['level']) ? explode(",",$v['level']) : array();
 				break;
 			}
 		}
-		if(!isset($mapLvls))
-		{ 
+		if(!isset($mapLvls)||count($mapLvls)<2)
+		{
 			return false;
 			//die('Map not found('.__LINE__.')!');
 		}
-		
-		$monsterStrs = explode(",",$monsterAndMap[$mapId]);
+
+		$monsterStrs = array_filter(explode(",",$monsterAndMap[$mapId]),'strlen');
 		if(empty($monsterStrs)) return false;
 		//echo '$monsterStrs='.$monsterStrs.'<hr>';
 		$gpcs = $this->getGPCs();
+		if(empty($gpcs)) return false;
 		$gw =array();
 		$connector = "";
 		$monsterStr = "";
+		$selectedNames = array();
 		$ct=0;
 		shuffle($gpcs);
-		
+		$minLevel = intval($mapLvls[0]);
+		$maxLevel = intval($mapLvls[1]);
+
 /*
 
 		echo '<b>'.__FILE__.'-->'.__LINE__.'</b><br/><pre>=';
@@ -275,8 +302,12 @@ if($rtn[0]=="")
 
 */
 		foreach($gpcs as $gpc){
-			if(strpos($monsterStr,$gpc['name'])===false&&in_array($gpc['name'],$monsterStrs)&&$gpc['boss']!=3&&$gpc['level']>$mapLvls[0]&&$gpc['level']<$mapLvls[1]&&$gpc['boss']!=4){
-				$monsterStr .= $connector.$gpc['id'].",".$gpc['level'].",".$gpc['name'];//.",".$gpc['mp'].",".$gpc['boss'];
+			if(!isset($gpc['id'])||!isset($gpc['name'])||!isset($gpc['level'])||!isset($gpc['boss'])) continue;
+			$gpcLevel = intval($gpc['level']);
+			$gpcBoss = intval($gpc['boss']);
+			if(!in_array($gpc['name'],$selectedNames)&&in_array($gpc['name'],$monsterStrs)&&$gpcBoss!=3&&$gpcLevel>$minLevel&&$gpcLevel<$maxLevel&&$gpcBoss!=4){
+				$monsterStr .= $connector.intval($gpc['id']).",".$gpcLevel.",".$gpc['name'];//.",".$gpc['mp'].",".$gpc['boss'];
+				$selectedNames[] = $gpc['name'];
 				if(empty($gw)){
 					$gw = $gpc;
 				}
@@ -293,16 +324,16 @@ if($rtn[0]=="")
 		}else{
 			$this->freshup();
 			$this->updateListStr($monsterStr);
-			$this->query("insert into ".$this->table_name."(uid,befall_time,monsters) values('".$this->uid."','".time()."','".$monsterStr."')",true);						
-			$this->isFirstMultiMonster = true;		
+			$this->query("insert into ".$this->table_name."(uid,befall_time,monsters) values('".$this->uid."','".time()."','".$monsterStr."')",true);
+			$this->isFirstMultiMonster = true;
 			return $gw;
 		}
-		
+
 	}
 	//ALTER TABLE `map` ADD `multi_monsters` VARCHAR( 100 ) NOT NULL ;
-	private function initTable(){		
+	private function initTable(){
 		$sql = "
-			CREATE TABLE if not exists `".$this->table_name."` (			
+			CREATE TABLE if not exists `".$this->table_name."` (
 			  `uid` int(11) unsigned NOT NULL default '0',
 			  `befall_time` int(10) NOT NULL default '0',
 			  `monsters` varchar(255) NOT NULL default '',
@@ -317,12 +348,12 @@ if($rtn[0]=="")
 	{
 		if($die)
 		{
-			mysql_query($sql,$this->conn) or die("exe Sql error:<br>".mysql_error()."<br>".$sql."<hr>");			
+			if(!mysql_query($sql,$this->conn)) die("100");
 		}
 		else
 		{
 			mysql_query($sql,$this->conn);
-			if(mysql_error()){
+			if(mysql_error($this->conn)){
 				return false;
 			}else{
 				return true;
@@ -339,11 +370,16 @@ if($rtn[0]=="")
 	}
 	private function query($sql,$die=false){
 		if($die)
-			$rs = mysql_query($sql,$this->conn) or die("query Sql error:<br>".mysql_error()."<br>".$sql."<hr>");
-		else
+		{
 			$rs = mysql_query($sql,$this->conn);
+			if(!$rs) die("100");
+		}
+		else
+		{
+			$rs = mysql_query($sql,$this->conn);
+		}
 		return $rs;
-	}	
+	}
 	function getRow($sql,$die=false){
 		$rs = $this->query($sql,$die);
 		if($rs && ($one = mysql_fetch_assoc($rs)) ){
@@ -355,7 +391,9 @@ if($rtn[0]=="")
 }
 //$_pm['mysql']->safeConn();
 //var_dump($_pm['mysql']->safeConn());
-$multiMonster = new multiMonster($_SESSION['id'],$_pm['mysql']->getConn(),&$_pm['mem']);
+$multiMonsterUid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($multiMonsterUid < 1) die('');
+$multiMonster = new multiMonster($multiMonsterUid,$_pm['mysql']->getConn(),$_pm['mem']);
 
 
 ?>

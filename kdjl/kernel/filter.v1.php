@@ -8,6 +8,9 @@ class filter{
 
 	private $on		=	1;
 	private $off	=	0;
+	private $magicQuotesOn = false;
+	private $postEscaped = false;
+	private $requestEscaped = false;
 
 	// default construct.
 	function __construct(){
@@ -16,9 +19,8 @@ class filter{
 
 	// Check magic for env.
 	public function magicQuotesCheck(){
-		if (@get_magic_quotes_runtime() == $this->off) {
-			@set_magic_quotes_runtime($this->on);
-		}
+		$this->magicQuotesOn = function_exists('get_magic_quotes_gpc') && @get_magic_quotes_gpc();
+		return $this->magicQuotesOn;
 	}
 
 	// Add slashes.
@@ -27,31 +29,33 @@ class filter{
 		{
 			foreach ($par as $k => $v)
 			{
-				if (is_array($v)) $this->addSlash($v);
+				if (is_array($v)) $this->addSlash($par[$k]);
 				else $par[$k] = addslashes($v);
 			}
 		}
-		else $par[$k] = addslashes($par);
+		else $par = addslashes($par);
 	}
 
 	public function getPost(){
-		if (@get_magic_quotes_runtime() == $this->off)
+		if (!$this->magicQuotesOn && !$this->postEscaped)
 		{
 			$this->addSlash($_POST);
+			$this->postEscaped = true;
 		}
 		return $_POST;
 	}
 
 	public function getRequest(){
-		if (@get_magic_quotes_runtime() == $this->off)
+		if (!$this->magicQuotesOn && !$this->requestEscaped)
 		{
 			$this->addSlash($_REQUEST);
+			$this->requestEscaped = true;
 		}
 		return $_REQUEST;
 	}
     // default descrutc.
 	function __destruct(){
-	
+
 	}
 }
 ?>

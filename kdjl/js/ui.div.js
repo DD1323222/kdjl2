@@ -126,7 +126,7 @@ window.objPos = function(elem){
     } else {
         var rect = elem.getBoundingClientRect();
         left = right = doc.documentElement.scrollLeft || doc.body.scrollLeft;
-        top = bottom = doc.documentElement.scrollLeft || doc.body.scrollLeft;
+        top = bottom = doc.documentElement.scrollTop || doc.body.scrollTop;
         left += rect.left; right += rect.right;
         top += rect.top; bottom += rect.bottom;
     }
@@ -166,7 +166,7 @@ var Drag = {
     },
     move  : function(e){
         window.getSelection ? window.getSelection().removeAllRanges() : document.selection.empty();
-        var iLeft = e.clientX - this.x,iTop = e.clientY - this.y;obj = this.elem;
+        var iLeft = e.clientX - this.x,iTop = e.clientY - this.y,obj = this.elem;
         obj.style.left = iLeft - this.marginLeft + "px";
         obj.style.top  = iTop - this.marginTop + "px";
         this.options.callbackmove&&this.options.callbackmove(this.elem);
@@ -270,6 +270,6 @@ window.onload = function(){
             }
         });
     };
-    Drag.init($('parent'));
-    overlap.init([$('equipment_box'),$('parent')]);
+    Drag.init(document.getElementById('parent'));
+    overlap.init([document.getElementById('equipment_box'),document.getElementById('parent')]);
 };

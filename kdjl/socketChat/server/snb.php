@@ -14,6 +14,7 @@ $addr = "0.0.0.0";
 $port = $socket_port;
 define('EC',chr(0));
 $lastUpdateTeamList = 0;
+$lastUpdateGuildList = 0;
 define('TEAM_LIST_KEY','MEM_TEAM_LIST');//组队成员信息内存键
 define('GUILD_LIST_KEY','MEM_GUILD_LIST');//组队成员信息内存键
 define('TEAM_LEFT_MEMS','TEAM_LEFT_MEMS');//断线的人内存键
@@ -30,6 +31,7 @@ error_reporting(E_ALL);
 $conn = NULL;//数据库连接
 $mem = NULL;//内存连接
 $teams = array();//从内存里面读出来的组队成员信息
+$guilds = array();//从内存里面读出来的家族成员信息
 connect();
 memConnect();//连接内存服务器
 
@@ -68,8 +70,8 @@ socket_set_option($socket,SOL_SOCKET, SO_SNDTIMEO,  array(		   "sec"=>0, 		   "u
 socket_set_option($socket,SOL_SOCKET, SO_RCVTIMEO,  array(		   "sec"=>0, 		   "usec"=>250000  		   )		  );
 socket_set_option($socket,SOL_SOCKET,SO_REUSEADDR,1);
 
-if($socket < 0) {
-    echo "Socket create:".$socket_strerror($socket)."\n";
+if($socket === false) {
+    echo "Socket create:".socket_strerror(socket_last_error())."\n";
     exit;
 }
 if (! ($ret = @socket_bind($socket, $addr, $port)) ) {
@@ -81,18 +83,19 @@ if (! ($ret = @socket_bind($socket, $addr, $port)) ) {
         $output = NULL;
         exec( $cmd, $output , $return_var);
         echo "
-		-----------------------------------------------		
-		$cmd		
+		-----------------------------------------------
+		$cmd
 		<pre>";
-        var_dump($output, $return_var);
+        echo htmlspecialchars(print_r($output, true), ENT_QUOTES, 'UTF-8');
+        echo "\nreturn_var=" . intval($return_var);
         echo "/<pre>";
     }
     //echo "//AS!\n";
     exit;
 }
 
-if ( ($ret = socket_listen($socket, 5)) < 0 ) {
-    echo "socket listen:".socket_strerror()."\n";
+if (socket_listen($socket, 128) === false) {
+    echo "socket listen:".socket_strerror(socket_last_error($socket))."\n";
     exit;
 }
 
@@ -128,6 +131,12 @@ while(true) {
 
     if(in_array($socket,$read)) {
         $newsock = socket_accept($socket);
+        if($newsock === false)
+        {
+            $key = array_search($socket,$read);
+            if($key !== false) unset($read[$key]);
+            continue;
+        }
         socket_set_nonblock($newsock);
         socket_getpeername($newsock,$remoteIP,$remotePort);
         $userSN = $remoteIP.'_'.$remotePort;
@@ -146,7 +155,7 @@ while(true) {
                     $tmpOfIP[$remoteIP0] = 1;
                 }
             }
-            $loginIpList[$remoteIP]--;
+			if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
             socket_write($newsock,'SYSM|您的IP与服务器连接数过大!');
             wr($remoteIP.":".$remotePort."(".$loginIpList[$remoteIP].'-'.$tmpOfIP[$remoteIP].") was refused to conect in.\r\n",0);
             $loginIpList = $tmpOfIP;
@@ -170,8 +179,7 @@ while(true) {
             if(isset($sn2user[$key])){
                 $user2snKey=$sn2user[$key]['name'];
 
-                $sql='update player_ext set onlinetime=onlinetime+'.(time()-$sn2user[$key]['loginTime']).' where uid='.$sn2user[$key]['id'];
-                query($sql);
+				saveSocketUserOnline($sn2user[$key]);
                 //echo $user2snKey." left\r\n";
                 //wrt('*****************************$user2snKey(username)='.$user2snKey.',$nickname2sn[$user2snKey]='.$nickname2sn[$user2snKey].' deleted, and $userid2nickname[$sn2user[$key][\'id\']]='.$userid2nickname[$sn2user[$key]['id']].".");
                 unset($nickname2sn[$user2snKey]);
@@ -185,7 +193,7 @@ while(true) {
                 unset($sn2user[$key]);
             }
 
-            $loginIpList[$remoteIP]--;
+			if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
             unset($clients[$key]);
             socket_close($read_sock);
             //userListRefreshMessage();
@@ -300,16 +308,15 @@ function checkClose()
 //为新登陆用户准备在线人员列表
 function userListRefreshMessage($userSN)
 {
-    global $nickname2sn,$clients;
-    $msg = frame('L|'.implode('|',array_keys($nickname2sn)).EC);
-    //$msg = 'L|所有人';
-    socket_write($clients[$userSN], $msg,strlen($msg));
+    global $nickname2sn;
+    return sendMsg($userSN,'L|'.implode('|',array_keys($nickname2sn)));
 }
 
 //找出用户所在的组的成员
 function getGroupMembers($user)
 {
-    global $lastUpdateTeamList,$mem,$userid2nickname,$sn2user,$nickname2sn,$teams;
+    global $lastUpdateTeamList,$userid2nickname,$sn2user,$teams;
+    if(!isset($sn2user[$user]) || !is_array($sn2user[$user])) return array();
     $userInfo = $sn2user[$user];
 
     $nowmicrotime = microtime_float();
@@ -353,25 +360,26 @@ function getGroupMembers($user)
 //找出用户所在的组的成员
 function getGuildMembers($user)
 {
-    global $lastUpdateTeamList,$mem,$userid2nickname,$sn2user,$nickname2sn,$teams;
+    global $lastUpdateGuildList,$userid2nickname,$sn2user,$guilds;
+    if(!isset($sn2user[$user]) || !is_array($sn2user[$user])) return array();
     $userInfo = $sn2user[$user];
 
     $nowmicrotime = microtime_float();
-    if($nowmicrotime-$lastUpdateTeamList>2){//每3秒只读一次内存
-        $teams = memGet(GUILD_LIST_KEY);
-        if(!$teams){
+    if($nowmicrotime-$lastUpdateGuildList>2){//每3秒只读一次内存
+        $guilds = memGet(GUILD_LIST_KEY);
+        if(!$guilds){
             mEcho('Team member info '.GUILD_LIST_KEY.' not found in memcache!'."\r\n");
         }
-        $lastUpdateTeamList = $nowmicrotime;
+        $lastUpdateGuildList = $nowmicrotime;
     }
 
-    if(!$teams){
+    if(!$guilds){
         mEcho('Team member info '.GUILD_LIST_KEY.' not found in memcache!'."\r\n");
         return array();
     }
     $teamMemberIds = array();
 
-    foreach($teams as $arr)
+    foreach($guilds as $arr)
     {
         if(!empty($arr))
         {
@@ -393,6 +401,57 @@ function getGuildMembers($user)
             $tmp[] = $userid2nickname[$mbid];
     }
     return $tmp;
+}
+
+function socketChatUserBlocksSender($targetSN,$senderName)
+{
+    global $sn2user;
+    if(!isset($sn2user[$targetSN]) || !is_array($sn2user[$targetSN])) return false;
+    $targetUid = isset($sn2user[$targetSN]['id']) ? intval($sn2user[$targetSN]['id']) : 0;
+    if($targetUid < 1 || $senderName === '') return false;
+    $blacklists = memGet('db_blacklist');
+    $listText = is_array($blacklists) && isset($blacklists[$targetUid]) && is_string($blacklists[$targetUid]) ? $blacklists[$targetUid] : '';
+    if($listText === '')
+    {
+        $rows = query('SELECT list FROM blacklist WHERE uid='.$targetUid.' ORDER BY Id');
+        if(is_array($rows)) foreach($rows as $row)
+        {
+            if(is_array($row) && isset($row['list']) && $row['list'] !== '') $listText .= ($listText === '' ? '' : ',').$row['list'];
+        }
+    }
+    if($listText === '') return false;
+    $names = explode(',', $listText);
+    foreach($names as $name)
+    {
+        if(trim($name) === $senderName) return true;
+    }
+    return false;
+}
+
+function socketChatMessageCheck($userSN,$msg)
+{
+    global $sn2user;
+    if(!isset($sn2user[$userSN]) || !is_array($sn2user[$userSN])) return '登录状态无效，请重新登录！';
+    $uid = isset($sn2user[$userSN]['id']) ? intval($sn2user[$userSN]['id']) : 0;
+    $lockTime = isset($sn2user[$userSN]['password']) ? intval($sn2user[$userSN]['password']) : 0;
+    if($uid > 0)
+    {
+        $liveLock = memGet('chat_lock_'.$uid);
+        if($liveLock !== false && $liveLock !== null && (is_numeric($liveLock) || is_string($liveLock)))
+        {
+            $lockTime = intval($liveLock);
+            $sn2user[$userSN]['password'] = $lockTime;
+        }
+    }
+    if($lockTime > time()) return '您已被禁言！';
+    if($lockTime > 0) $sn2user[$userSN]['password'] = 0;
+    if(trim($msg) === '') return '消息内容不能为空！';
+    if(strlen($msg) > 300) return '消息内容过长！';
+    $now = microtime_float();
+    $last = isset($sn2user[$userSN]['lastChatTime']) ? floatval($sn2user[$userSN]['lastChatTime']) : 0;
+    if($last > 0 && $now-$last < 1) return '发言过快，请稍候再试！';
+    $sn2user[$userSN]['lastChatTime'] = $now;
+    return true;
 }
 //回收子进程
 function recylePid($flag=false)
@@ -429,21 +488,49 @@ function upDateUserOnline()
         $lastupDateUserOnline=$minute;
     }
 }
+
+function saveSocketUserOnline(&$socketUser)
+{
+	if(!is_array($socketUser)) return false;
+	$uid = isset($socketUser['id']) ? intval($socketUser['id']) : 0;
+	if($uid < 1) return false;
+	$now = time();
+	$loginTime = isset($socketUser['loginTime']) ? intval($socketUser['loginTime']) : $now;
+	$elapsed = max(0,$now-$loginTime);
+	$sql = 'update player_ext set onlinetime=COALESCE(onlinetime,0)+'.$elapsed.' where uid='.$uid;
+	if(query($sql) !== true) return false;
+	$sid = isset($socketUser['sid']) ? strval($socketUser['sid']) : '';
+	if($sid !== '' && !setSocketAuthOnline($uid,$sid,0)) return false;
+	$socketUser['loginTime'] = $now;
+	return true;
+}
+
+function setSocketAuthOnline($uid,$sid,$online)
+{
+    global $conn;
+    $uid = intval($uid);
+    $online = $online ? 1 : 0;
+    if($uid < 1 || !is_string($sid) || $sid === '') return false;
+    if(!is_resource($conn)) connect();
+    if(!is_resource($conn)) return false;
+    $safeSid = mysql_real_escape_string($sid,$conn);
+    return query("UPDATE chat_login_auth SET is_online={$online} WHERE uid={$uid} AND sid='{$safeSid}'") === true;
+}
 //发送公告
 function doGongGao(&$configuration)
 {
     $dt = date("YmdHi");
-    $minute = round(time()/60);
     if(!isset($configuration['gonggao'])||!is_array($configuration['gonggao']))
     {
         return;
     }
     foreach($configuration['gonggao'] as $k=>$row)
     {
+        if(!is_array($row) || !isset($row['starttime'],$row['endtime'],$row['msg'])) continue;
         if($row['endtime']<$dt)//过期了
         {
             unset($configuration['gonggao'][$k]);
-        }else if($row['starttime']<=$dt&&date("i")%$row['times']==0){
+        }else if($row['starttime']<=$dt && intval(date("i"))%max(1,intval(isset($row['times']) ? $row['times'] : 1))==0){
             $msg = 'SYSI|'.$row['msg'];
             sendMsg('__ALL__',$msg);
         }
@@ -624,7 +711,7 @@ function doOtherWork(&$noticeData,$failedCt=0,&$userid2nickname,&$nickname2sn)
         mEcho( "|-------------------------- failedMsg -----------------------|").print_r($failedMsg,1);
         mEcho( "|-----------------------------------------------------------|");
 
-        doOtherWork($failedMsg,$failedCt+1);
+        doOtherWork($failedMsg,$failedCt+1,$userid2nickname,$nickname2sn);
     }
 
     //wr('doOtherWork rs ==>'.date('Y-m-d H:i:s').' -> '."\r\n".$log."\r\n -------------------------------- \r\n");
@@ -697,7 +784,7 @@ function sendMsg($aimSign,$msg)
         }
     }else if(!isset($clients[$aimSign])){
         mEcho( $aimSign." is not valid clients id.");
-        return true;
+        return false;
     }
     return false;
 
@@ -707,12 +794,13 @@ function proceedMsg($userSN,$msg)
 {
     global $sn2user,$nickname2sn,$clients,$userid2nickname,$loginIpList,$configuration,$totalBytesRecv,$totalBytesSend,$pwd;
     $strs = preg_split("/\s+/", $msg, 2, PREG_SPLIT_NO_EMPTY);
+    if(!is_array($strs) || !isset($strs[0]) || $strs[0] === '') return;
     if(strpos($strs[0],"|") !== false){
         $chatarr = explode('|',$strs[0]);
         $strs[0] = $chatarr[0];
     }
     $command = strtoupper($strs[0]);
-    $msg = $strs[1];
+    $msg = isset($strs[1]) ? $strs[1] : '';
     if((!isset($sn2user[$userSN])||!isset($sn2user[$userSN]['name'])) && $command!='LOGIN')
     {
         if(substr($command,0,1)==chr(1))//web服务器直接发送过来的信息
@@ -731,9 +819,7 @@ function proceedMsg($userSN,$msg)
                             if(isset($userid2nickname[$userId]) && isset($nickname2sn[$userid2nickname[$userId]]))
                             {
                                 $key=$nickname2sn[$userid2nickname[$userId]];
-                                $sql='update player_ext set onlinetime=onlinetime+'.(time()-$sn2user[$key]['loginTime']).' where uid='.$sn2user[$key]['id'];
-                                query($sql);
-                                $rtn[]=$userId;
+								if(saveSocketUserOnline($sn2user[$key])) $rtn[]=$userId;
                             }
                         }
                         $writer = "OK|".implode(',',$rtn);
@@ -761,13 +847,23 @@ function proceedMsg($userSN,$msg)
                 sendMsg($userSN,$writer);
             }
         }else{
-            $writer = "SYSM|Error command:$command, login first.".chr(substr($command,0,1)).'&&'.strtoupper($pwd).'=='.substr($command,1);
+            $writer = "SYSM|错误命令：$command，请先登录。".chr(substr($command,0,1)).'&&'.strtoupper($pwd).'=='.substr($command,1);
             sendMsg($userSN,$writer);
             socket_close($clients[$userSN]);
+			unset($clients[$userSN]);
             $remoteIP = preg_replace("/_\d+/",'',$userSN);
-            $loginIpList[$remoteIP]--;
+			if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
         }
         return;
+    }
+    if(in_array($command,array('CHAT','SGCHAT','GCHAT','WHISPER','WP'),true))
+    {
+        $chatCheck = socketChatMessageCheck($userSN,$msg);
+        if($chatCheck !== true)
+        {
+            sendMsg($userSN,'SYSM|'.$chatCheck);
+            return;
+        }
     }
     switch ($command)
     {
@@ -779,8 +875,9 @@ function proceedMsg($userSN,$msg)
                 if(strlen($loginInfo[0])!=26 && strlen($loginInfo[0])!=32)
                 {
                     socket_close($clients[$userSN]);
+					unset($clients[$userSN]);
                     $remoteIP = preg_replace("/_\d+/",'',$userSN);
-                    $loginIpList[$remoteIP]--;
+					if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
                     break;
                 }
 
@@ -789,7 +886,11 @@ function proceedMsg($userSN,$msg)
                 @session_start();
                 if(!isset($_SESSION['id'])||!isset($_SESSION['username'])||intval($_SESSION['id'])<1)
                 {
-                    $safeSid = mysql_real_escape_string($loginInfo[0]);
+                    global $conn;
+                    if(!is_resource($conn)){
+                        connect();
+                    }
+                    $safeSid = mysql_real_escape_string($loginInfo[0], $conn);
                     $authRows = false;
                     for($authTry=0; $authTry<3; $authTry++){
                         $authRows = query("SELECT uid,username,nickname,guild_id,team_id,lock_time,vip FROM chat_login_auth WHERE sid='".$safeSid."' ORDER BY is_online DESC,id DESC LIMIT 1");
@@ -804,7 +905,12 @@ function proceedMsg($userSN,$msg)
                         $_SESSION['nickname'] = $authRows[0]['nickname'];
                         $_SESSION['name'] = $authRows[0]['nickname'];
                         $_SESSION['guild_id'] = intval($authRows[0]['guild_id']);
-                        $_SESSION['team_id'] = intval($authRows[0]['team_id']);
+                        $authTeamId = intval($authRows[0]['team_id']);
+                        if($authTeamId > 0){
+                            $_SESSION['team_id'] = $authTeamId;
+                        }else{
+                            unset($_SESSION['team_id'], $_SESSION['team_inmap'], $_SESSION['team_state']);
+                        }
                         $_SESSION['password'] = intval($authRows[0]['lock_time']);
                         $_SESSION['vip'] = intval($authRows[0]['vip']);
                         $_userNickName = $_SESSION['nickname'];
@@ -814,8 +920,9 @@ function proceedMsg($userSN,$msg)
                         {
                             unset($loginErrCount[$userSN]);
                             socket_close($clients[$userSN]);
+							unset($clients[$userSN]);
                             $remoteIP = preg_replace("/_\d+/",'',$userSN);
-                            $loginIpList[$remoteIP]--;
+							if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
                             break;
                         }
                         $writer = "SYSM|登陆失败！";
@@ -843,9 +950,6 @@ function proceedMsg($userSN,$msg)
                     //kick user
                     $oldSN = $nickname2sn[$_userNickName];
 
-                    $remoteIP = preg_replace("/_\d+/",'',$oldSN);
-                    if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP]--;
-
                     $writer = "SYSM|{$_userNickName}从别处(".preg_replace("/_\d+/",'',$userSN).")登陆了,您被强制断线！";
                     sendMsg($oldSN,$writer);
                     //echo $_userNickName." kicked\r\n";
@@ -862,6 +966,7 @@ function proceedMsg($userSN,$msg)
                         unset($_SESSION['username']);
                         session_write_close();
                     }
+					saveSocketUserOnline($sn2user[$oldSN]);
                     unset($nickname2sn[$_userNickName]);
 
                     unset($userid2nickname[$sn2user[$oldSN]['id']]);
@@ -871,7 +976,7 @@ function proceedMsg($userSN,$msg)
                     unset($clients[$oldSN]);
 
                     $remoteIP = preg_replace("/_\d+/",'',$oldSN);
-                    $loginIpList[$remoteIP]--;
+					if(isset($loginIpList[$remoteIP])) $loginIpList[$remoteIP] = max(0,$loginIpList[$remoteIP]-1);
 
                     session_id($loginInfo[0]);
                     @session_start();
@@ -881,17 +986,22 @@ function proceedMsg($userSN,$msg)
                 session_write_close();
 
                 userListRefreshMessage($userSN);
+				$achievementTitle = isset($_SESSION['now_Achievement_title']) ? strval($_SESSION['now_Achievement_title']) : '';
+				if($achievementTitle !== '' && !preg_match('/^[A-Za-z0-9_-]{1,64}$/D',$achievementTitle)) $achievementTitle = '';
 
                 $sn2user[$userSN]=array(
                     'name'      =>$_userNickName,
-                    'id'        =>$_SESSION['id'],
+                    'id'        =>intval($_SESSION['id']),
                     'sid'       =>$loginInfo[0],
                     'loginTime' =>time(),
-                    'username'  =>$_SESSION['username'],
-                    'password'  =>$_SESSION['password'],
-                    'vip' 		=> $_SESSION['vip'],
-                      'now_Achievement_title' => isset($_SESSION['now_Achievement_title'])?$_SESSION['now_Achievement_title']:''
+                    'username'  =>isset($_SESSION['username']) ? $_SESSION['username'] : '',
+                    'password'  =>isset($_SESSION['password']) ? intval($_SESSION['password']) : (isset($_SESSION['lock_time']) ? intval($_SESSION['lock_time']) : 0),
+                    'vip' 		=> isset($_SESSION['vip']) ? intval($_SESSION['vip']) : 0,
+                    'lastChatTime' =>0,
+					'now_Achievement_title' => $achievementTitle
                 );
+
+                setSocketAuthOnline(intval($_SESSION['id']),$loginInfo[0],1);
 
                 $userid2nickname[$_SESSION['id']] = $_userNickName;
 
@@ -908,7 +1018,7 @@ function proceedMsg($userSN,$msg)
 
                 $writer = 'SYSI|欢迎, '.$_userNickName.'.';
             }else{
-                $writer = 'SYSM|Error format: '.$msg.',use command like:login someone password.';
+                $writer = 'SYSM|登录命令格式错误！';
             }
             mEcho('WWWWWWWWWWWWWWWwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'.$userSN.'-'.$writer);
             sendMsg($userSN,$writer);
@@ -919,8 +1029,7 @@ function proceedMsg($userSN,$msg)
             sendMsg($userSN,$data);
             break;
         case "VAR":
-            $data = 'SYS|'.preg_split("/\s+/", $msg, 2, PREG_SPLIT_NO_EMPTY);
-            sendMsg($userSN,print_r($GLOBALS[$data[0]],1));
+            sendMsg($userSN,'SYSM|错误命令');
             break;
         case "CHAT":
             $now_Achievement_title_str = '';
@@ -1042,6 +1151,11 @@ function proceedMsg($userSN,$msg)
             $now_Achievement_title_str = '';
             if($sn2user[$userSN]['password']>time()) continue;
             $data = preg_split("/\s+/", $msg, 2, PREG_SPLIT_NO_EMPTY);
+            if(!isset($data[0]) || !isset($data[1]) || $data[0] == '' || $data[1] == '')
+            {
+                sendMsg($userSN,'SYSM|bad whisper');
+                break;
+            }
             if($sn2user[$userSN]['name'] == $data[0])
             {
                 $writer = "SYSM|不能对自己说话！";
@@ -1075,9 +1189,15 @@ function proceedMsg($userSN,$msg)
             }
         }
             if(isset($nickname2sn[$data[0]])){
+                $targetSN = $nickname2sn[$data[0]];
+                if(socketChatUserBlocksSender($targetSN,$sn2user[$userSN]['name']))
+                {
+                    sendMsg($userSN,'SYSM|对方已屏蔽您的消息。');
+                    break;
+                }
                 $writer = 'WP|'.$now_Achievement_title_str.'$'.$sn2user[$userSN]['name']."`".$vipStr."对你说：".$data[1];
                 //echo $writer;
-                sendMsg($nickname2sn[$data[0]],$writer);
+                sendMsg($targetSN,$writer);
                 sendMsg($userSN,'WP|你对$'.$data[0]."`说：".$data[1]);
             }else{
                 $writer = "SYSM|$data[0] 不在线！";
@@ -1086,7 +1206,7 @@ function proceedMsg($userSN,$msg)
             //print_r($data);
             break;
         default:
-            $writer = "SYSM|Error command";
+            $writer = 'SYSM|错误命令';
             echo $msg;
             sendMsg($userSN,$writer);
             break;
@@ -1097,39 +1217,34 @@ function connect(){
     global $conn,$_mysql;
     @mysql_close($conn);
     $conn = mysql_connect($_mysql['host'],$_mysql['user'],$_mysql['pass']) or wr(__LINE__.' a=>'.mysql_error(),1);
-    mysql_select_db($_mysql['db'],$conn) or wr(__LINE__.' b=>'.mysql_error(),1);
-    $row = mysql_fetch_row(mysql_query('show tables',$conn));
-    $row = mysql_fetch_row(mysql_query('show create table '.$row[0],$conn));
-    //wr(__FILE__." c:".print_r($row,1)."");
-    if(strpos(strtolower($row[1]),"charset=gbk")!==false){
-        mysql_query("SET NAMES gbk;",$conn);
-    }else{
-        mysql_query("SET NAMES gbk;",$conn);
-    }
+    mysql_select_db($_mysql['db'],$conn) or wr(__LINE__.' b=>'.mysql_error($conn),1);
+    mysql_query("SET NAMES utf8mb4;",$conn);
+    mysql_query("SET CHARACTER_SET_CLIENT=utf8mb4;",$conn);
+    mysql_query("SET CHARACTER_SET_RESULTS=utf8mb4;",$conn);
 }
 //查询数据库
 function query($sql,$flag=false){
     global $conn;
     $result = @mysql_query($sql,$conn);//or die('sql='.$sql.'<br/>'.mysql_error());
-    if($e=mysql_error())
+    if($e=mysql_error($conn))
     {
         connect();
         $result = @mysql_query($sql,$conn);
-        if($e=mysql_error())
+        if($e=mysql_error($conn))
         {
             wr(__FILE__.":".$e." 2\r\n",1);
         }
     }
     //wr(__FILE__.":".$sql."\r\n");
     $rtn = array();
-    if(is_resource($result)){
-        while ($row = mysql_fetch_assoc($result))
-        {
-            $rtn[]=$row;
-        }
-    }else{
-        return;
-    }
+	if(is_resource($result)){
+		while ($row = mysql_fetch_assoc($result))
+		{
+			$rtn[]=$row;
+		}
+	}else{
+		return $result === true;
+	}
     //wr(__FILE__.":".print_r($rtn,1)."\r\n",2);
     @mysql_free_result($result);
     return $rtn;
@@ -1150,7 +1265,10 @@ function memConnect()
 function memGet($key)
 {
     global $mem;
-    if(!$ver=$mem->getVersion())
+    if(!is_object($mem)) memConnect();
+    if(!is_object($mem)) return NULL;
+    $ver = $mem->getVersion();
+    if(!$ver)
     {
         memConnect();
     }
@@ -1164,7 +1282,11 @@ function memGet($key)
         //wr($key.' (mem)= '.print_r($val,1));
     }
     if(is_string($val))
-        return unserialize($val);
+    {
+        $parsed = @unserialize($val);
+        if($parsed === false && $val !== serialize(false)) return $val;
+        return $parsed;
+    }
     else
         return $val;
 }
@@ -1172,7 +1294,10 @@ function memGet($key)
 function memSet($key,$value)
 {
     global $mem;
-    if(!$ver=$mem->getVersion())
+    if(!is_object($mem)) memConnect();
+    if(!is_object($mem)) return NULL;
+    $ver = $mem->getVersion();
+    if(!$ver)
     {
         memConnect();
     }
@@ -1213,6 +1338,7 @@ function formatSize($int)
 function getConfiguration(){
     global $configuration;
     $dt = date("YmdHi");
+	$configuration['admin'] = array();
     $configWelcome = memGet('db_welcome');
     if(empty($configWelcome)||!is_array($configWelcome))
     {
@@ -1221,13 +1347,13 @@ function getConfiguration(){
     }
     foreach($configWelcome as $row)
     {
-        if($row['code']=='admin'){
+        if(is_array($row) && isset($row['code']) && $row['code']=='admin'){
             //echo $row['contents']."\r\n";
-            $configuration[$row['code']] = explode(',',$row['contents']);
+			$adminNames = isset($row['contents']) ? array_filter(array_map('trim',explode(',',$row['contents'])),'strlen') : array();
+			$configuration['admin'] = array_flip($adminNames);
             break;
         }
     }
-    $configuration['admin'] = array_flip($configuration['admin']);
 
     $configWelcome = memGet('db_gonggao');
     if(empty($configWelcome)||!is_array($configWelcome))
@@ -1236,20 +1362,20 @@ function getConfiguration(){
         return;
     }
 
+	$activeAnnouncements = array();
     foreach($configWelcome as $row)
     {
-        if(!isset($row['endtime']))
+		if(!is_array($row) || !isset($row['endtime']))
         {
             mEcho('Gonggao error:'.print_r($row,1));
             continue;
         }
         if($row['endtime']>$dt)//没有结束的
         {
-            if(!isset($configWelcome['gonggao'])) $configWelcome['gonggao']=array();
-            $configWelcome['gonggao'][] = $row;
+			$activeAnnouncements[] = $row;
         }
     }
-    if(isset($configWelcome['gonggao']))    $configuration['gonggao'] = $configWelcome['gonggao'];
+	$configuration['gonggao'] = $activeAnnouncements;
 
 }
 

@@ -14,7 +14,7 @@ body{ margin:0px auto; font-size:12px; font-family:Verdana,Geneva,sans-serif;}
 #midd_left{ float:left; width:690px; height:auto; margin-top:5px;}
 #midd_left_chaxun{ float:left; width:690px; height:auto;}
 #midd_left1{ float:left; width:750px; height:32px; background:url(../images/index_leftnew2.gif) no-repeat; line-height:32px;font-size:14px; color:#236597;background-color:#E9F1FA;}
-#midd_left2{ float:left; width:676px; height:100; background:url(../images/serbg.gif) no-repeat; clear:both;padding:5px;}
+#midd_left2{ float:left; width:676px; height:100px; background:url(../images/serbg.gif) no-repeat; clear:both;padding:5px;}
 #midd_left3{ float:left; width:750px; height:auto; }
 #midd_left4{ float:right; margin-right:10px; width:112px; height:30px; margin-top:5px;}
 #midd_left5{ float:left; width:337px; height:auto;}

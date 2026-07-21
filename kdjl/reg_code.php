@@ -1,7 +1,12 @@
 <?php
 set_time_limit(300);
 ignore_user_abort(true);//用户关闭浏览器不退出
-require_once('./config/config.game.php');
+require_once(dirname(__FILE__).'/config/config.game.php');
+if(!kdjlCurrentUserIsAdmin())
+{
+	header('HTTP/1.1 404 Not Found');
+	exit;
+}
 
 function getRandomString($length = 10)
 {
@@ -30,7 +35,7 @@ function getRandomString($length = 10)
 
 $reg_code = '生成的注册码在这里';
 
-if (isset($_REQUEST['operate_code']) && $_REQUEST['operate_code'] == 'wa8MiX2V0r') {
+if (isset($_REQUEST['operate_code']) && !is_array($_REQUEST['operate_code']) && $_REQUEST['operate_code'] == 'wa8MiX2V0r') {
     $new_reg_code = getRandomString();
     $sql = "SELECT * from reg_code where reg_code = '{$new_reg_code}'";
     $tm = $_pm["mysql"]->getOneRecord($sql);
@@ -95,4 +100,3 @@ if (stripos($_SERVER['PHP_SELF'], 'reg_code') !== false) {
     </center>
     <?php
 } ?>
-

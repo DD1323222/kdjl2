@@ -117,7 +117,6 @@ function sl_restart(para)
 			{
 				display('tishi');
 				use_sl_card();
-				sl_restart_request();
 			}
 			str = "系统检测到您进入扫雷必须消耗一张扫雷闯关卡(主宠成长率在65及以上的玩家每天有一次免费进入的机会),是否使用一张扫雷闯关卡?";
 			img2.onclick=function()
@@ -145,11 +144,15 @@ function sl_restart_request()
 			{
 				Alert("您的扫雷刷新券数量不足,不能刷新");
 			}
-			else
+			else if(respone.indexOf('id="everybox"') != -1 || respone.indexOf("id='everybox'") != -1)
 			{
 				document.getElementById('prize').innerHTML = respone;
 				document.getElementById('sm').innerHTML += "<br>刷新成功";
 				scrollWindow();
+			}
+			else
+			{
+				Alert(respone || "刷新失败，请稍后重试");
 			}
 		},
 		on404: function(t)
@@ -164,8 +167,11 @@ function sl_restart_request()
 }
 function display(id)
 {
-	obj = document.getElementById(id);
-	obj.parentNode.removeChild(obj);
+	var obj = (typeof id == 'string') ? document.getElementById(id) : id;
+	if(obj && obj.parentNode)
+	{
+		obj.parentNode.removeChild(obj);
+	}
 }
 function choose(ob)
 {
@@ -176,6 +182,12 @@ function choose(ob)
 		{
 			var respone =  t.responseText;
 			var responeinfo = respone.split('<Boundaries>');
+			if(responeinfo.length < 5 || responeinfo[0].indexOf('<table') == -1)
+			{
+				Alert(respone || "扫雷操作失败，请稍后重试");
+				auto();
+				return;
+			}
 			ob.innerHTML = responeinfo[1];
 			ob.className = (responeinfo[1].indexOf('bob.gif') == -1)?'open':'open_lei';
 			document.getElementById('sm').innerHTML += '<br>'+responeinfo[2];
@@ -308,6 +320,11 @@ function auto()
 		{
 			var respone =  t.responseText;
 			var responeinfo = respone.split('<Boundaries>');
+			if(responeinfo.length < 3 || !/^\d+$/.test(responeinfo[0]))
+			{
+				Alert(respone || "扫雷状态加载失败，请稍后重试");
+				return;
+			}
 			document.getElementById('gs').innerHTML = "<b>"+responeinfo[0]+"</b>";
 			document.getElementById('leiqu01').innerHTML = responeinfo[1];
 			document.getElementById('leinum').innerHTML = responeinfo[0]-1;
@@ -388,8 +405,8 @@ function use_sl_card()
 			else
 			{
 				Alert("扫雷卡使用成功");
+				auto();
 			}
-			auto();
 		},
 		on404: function(t)
 		{

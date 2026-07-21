@@ -5,27 +5,49 @@
 *@Author: %author%
 
 *@Write Date: 2008.09.25
-*@Update Date: 
+*@Update Date:
 *@Usage: 宠物托管
 *@Note: none
 */
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-$petsAll  = $_pm['user']->getUserPetById($_SESSION['id']);
+function tuoguanModHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('1');
+$user	 = $_pm['user']->getUserById($uid);
+$petsAll  = $_pm['user']->getUserPetById($uid);
+if(!is_array($user)) die('1');
+if(!is_array($petsAll)) $petsAll = array();
+if(!isset($user['tgmax'])) $user['tgmax'] = 0;
+if(!isset($user['tgtime'])) $user['tgtime'] = 0;
 //可以托管的最大数目
 $tgnum = $user['tgmax'];
 //得到可以设置的宠物
 $utime = $user['tgtime'];
+$petsoption = '';
+$timeoption = '';
+$mesoption = '';
+$petarr = array();
 $petsoption .= '<option value="">请选择宠物</option>';
 foreach($petsAll as $pall)
 {
-	if($pall['level'] < 10 || $pall['muchang'] != 1)
+	if(!is_array($pall)) continue;
+	if(!isset($pall['level'])) $pall['level'] = 0;
+	if(!isset($pall['muchang'])) $pall['muchang'] = 0;
+	if(!isset($pall['id'])) $pall['id'] = 0;
+	if(!isset($pall['name'])) $pall['name'] = '';
+	if(!isset($pall['tgflag'])) $pall['tgflag'] = 0;
+	if(!isset($pall['chchengsx'])) $pall['chchengsx'] = '';
+	if($pall['level'] < 10 || $pall['muchang'] != 1 || $pall['tgflag'] != 0 || !empty($pall['chchengsx']))
 	{
 		continue;
 	}
-	$petsoption .= '<option value='.$pall["id"].'>'.$pall['name'].'</option>';
+	$petsoption .= '<option value='.intval($pall["id"]).'>'.tuoguanModHtml($pall['name']).'</option>';
 }
 $option1 = '<select name="select5" id="pets1" onchange="getflag(this)">'.$petsoption.'</select>';
 $option2 = '<select name="select4" id="pets2" onchange="getflag(this)">'.$petsoption.'</select>';
@@ -59,9 +81,17 @@ $mes2 = '<select name="select3" id="mes2">'.$mesoption.'</select>';
 $mes3 = '<select name="select3" id="mes3">'.$mesoption.'</select>';
 foreach($petsAll as $pet)
 {
-	if(!empty($pet['tgflag']))
+	if(!is_array($pet)) continue;
+	if(!isset($pet['tgflag'])) $pet['tgflag'] = 0;
+	if(!isset($pet['id'])) $pet['id'] = 0;
+	if(!isset($pet['name'])) $pet['name'] = '';
+	if(!isset($pet['tgstime'])) $pet['tgstime'] = 0;
+	if(!isset($pet['tgtime'])) $pet['tgtime'] = 0;
+	if(!isset($pet['tgmes'])) $pet['tgmes'] = 0;
+	if(!isset($pet['muchang'])) $pet['muchang'] = 0;
+	if(!empty($pet['tgflag']) && intval($pet['muchang']) == 1)
 	{
-		$petarr[] = $pet; 
+		$petarr[] = $pet;
 	}
 }
 if(is_array($petarr))
@@ -77,34 +107,34 @@ if(is_array($petarr))
 	if($num == 2)
 	{
 		$option1 ='<select name="select5" id="pets1" onchange="getflag(this)" disabled="disabled">'.petoption($petarr[0]['id'],$petarr[0]['name'],$petsAll).'</select>';
-		
-		$option2 ='<select name="select4" id="pets2" onchange="getflag(this)" disabled="disabled"> disabled="disabled">'.petoption($petarr[1]['id'],$petarr[1]['name'],$petsAll).'</select>';
-		
+
+		$option2 ='<select name="select4" id="pets2" onchange="getflag(this)" disabled="disabled">'.petoption($petarr[1]['id'],$petarr[1]['name'],$petsAll).'</select>';
+
 		$time1 = '<select name="select2" id="time1" disabled=disabled >'.pettime($petarr[0]['tgtime'],$timearr).'</select>';
 		$time2 = '<select name="select20" id="time2" disabled=disabled >'.pettime($petarr[1]['tgtime'],$timearr).'</select>';
-		
+
 		$mes1 = '<select name="select3" id="mes1" disabled = disabled>'.tgmes($petarr[0]['tgmes'],$mesarr,$mesarr1).'</select>';
 		$mes2 = '<select name="select3" id="mes2" disabled = disabled>'.tgmes($petarr[1]['tgmes'],$mesarr,$mesarr1).'</select>';
-		
+
 		$flag1 = flag($petarr[0]['tgstime'],$petarr[0]['tgtime']);
 		$flag2 = flag($petarr[1]['tgstime'],$petarr[1]['tgtime']);
 	}
 	if($num == 3)
 	{
 		$option1 ='<select name="select5" id="pets1" onchange="getflag(this)" disabled="disabled">'.petoption($petarr[0]['id'],$petarr[0]['name'],$petsAll).'</select>';
-		
-		$option2 ='<select name="select4" id="pets2" onchange="getflag(this)" disabled="disabled"> disabled="disabled">'.petoption($petarr[1]['id'],$petarr[1]['name'],$petsAll).'</select>';
-		
-		$option3 ='<select name="select"  id="pets3" onchange="getflag(this)" disabled=disabled> disabled="disabled">'.petoption($petarr[2]['id'],$petarr[2]['name'],$petsAll).'</select>';
-		
+
+		$option2 ='<select name="select4" id="pets2" onchange="getflag(this)" disabled="disabled">'.petoption($petarr[1]['id'],$petarr[1]['name'],$petsAll).'</select>';
+
+		$option3 ='<select name="select" id="pets3" onchange="getflag(this)" disabled="disabled">'.petoption($petarr[2]['id'],$petarr[2]['name'],$petsAll).'</select>';
+
 		$time1 = '<select name="select2" id="time1" disabled=disabled >'.pettime($petarr[0]['tgtime'],$timearr).'</select>';
 		$time2 = '<select name="select20" id="time2" disabled=disabled >'.pettime($petarr[1]['tgtime'],$timearr).'</select>';
 		$time3 = ' <select name="select2" id="time3"disabled=disabled >'.pettime($petarr[2]['tgtime'],$timearr).'</select>';
-		
+
 		$mes1 = '<select name="select3" id="mes1" disabled = disabled>'.tgmes($petarr[0]['tgmes'],$mesarr,$mesarr1).'</select>';
 		$mes2 = '<select name="select3" id="mes2" disabled = disabled>'.tgmes($petarr[1]['tgmes'],$mesarr,$mesarr1).'</select>';
 		$mes3 = '<select name="select3" id="mes3" disabled = disabled>'.tgmes($petarr[2]['tgmes'],$mesarr,$mesarr1).'</select>';
-		
+
 		$flag1 = flag($petarr[0]['tgstime'],$petarr[0]['tgtime']);
 		$flag2 = flag($petarr[1]['tgstime'],$petarr[1]['tgtime']);
 		$flag3 = flag($petarr[2]['tgstime'],$petarr[2]['tgtime']);
@@ -123,7 +153,7 @@ $tn = $_game['template'] . 'tpl_tuoguan.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#word#',
 				 '#petsoption1#',
 				 '#petsoption2#',
@@ -178,7 +208,7 @@ function flag($stime,$time)
 	else
 	{
 		$times = $now - $stime;
-		if($times > $time)
+		if($times >= $time)
 		{
 			$str = "托管完成";
 		}
@@ -196,14 +226,22 @@ function flag($stime,$time)
 //$pets array 所有的宠物
 function petoption($id,$name,$pets)
 {
-	$str ='<option value='.$id.'>'.$name.'</option>';
+	$str ='<option value='.intval($id).'>'.tuoguanModHtml($name).'</option>';
 	foreach($pets as $pall)
 	{
-		if($pall['level'] < 10 || $pall['id'] == $id || $pall['muchang'] != 1)
+		if(!is_array($pall)) continue;
+		if(!isset($pall['level'])) $pall['level'] = 0;
+		if(!isset($pall['id'])) $pall['id'] = 0;
+		if(!isset($pall['muchang'])) $pall['muchang'] = 0;
+		if(!isset($pall['name'])) $pall['name'] = '';
+		if(!isset($pall['tgflag'])) $pall['tgflag'] = 0;
+		if(!isset($pall['chchengsx'])) $pall['chchengsx'] = '';
+		if($pall['level'] < 10 || $pall['id'] == $id || $pall['muchang'] != 1 ||
+			$pall['tgflag'] != 0 || !empty($pall['chchengsx']))
 		{
 			continue;
 		}
-		$str .= '<option value='.$pall["id"].'>'.$pall['name'].'</option>';
+		$str .= '<option value='.intval($pall["id"]).'>'.tuoguanModHtml($pall['name']).'</option>';
 	}
 	return $str;
 }
@@ -232,6 +270,7 @@ function pettime($time,$arr)
 //$arr2 数组 内容
 function tgmes($mes,$arr1,$arr2)
 {
+	$str = '';
 	foreach($arr1 as $k => $v)
 	{
 		if($v == $mes)

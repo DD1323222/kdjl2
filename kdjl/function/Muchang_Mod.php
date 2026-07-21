@@ -8,44 +8,85 @@
 *@Update Date: 2008.05.22
 *@Usage: MuChang
 *@Note: none
-*/ 
+*/
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-$petsAll  = $_pm['user']->getUserPetById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+
+function muchangModHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function muchangModJsSingle($value)
+{
+	$value = str_replace("\\", "\\\\", (string)$value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	return $value;
+}
+
+function muchangModImage($value)
+{
+	$value = basename((string)$value);
+	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
+}
+
+$user	 = $_pm['user']->getUserById($uid);
+$petsAll  = $_pm['user']->getUserPetById($uid);
+if(!is_array($user)) die('');
+if(!is_array($petsAll)) $petsAll = array();
+$userDefaults = array('mbid' => 0, 'fieldpwd' => '', 'tgtime' => 0, 'tgmax' => 0, 'maxmc' => 0, 'task' => 0, 'money' => 0, 'yb' => 0);
+foreach($userDefaults as $defaultKey => $defaultValue)
+{
+	if(!isset($user[$defaultKey])) $user[$defaultKey] = $defaultValue;
+}
 $td_num = 0;
 $pall = 0;
 $mainbb =''; //1:26;2:123 ;3:235;
+$petslist = '';
+$petsoption = '';
+$mesoption = '';
+$mc = '';
+$pets = array('', '', '');
 if (!is_array($petsAll)) $petslist='获取宝宝数据失败!';
-else 
+else
 {
 	$kk = 0;
 	foreach ($petsAll as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id' => 0, 'name' => '', 'muchang' => 0, 'tgflag' => 0, 'wx' => 0, 'level' => 0, 'cardimg' => '', 'imgdie' => '');
+		foreach($rsDefaults as $defaultKey => $defaultValue)
+		{
+			if(!isset($rs[$defaultKey])) $rs[$defaultKey] = $defaultValue;
+		}
 		if ($rs['name'] == '') continue;
 		if ($rs['muchang']==1 && $rs['tgflag'] == 0)
-		{//title="<img src='.IMAGE_SRC_URL.'/bb/'.$rs['imgdie'].' style=\'margin:0px;float:left;\'>'.$rs['name'].'<br/>'.getWx($rs['wx']).'系<br/>'.'" 
+		{//title="<img src='.IMAGE_SRC_URL.'/bb/'.$rs['imgdie'].' style=\'margin:0px;float:left;\'>'.$rs['name'].'<br/>'.getWx($rs['wx']).'系<br/>'.'"
 			$pall++;
+			$nameHtml = muchangModHtml($rs['name']);
+			$nameJs = muchangModHtml(muchangModJsSingle($rs['name']));
+			$wxHtml = muchangModHtml(getWx($rs['wx']));
+			$imgDie = muchangModImage($rs['imgdie']);
 			$petslist .= '<tr>
-              			<td width="130px" onmouseover="mcbbshow('.$rs['id'].');" style="cursor:pointer;text-align:left;" onmouseover="vtips(this)" onmouseout="ctips(this)" onclick="sel(this);copyWord(\''.$rs[name].'\');Display('.$rs['id'].');"><img src="'.IMAGE_SRC_URL.'/ui/muchang/mc05.gif" />'.$rs['name'].'</td>
-              			<td width="70px" style="text-align:left;">'.getWx($rs['wx']).'</td>
-              			<td style="text-align:left;" >LV '.$rs['level'].'</td>
-            		  </tr>';
-			$imgcontent = '<img src='.IMAGE_SRC_URL.'/bb/'.$rs['imgdie'].' style=\'margin:0px;float:left;\'>'.
-					$rs['name'].'<br/>'.getWx($rs['wx']).'系<br/>'
-					.'" style="cursor:pointer;text-align:left;" onmouseover="vtips(this)" onmouseout="ctips(this)" onclick="sel(this);copyWord(\''.$rs[name].'\');Display('.$rs['id'].');';
+			<td width="130px" style="cursor:pointer;text-align:left;" onmouseover="mcbbshow('.$rs['id'].');vtips(this);" onmouseout="ctips(this)" onclick="sel(this);copyWord(\''.$nameJs.'\');Display('.$rs['id'].');"><img src="'.IMAGE_SRC_URL.'/ui/muchang/mc05.gif" />'.$nameHtml.'</td>
+			<td width="70px" style="text-align:left;">'.$wxHtml.'</td>
+			<td style="text-align:left;" >LV '.$rs['level'].'</td>
+		  </tr>';
 		}
-		else if($rs['muchang'] == 0 && $rs['tgflag'] != 1)
+		else if($rs['muchang'] == 0 && $rs['tgflag'] == 0)
 		{
 			//----------------------------------
 			if ($rs['id'] == $user['mbid'])
 			{
-				$pets[$kk++] = "<img src='".IMAGE_SRC_URL."/bb/{$rs['cardimg']}' onclick='Display({$rs['id']});zhixiang(this,".$td_num.")' style='cursor:pointer;'>";
+				$pets[$kk++] = "<img src='".IMAGE_SRC_URL."/bb/".muchangModImage($rs['cardimg'])."' onclick='Display({$rs['id']});zhixiang(this,".$td_num.")' style='cursor:pointer;'>";
 			}
 			else
 			{
-				$pets[$kk++] = "<img class='ch02' src='".IMAGE_SRC_URL."/bb/{$rs['cardimg']}' onclick='Display({$rs['id']});zhixiang(this,".$td_num.")' style='cursor:pointer;'>";
+				$pets[$kk++] = "<img class='ch02' src='".IMAGE_SRC_URL."/bb/".muchangModImage($rs['cardimg'])."' onclick='Display({$rs['id']});zhixiang(this,".$td_num.")' style='cursor:pointer;'>";
 			}
 			$td_num++;
 			if ($rs['id'] == $user['mbid'])
@@ -79,12 +120,12 @@ if(!empty($user['fieldpwd'])) {
     $encryptSubmit = 'resetPwd();';
     $oldPwdInput   = '原密码：<input type="password" name="old_pwd" id="old_pwd" /><br /><br />新';
     $discardStep   = 'discardBb();';
-    $discardAction = "Ajax.Request('../function/mcGate.php?op=d&pwd='+pwd+'&id='+bid, opt)";
+    $discardAction = "Ajax.Request('../function/mcGate.php?op=d&pwd='+encodeURIComponent(pwd)+'&id='+bid, opt)";
     $getDiscardPwd = "var pwd = $('pwd2').value;";
     $discardCheck  = '';
 }
 
-if(!empty($user['fieldpwd']) && empty($_SESSION['loginField' . $_SESSION['id']]))
+if(!empty($user['fieldpwd']) && empty($_SESSION['loginField' . $uid]))
 {
     $petslist = $login;
     $encryptAction = "alert('该牧场已经加密!');return false;";
@@ -98,33 +139,41 @@ $i = 0;
 $utime = $user['tgtime'];
 foreach($petsAll as $pall)
 {
-	if($pall['level'] < 10 || $pall['muchang'] != 1)
+	if(!is_array($pall)) continue;
+	$pallDefaults = array('id' => 0, 'name' => '', 'level' => 0, 'muchang' => 0, 'tgflag' => 0, 'chchengsx' => '');
+	foreach($pallDefaults as $defaultKey => $defaultValue)
+	{
+		if(!isset($pall[$defaultKey])) $pall[$defaultKey] = $defaultValue;
+	}
+	if($pall['level'] < 10 || $pall['muchang'] != 1 || !empty($pall['chchengsx']))
 	{
 		continue;
 	}
 	if($pall['tgflag'] > 0){
 		$i++;
-		$mesoption .= '<option value='.$pall["id"].'>'.$pall['name'].'</option>';
+		$mesoption .= '<option value='.intval($pall["id"]).'>'.muchangModHtml($pall['name']).'</option>';
 	}else{
-		$petsoption .= '<option value='.$pall["id"].'>'.$pall['name'].'</option>';
+		$petsoption .= '<option value='.intval($pall["id"]).'>'.muchangModHtml($pall['name']).'</option>';
 	}
 }
 //可以托管的最大数目
-$tgnum = $user['tgmax'] - $i;
+$tgnum = max(0, intval($user['tgmax']) - $i);
 /* added by Zheng.Ping */
 
 //Word part.
 $taskword= taskcheck($user['task'],4);
 
 $_pm['mem']->memClose();
-$style = $_GET['style'];
-$sjarr = $_pm['mysql'] -> getOneRecord("SELECT sj FROM player_ext WHERE uid = {$_SESSION['id']}");
+$style = (isset($_GET['style']) && !is_array($_GET['style']) && $_GET['style'] === '2') ? '2' : '';
+$sjarr = $_pm['mysql'] -> getOneRecord("SELECT sj FROM player_ext WHERE uid = {$uid}");
+if(!is_array($sjarr)) $sjarr = array('sj' => 0);
+if(!isset($sjarr['sj'])) $sjarr['sj'] = 0;
 //@Load template.
 $tn = $_game['template'] . 'tpl_muchang.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#money#',
 				 '#yb#',
 				 '#mclimit#',
@@ -196,7 +245,7 @@ function flag($stime,$time)
 	else
 	{
 		$times = $now - $stime;
-		if($times > $time)
+		if($times >= $time)
 		{
 			$str = "托管完成";
 		}
@@ -214,14 +263,22 @@ function flag($stime,$time)
 //$pets array 所有的宠物
 function petoption($id,$name,$pets)
 {
-	$str ='<option value='.$id.'>'.$name.'</option>';
+	$str ='<option value='.intval($id).'>'.muchangModHtml($name).'</option>';
+	if(!is_array($pets)) $pets = array();
 	foreach($pets as $pall)
 	{
-		if($pall['level'] < 10 || $pall['id'] == $id || $pall['muchang'] != 1)
+		if(!is_array($pall)) continue;
+		$pallDefaults = array('id' => 0, 'name' => '', 'level' => 0, 'muchang' => 0, 'tgflag' => 0, 'chchengsx' => '');
+		foreach($pallDefaults as $defaultKey => $defaultValue)
+		{
+			if(!isset($pall[$defaultKey])) $pall[$defaultKey] = $defaultValue;
+		}
+		if($pall['level'] < 10 || $pall['id'] == $id || $pall['muchang'] != 1 ||
+			$pall['tgflag'] != 0 || !empty($pall['chchengsx']))
 		{
 			continue;
 		}
-		$str .= '<option value='.$pall["id"].'>'.$pall['name'].'</option>';
+		$str .= '<option value='.intval($pall["id"]).'>'.muchangModHtml($pall['name']).'</option>';
 	}
 	return $str;
 }
@@ -233,6 +290,7 @@ function pettime($time,$arr)
 {
 	$time1 = $time / 3600;
 	$str = '<option value='.$time1.'>'.$time1.'小时</option>';
+	if(!is_array($arr)) $arr = array();
 	foreach($arr as $v)
 	{
 		if($v == $time1)
@@ -250,15 +308,19 @@ function pettime($time,$arr)
 //$arr2 数组 内容
 function tgmes($mes,$arr1,$arr2)
 {
+	$str = '';
+	if(!is_array($arr1)) $arr1 = array();
+	if(!is_array($arr2)) $arr2 = array();
 	foreach($arr1 as $k => $v)
 	{
+		$title = isset($arr2[$k]) ? $arr2[$k] : '';
 		if($v == $mes)
 		{
-			$str .= '<option value='.$v.' selected=selected>'.$arr2[$k].'</option>';
+			$str .= '<option value='.$v.' selected=selected>'.$title.'</option>';
 		}
 		else
 		{
-			$str .= '<option value='.$v.'>'.$arr2[$k].'</option>';
+			$str .= '<option value='.$v.'>'.$title.'</option>';
 		}
 	}
 	return $str;

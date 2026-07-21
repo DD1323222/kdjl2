@@ -37,7 +37,7 @@ if (!class_exists('memSession'))
 		{
 			if (!class_exists('Memcache') || !function_exists('memcache_connect'))
 			{
-				die('Memcache extension not exists!');
+				die('服务器未安装 Memcache 扩展！');
 			}
 	
 			if (!empty(self::$mMemcacheObj) && is_object(self::$mMemcacheObj))
@@ -47,7 +47,7 @@ if (!class_exists('memSession'))
 			self::$mMemcacheObj = new Memcache;
 			if (!self::$mMemcacheObj->connect(MEMCACHE_HOST , MEMCACHE_PORT))
 			{
-				die('Fatal Error: Can not connect to memcache host '. MEMCACHE_HOST .':'. MEMCACHE_PORT);
+				die('服务器无法连接 Memcache：'. MEMCACHE_HOST .':'. MEMCACHE_PORT);
 			}
 			return TRUE;
 		}
@@ -66,7 +66,7 @@ if (!class_exists('memSession'))
 		
 		public static function sessRead($wSessId = '')
 		{
-			if(strlen($wSessId) == 0) return;
+			if(strlen($wSessId) == 0) return '';
 
 			$wData = self::$mMemcacheObj->get($wSessId);
 			//先读数据，如果没有，就初始化一个
@@ -81,21 +81,21 @@ if (!class_exists('memSession'))
 	
 				if (TRUE != $ret)
 				{
-					die("Session error(".__LINE__.")!");
+				die("会话数据错误（".__LINE__."）！");
 	
 					return FALSE;
 				}
 	
-				return TRUE;
+				return '';
 			}
 		}
 		
 		public static function sessWrite($wSessId = '', $wData = '')
 		{
-			$ret = self::$mMemcacheObj->replace($wSessId, $wData, 0, SESS_LIFTTIME);
+			$ret = self::$mMemcacheObj->set($wSessId, $wData, 0, SESS_LIFTTIME);
 			if (TRUE != $ret)
 			{
-				die("Fatal Error: SessionID $wSessId Save data failed!");
+				die("保存会话数据失败，会话编号：$wSessId");
 	
 				return FALSE;
 			}
@@ -104,9 +104,8 @@ if (!class_exists('memSession'))
 		
 		public static function sessDestroy($wSessId = '')
 		{
-			self::sessWrite($wSessId);
-	
-			return FALSE;
+			if(strlen($wSessId) == 0) return TRUE;
+			return self::$mMemcacheObj->delete($wSessId);
 		}
 		
 		public static function sessGc()

@@ -12,24 +12,73 @@ require_once('../config/config.game.php');
 require_once('../sec/dblock_fun.php');
 secStart($_pm['mem']);
 
-function tgFail($message, $rollback=false)
+$tgTransactionActive = false;
+$tgLockHeld = false;
+
+function tgShutdown()
 {
-	global $_pm;
-	if ($rollback)
+	global $_pm, $tgTransactionActive, $tgLockHeld;
+	$error = error_get_last();
+	if(!is_array($error) || !in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR), true))
+	{
+		return;
+	}
+	if($tgTransactionActive)
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		$tgTransactionActive = false;
+	}
+	if($tgLockHeld && function_exists('realseLock'))
+	{
+		realseLock();
+		$tgLockHeld = false;
+	}
+}
+register_shutdown_function('tgShutdown');
+
+function tgFail($message, $rollback=false)
+{
+	global $_pm, $tgTransactionActive, $tgLockHeld;
+	if ($rollback || $tgTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$tgTransactionActive = false;
+	}
+	if ($tgLockHeld && function_exists('realseLock'))
+	{
+		realseLock();
+		$tgLockHeld = false;
 	}
 	die($message);
 }
 
 function tgCommit()
 {
-	global $_pm;
+	global $_pm, $tgTransactionActive, $tgLockHeld;
 	if (!$_pm['mysql']->query('COMMIT'))
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		$tgTransactionActive = false;
+		if ($tgLockHeld && function_exists('realseLock')) realseLock();
+		$tgLockHeld = false;
 		die('操作提交失败，请重试！');
 	}
+	$tgTransactionActive = false;
+	$_pm['mem']->del(MEM_USER_KEY);
+	$_pm['mem']->del(MEM_USERBB_KEY);
+	$_pm['mem']->del(MEM_USERSK_KEY);
+	$_pm['mem']->del(MEM_USERBAG_KEY);
+	if ($tgLockHeld && function_exists('realseLock')) realseLock();
+	$tgLockHeld = false;
+}
+
+function tgAcquireLock($uid)
+{
+	global $tgLockHeld, $tgTransactionActive;
+	if(!is_array(getLock(intval($uid)))) return false;
+	$tgLockHeld = true;
+	$tgTransactionActive = true;
+	return true;
 }
 
 function tgPetStatus($pet, $now)
@@ -52,9 +101,9 @@ function tgStart($uid, $auto)
 {
 	global $_pm;
 	$db = $_pm['mysql'];
-	$petId = isset($_REQUEST['pets']) ? intval($_REQUEST['pets']) : 0;
-	$hours = isset($_REQUEST['time']) ? intval($_REQUEST['time']) : 0;
-	$mode = isset($_REQUEST['mes']) ? intval($_REQUEST['mes']) : 0;
+	$petId = (isset($_REQUEST['pets']) && !is_array($_REQUEST['pets'])) ? intval($_REQUEST['pets']) : 0;
+	$hours = (isset($_REQUEST['time']) && !is_array($_REQUEST['time'])) ? intval($_REQUEST['time']) : 0;
+	$mode = (isset($_REQUEST['mes']) && !is_array($_REQUEST['mes'])) ? intval($_REQUEST['mes']) : 0;
 	$allowedHours = array(1, 2, 4, 8, 10);
 
 	if ($petId < 1 || !in_array($hours, $allowedHours, true) || $mode < 1 || $mode > 3)
@@ -81,7 +130,7 @@ function tgStart($uid, $auto)
 		tgFail('7');
 	}
 
-	getLock($uid);
+	if (!tgAcquireLock($uid)) tgFail('服务器繁忙，请稍候再试！', true);
 	$user = $db->getOneRecord('SELECT tgtime,tgmax FROM player WHERE id='.$uid.' FOR UPDATE');
 	$pet = tgGetPet($uid, $petId, true);
 	if (!is_array($user) || !is_array($pet))
@@ -167,8 +216,9 @@ function giveprops($level)
 	return $reward;
 }
 
-$uid = intval($_SESSION['id']);
-$action = isset($_REQUEST['action']) ? strval($_REQUEST['action']) : '';
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('1');
+$action = (isset($_REQUEST['action']) && !is_array($_REQUEST['action'])) ? strval($_REQUEST['action']) : '';
 $allowedActions = array('getinfo', 'times', 'timesdo', 'change', 'tuoguan', 'offpets', 'offpet', 'show', 'auto');
 if ($uid < 1 || !in_array($action, $allowedActions, true))
 {
@@ -188,7 +238,7 @@ if (in_array($action, $mutatingActions, true))
 }
 
 $db = $_pm['mysql'];
-$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+$id = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0;
 
 if ($action == 'getinfo')
 {
@@ -219,8 +269,12 @@ if ($action == 'times')
 if ($action == 'timesdo')
 {
 	if ($id < 1) tgFail('数据有误！');
-	getLock($uid);
+	if (!tgAcquireLock($uid)) tgFail('服务器繁忙，请稍候再试！', true);
 	$pet = tgGetPet($uid, $id, true);
+	if (!$db->query('INSERT INTO player_ext(uid,bbshow) VALUES('.$uid.',5) ON DUPLICATE KEY UPDATE uid=uid'))
+	{
+		tgFail('2', true);
+	}
 	$playerExt = $db->getOneRecord('SELECT sj FROM player_ext WHERE uid='.$uid.' FOR UPDATE');
 	if (!is_array($pet) || !is_array($playerExt) || intval($pet['tgflag']) == 0 || intval($pet['muchang']) != 1)
 	{
@@ -282,7 +336,7 @@ if ($action == 'offpets')
 if ($action == 'offpet')
 {
 	if ($id < 1) tgFail('11');
-	getLock($uid);
+	if (!tgAcquireLock($uid)) tgFail('服务器繁忙，请稍候再试！', true);
 	$user = $db->getOneRecord('SELECT maxbag FROM player WHERE id='.$uid.' FOR UPDATE');
 	$pet = tgGetPet($uid, $id, true);
 	if (!is_array($user) || !is_array($pet) || intval($pet['tgflag']) == 0 || intval($pet['muchang']) != 1)
@@ -318,8 +372,30 @@ if ($action == 'offpet')
 		}
 	}
 
+	$propsMap = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
+	if (!is_array($propsMap)) $propsMap = array();
+	$rewardProps = array();
+	foreach ($rewards as $propsId => $sum)
+	{
+		$propsId = intval($propsId);
+		if (isset($propsMap[$propsId]) && is_array($propsMap[$propsId]))
+		{
+			$rewardProps[$propsId] = $propsMap[$propsId];
+		}
+		else
+		{
+			$rewardProps[$propsId] = $db->getOneRecord('SELECT sell,vary FROM props WHERE id='.$propsId);
+		}
+		if (!is_array($rewardProps[$propsId]))
+		{
+			tgFail('奖励物品配置错误，请联系管理员。', true);
+		}
+		$rewardProps[$propsId]['sell'] = isset($rewardProps[$propsId]['sell']) ? intval($rewardProps[$propsId]['sell']) : 0;
+		$rewardProps[$propsId]['vary'] = isset($rewardProps[$propsId]['vary']) ? intval($rewardProps[$propsId]['vary']) : 1;
+	}
+
 	$bagRows = $db->getRecords(
-		'SELECT id,pid,sums,sell,bsum,psum,pyb,zbing,zbpets FROM userbag WHERE uid='.$uid.' FOR UPDATE'
+		'SELECT id,pid,vary,sums,sell,bsum,psum,pyb,zbing,zbpets,cantrade FROM userbag WHERE uid='.$uid.' FOR UPDATE'
 	);
 	if (!is_array($bagRows)) $bagRows = array();
 	$usedSlots = 0;
@@ -328,9 +404,12 @@ if ($action == 'offpet')
 	{
 		if (intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0) $usedSlots++;
 		if (intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0 &&
+			intval($bagRow['vary']) == 1 &&
 			intval($bagRow['bsum']) == 0 &&
 			intval($bagRow['psum']) == 0 && intval($bagRow['pyb']) == 0 &&
-			intval($bagRow['zbpets']) == 0 && !isset($stackByPid[intval($bagRow['pid'])]))
+			intval($bagRow['zbpets']) == 0 &&
+			(!isset($bagRow['cantrade']) || intval($bagRow['cantrade']) == 0) &&
+			!isset($stackByPid[intval($bagRow['pid'])]))
 		{
 			$stackByPid[intval($bagRow['pid'])] = intval($bagRow['id']);
 		}
@@ -339,7 +418,10 @@ if ($action == 'offpet')
 	$newSlots = 0;
 	foreach ($rewards as $propsId => $sum)
 	{
-		if (!isset($stackByPid[$propsId])) $newSlots++;
+		if (!isset($stackByPid[$propsId]))
+		{
+			$newSlots += intval($rewardProps[$propsId]['vary']) == 1 ? 1 : intval($sum);
+		}
 	}
 	if ($usedSlots + $newSlots > intval($user['maxbag']))
 	{
@@ -350,14 +432,27 @@ if ($action == 'offpet')
 	{
 		if (isset($stackByPid[$propsId]))
 		{
-			$sql = 'UPDATE userbag SET sums=sums+'.intval($sum).' WHERE uid='.$uid.
-				' AND id='.$stackByPid[$propsId];
+			$sql = 'UPDATE userbag SET sums=COALESCE(sums,0)+'.intval($sum).' WHERE uid='.$uid.
+				' AND id='.$stackByPid[$propsId].' AND vary=1 AND COALESCE(sums,0) <= 2147483647-'.intval($sum).' AND zbing=0 AND (cantrade IS NULL OR cantrade=0)';
 		}
 		else
 		{
-			$sql = 'INSERT INTO userbag (pid,sums,uid) VALUES ('.intval($propsId).','.intval($sum).','.$uid.')';
+			$propsInfo = $rewardProps[$propsId];
+			if (intval($propsInfo['vary']) == 1)
+			{
+				$sql = 'INSERT INTO userbag (uid,pid,sell,vary,sums,stime) VALUES ('.$uid.','.intval($propsId).','.intval($propsInfo['sell']).',1,'.intval($sum).','.time().')';
+			}
+			else
+			{
+				$values = array();
+				for ($i = 0; $i < intval($sum); $i++)
+				{
+					$values[] = '('.$uid.','.intval($propsId).','.intval($propsInfo['sell']).','.intval($propsInfo['vary']).',1,'.time().')';
+				}
+				$sql = 'INSERT INTO userbag (uid,pid,sell,vary,sums,stime) VALUES '.implode(',', $values);
+			}
 		}
-		if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
+		if (!$db->query($sql) || mysql_affected_rows($db->getConn()) < 1)
 		{
 			tgFail('奖励物品发放失败，请重试！', true);
 		}
@@ -366,7 +461,10 @@ if ($action == 'offpet')
 	if ($exp > 0)
 	{
 		$task = new task();
-		$task->saveExps($exp, $id, $uid);
+		if($task->saveExps($exp, $id, $uid) === false)
+		{
+			tgFail('托管经验发放失败，请重试！', true);
+		}
 	}
 
 	$sql = 'UPDATE userbb SET tgflag=0,tgstime=0,tgtime=0,tgmes=0'.

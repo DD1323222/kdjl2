@@ -6,8 +6,11 @@
 
 
 <script language="javascript">
+var battleJoining = false;
 function addBattle(n)
 {
+	if (battleJoining) return false;
+	battleJoining = true;
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
@@ -27,14 +30,18 @@ function addBattle(n)
 						window.parent.$('gw').src='./function/BattleInfo_Mod.php';
 					}
 					window.parent.Alert(ret);
-    		 	},
-    		 	on404: function(t) {
-    		 	},
-    		 	onFailure: function(t) {
+					battleJoining = false;
+				},
+				on404: function(t) {
+					battleJoining = false;
+				},
+				onFailure: function(t) {
+					battleJoining = false;
     		 	},
     		 	asynchronous:true 
 			}
 	var ajax=new Ajax.Request('../function/AddBattleGate.php?n='+n, opt);
+	return false;
 }
 
 </script>
@@ -74,8 +81,8 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 	
 <div class="task_center"><img src="../new_images/ui/zc_07.jpg" width="164" height="319" border="0" usemap="#Map" />
   <map name="Map" id="Map">
-    <area shape="rect" coords="12,294,75,315" href="#"  onclick="window.parent.$('gw').src='./function/BattleBox_Mod.php';"/>
-    <area shape="rect" coords="87,292,157,315" href="#" onclick="$('activity_dis').style.display='block'";/>
+    <area shape="rect" coords="12,294,75,315" href="#" onclick="window.parent.$('gw').src='./function/BattleBox_Mod.php'; return false;" />
+    <area shape="rect" coords="87,292,157,315" href="#" onclick="$('activity_dis').style.display='block'; return false;" />
   </map>
 </div>
   <div class="task_right">
@@ -88,9 +95,9 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 <div id="zrpsum" style="font-size:12px; color:#4A3B00; font-weight:bold; width:123px; height:18px; position:absolute; top: 246px; left: 108px; text-align:center"> 阵营人数：#zrpsum#</div>
 <div id="zrpsum2" style="font-size:12px; color:#4A3B00; font-weight:bold; width:123px; height:18px; position:absolute; top: 247px; left: 564px; text-align:center"> 阵营人数：#aypsum#</div>
 
-<div id="apDiv1" style="width:153px;height:28px;background-image:url(../new_images/ui/icon15.png); background-color:transpanrent" onclick="addBattle(1)" style="cursor:pointer;">
+<div id="apDiv1" style="width:153px;height:28px;background-image:url(../new_images/ui/icon15.png);background-color:transparent;cursor:pointer;" onclick="addBattle(1)">
 </div>
-<div id="apDiv2" style="width:153px;height:28px;background-image:url(../new_images/ui/icon16.png); background-color:transpanrent"  onclick="addBattle(2)" style="cursor:pointer;">
+<div id="apDiv2" style="width:153px;height:28px;background-image:url(../new_images/ui/icon16.png);background-color:transparent;cursor:pointer;" onclick="addBattle(2)">
 </div>
 
 
@@ -105,4 +112,3 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 
 </body>
 </html>
-

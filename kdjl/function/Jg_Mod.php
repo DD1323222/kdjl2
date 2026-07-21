@@ -13,28 +13,33 @@ require_once('../config/config.game.php');
 
 secStart($_pm['mem']);
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$user		= $_pm['user']->getUserById($uid);
+if(!is_array($user)) $user = array('task' => 0);
+$taskid = isset($user['task']) ? intval($user['task']) : 0;
 
 
 //Word part.
 
-$taskword10= taskcheck($user['task'],10);
+$taskword10= taskcheck($taskid,10);
 
-$taskword11= taskcheck($user['task'],11);
+$taskword11= taskcheck($taskid,11);
 
-$taskword12= taskcheck($user['task'],12);
+$taskword12= taskcheck($taskid,12);
 
-$taskword13= taskcheck($user['task'],13);
+$taskword13= taskcheck($taskid,13);
 
 
 $_pm['mem']->memClose();
 
 //@Load template.
 $tn = $_game['template'] . 'tpl_jg.html';
+$shop = '';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#one#', // 12
 				 '#two#', //11
 				 '#three#', //10

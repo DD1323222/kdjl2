@@ -16,6 +16,10 @@
 session_start();
 
 require_once('../config/config.game.php');
+if(!kdjlCurrentUserIsAdmin())
+{
+	die();
+}
 
 $rows=$_pm['mysql']->getRecords('select id ,name from props');
 foreach($rows as $row)

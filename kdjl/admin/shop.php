@@ -2,7 +2,7 @@
 require_once(dirname(__FILE__) . '/_bootstrap.php');
 require_once(dirname(__FILE__) . '/_layout.php');
 
-$channel = isset($adminDefaultChannel) ? $adminDefaultChannel : (isset($_REQUEST['channel']) ? $_REQUEST['channel'] : 'yb');
+$channel = isset($adminDefaultChannel) ? $adminDefaultChannel : adminRequest('channel', 'yb');
 $shops = array(
 	'yb' => array('field' => 'yb', 'title' => '神秘商店管理', 'unit' => '元宝'),
 	'sj' => array('field' => 'sj', 'title' => '水晶商店管理', 'unit' => '水晶'),
@@ -16,7 +16,7 @@ $categoryNames = array(1 => '热卖', 2 => '进化合成', 3 => '宠物相关', 
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 {
-	$action = isset($_POST['action']) ? $_POST['action'] : '';
+	$action = adminPost('action');
 	if ($action === 'batch_take_down')
 	{
 		$selectedIds = adminSelectedIds(isset($_POST['selected_ids']) ? $_POST['selected_ids'] : array());
@@ -25,13 +25,23 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			adminSetFlash('error', '请先选择要下架的商品。');
 			adminRedirect($returnUrl);
 		}
-		$limited = adminGetLimitedConfig($adminDb);
-		$limitedItems = adminParseLimitedItems($limited['contents']);
+		$limited = array('Id' => 0, 'value2' => '', 'contents' => '');
+		$limitedItems = array();
 		$limitedChangedIds = array();
 		$idList = implode(',', $selectedIds);
-		$adminDb->query('START TRANSACTION');
+		if (!adminStartTransaction($adminDb))
+		{
+			adminSetFlash('error', '批量下架失败：无法开始数据库事务。');
+			adminRedirect($returnUrl);
+		}
 		$batchRows = $adminDb->getRecords("SELECT id,yb,sj,vip,zhekouyb FROM props WHERE id IN ({$idList}) FOR UPDATE");
 		$batchOk = is_array($batchRows);
+		$lockedLimited = $adminDb->getOneRecord("SELECT Id,value2,contents FROM welcome WHERE code='timelimitbuy' LIMIT 1 FOR UPDATE");
+		if (is_array($lockedLimited))
+		{
+			$limited = $lockedLimited;
+			$limitedItems = adminParseLimitedItems($limited['contents']);
+		}
 		$changed = 0;
 		if ($batchOk)
 		{
@@ -80,7 +90,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		adminRedirect($returnUrl);
 	}
 
-	$propId = isset($_POST['prop_id']) ? intval($_POST['prop_id']) : 0;
+	$propId = intval(adminPost('prop_id', 0));
 	$prop = $propId > 0 ? $adminDb->getOneRecord("SELECT * FROM props WHERE id={$propId} LIMIT 1") : false;
 	if (!is_array($prop))
 	{
@@ -90,9 +100,27 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 
 	if ($action === 'take_down')
 	{
-		$limited = adminGetLimitedConfig($adminDb);
-		$limitedItems = adminParseLimitedItems($limited['contents']);
-		$adminDb->query('START TRANSACTION');
+		$limited = array('Id' => 0, 'value2' => '', 'contents' => '');
+		$limitedItems = array();
+		if (!adminStartTransaction($adminDb))
+		{
+			adminSetFlash('error', '下架失败：无法开始数据库事务。');
+			adminRedirect($returnUrl);
+		}
+		$lockedProp = $adminDb->getOneRecord("SELECT * FROM props WHERE id={$propId} FOR UPDATE");
+		if (!is_array($lockedProp))
+		{
+			$adminDb->query('ROLLBACK');
+			adminSetFlash('error', '下架失败：道具记录不存在。');
+			adminRedirect($returnUrl);
+		}
+		$lockedLimited = $adminDb->getOneRecord("SELECT Id,value2,contents FROM welcome WHERE code='timelimitbuy' LIMIT 1 FOR UPDATE");
+		if (is_array($lockedLimited))
+		{
+			$limited = $lockedLimited;
+			$limitedItems = adminParseLimitedItems($limited['contents']);
+		}
+		$prop = $lockedProp;
 		if (!$adminDb->query("UPDATE props SET {$field}=0 WHERE id={$propId}"))
 		{
 			$adminDb->query('ROLLBACK');
@@ -127,15 +155,15 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		if ($limitedChanged) $adminMem->del('zhekou_' . $propId . '_num');
 		$cacheOk = adminRefreshPropsCache($adminDb, $adminMem);
 		if ($limitedChanged) $cacheOk = adminRefreshWelcomeCache($adminDb, $adminMem) && $cacheOk;
-		adminSetFlash($cacheOk ? 'success' : 'warning', '已从' . $shop['title'] . '下架 #' . $propId . ' ' . $prop['name'] . ($cacheOk ? '。' : '，但道具缓存刷新失败。'));
+		adminSetFlash($cacheOk ? 'success' : 'warning', '已从' . $shop['title'] . '下架 id=' . $propId . ' ' . $prop['name'] . ($cacheOk ? '。' : '，但道具缓存刷新失败。'));
 		adminRedirect($returnUrl);
 	}
 
 	if ($action === 'publish')
 	{
-		$price = isset($_POST['price']) ? intval($_POST['price']) : 0;
-		$category = isset($_POST['category']) ? intval($_POST['category']) : 0;
-		$sortSuffix = isset($_POST['sort_suffix']) ? $_POST['sort_suffix'] : '';
+		$price = intval(adminPost('price', 0));
+		$category = intval(adminPost('category', 0));
+		$sortSuffix = adminPost('sort_suffix');
 		if ($price < 1 || $price >= 99999)
 		{
 			adminSetFlash('error', '售价必须在 1 至 99998 之间。');
@@ -152,8 +180,8 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			adminSetFlash('error', '排序编号必须是 1 至 6 位数字。');
 			adminRedirect($returnUrl);
 		}
-		$start = adminNormalizeDate(isset($_POST['start_time']) ? $_POST['start_time'] : '');
-		$end = adminNormalizeDate(isset($_POST['end_time']) ? $_POST['end_time'] : '');
+		$start = adminNormalizeDate(adminPost('start_time'));
+		$end = adminNormalizeDate(adminPost('end_time'));
 		if ($start === false || $end === false || ($start !== '' && $end !== '' && $start > $end))
 		{
 			adminSetFlash('error', '上架时间范围无效。');
@@ -161,15 +189,25 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		}
 		$timelimit = $start === '' && $end === '' ? '' : $start . '|' . $end;
 		$timeSql = $adminDb->escape($timelimit);
-		$limited = adminGetLimitedConfig($adminDb);
-		$limitedItems = adminParseLimitedItems($limited['contents']);
-		$adminDb->query('START TRANSACTION');
+		$limited = array('Id' => 0, 'value2' => '', 'contents' => '');
+		$limitedItems = array();
+		if (!adminStartTransaction($adminDb))
+		{
+			adminSetFlash('error', '上架失败：无法开始数据库事务。');
+			adminRedirect($returnUrl);
+		}
 		$lockedProp = $adminDb->getOneRecord("SELECT * FROM props WHERE id={$propId} FOR UPDATE");
 		if (!is_array($lockedProp))
 		{
 			$adminDb->query('ROLLBACK');
 			adminSetFlash('error', '上架失败：道具记录不存在。');
 			adminRedirect($returnUrl);
+		}
+		$lockedLimited = $adminDb->getOneRecord("SELECT Id,value2,contents FROM welcome WHERE code='timelimitbuy' LIMIT 1 FOR UPDATE");
+		if (is_array($lockedLimited))
+		{
+			$limited = $lockedLimited;
+			$limitedItems = adminParseLimitedItems($limited['contents']);
 		}
 		$otherChannels = adminOtherActiveChannels($lockedProp, $channel, $limitedItems);
 		if (count($otherChannels) > 0 &&
@@ -205,14 +243,14 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		if ($limitedRemoved) $adminMem->del('zhekou_' . $propId . '_num');
 		$cacheOk = adminRefreshPropsCache($adminDb, $adminMem);
 		if ($limitedRemoved) $cacheOk = adminRefreshWelcomeCache($adminDb, $adminMem) && $cacheOk;
-		adminSetFlash($cacheOk ? 'success' : 'warning', '已上架 #' . $propId . ' ' . $prop['name'] . '，售价 ' . $price . ' ' . $shop['unit'] . ($cacheOk ? '。' : '，但道具缓存刷新失败。'));
+		adminSetFlash($cacheOk ? 'success' : 'warning', '已上架 id=' . $propId . ' ' . $prop['name'] . '，售价 ' . $price . ' ' . $shop['unit'] . ($cacheOk ? '。' : '，但道具缓存刷新失败。'));
 		adminRedirect($returnUrl);
 	}
 }
 
-$categoryFilter = isset($_GET['category']) ? intval($_GET['category']) : 0;
+$categoryFilter = intval(adminGet('category', 0));
 if (!isset($categoryNames[$categoryFilter])) $categoryFilter = 0;
-$scope = isset($_GET['scope']) && $_GET['scope'] === 'configured' ? 'configured' : 'current';
+$scope = adminGet('scope') === 'configured' ? 'configured' : 'current';
 $saleRows = $adminDb->getRecords("SELECT id,name,{$field} AS price,stime,timelimit,varyname FROM props WHERE stime>0 AND {$field}>0 AND {$field}<99999 ORDER BY stime,id");
 if (!is_array($saleRows)) $saleRows = array();
 $visibleRows = array();
@@ -227,7 +265,7 @@ foreach ($saleRows as $row)
 	$visibleRows[] = $row;
 }
 
-$search = isset($_GET['q']) ? trim($_GET['q']) : '';
+$search = trim(adminGet('q'));
 $searchRows = adminSearchProps($adminDb, $search);
 
 adminPageStart($shop['title'], $channel);

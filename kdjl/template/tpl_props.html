@@ -22,7 +22,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(..//../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:89px;display:block;}
@@ -58,7 +58,7 @@ ol,ul {list-style:none}
 .con{display:none;}
 #apDiv1 {position:absolute;	width:305px;height:20px;z-index:2;left: 361px;top: 4px;}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 </style>
 
 <script type="text/javascript">
@@ -162,7 +162,7 @@ var types=-1;
 			</div>
 			<div id="apDiv1">
     	<div class="task_dh02">
-			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">金币：#money#</div>
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">金币：<span id="mny">#money#</span></div>
 			
 		</div>
     </div>
@@ -220,7 +220,7 @@ var types=-1;
 			<div id="apDiv1">
     	<div class="task_dh02">
 
-			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">威望：#prestige#</div>
+			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div><div class="cion01">威望：<span id="prestigeNum">#prestige#</span></div>
 		</div>
     </div>
     </div>        
@@ -234,6 +234,22 @@ function copyWord(words)
 {
 	window.parent.$('baike_input').value=words;
 }
+function setShopBuyNumDefault()
+{
+	var ids = ['num','prenum'];
+	for(var i=0;i<ids.length;i++)
+	{
+		if($(ids[i])) $(ids[i]).value = 1;
+	}
+}
+function updateNumberText(id, delta)
+{
+	var obj = $(id);
+	if(!obj) return;
+	var val = parseInt(obj.innerHTML, 10);
+	if(isNaN(val)) val = 0;
+	obj.innerHTML = val + delta;
+}
 function sel(obj)
 {
 	if(selid!=0) selid.style.backgroundColor='#fff';
@@ -246,7 +262,7 @@ function sel(obj)
 	}
 	catch(e)
 	{
-		$('num').value = "";
+		setShopBuyNumDefault();
 	}
 }
 function buy(){
@@ -264,7 +280,7 @@ function buy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('您的金币不够！');
-					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
+					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');updateNumberText('mny',-sump);}//refresh bag.
 					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
     		 	},
@@ -295,7 +311,7 @@ function prebuy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('您的威望不够！');
-					else if(n==0) {ajaxfun2();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}//refresh bag.
+					else if(n==0) {ajaxfun2();window.parent.Alert('买入物品成功!');updateNumberText('prestigeNum',-sump);}//refresh bag.
 					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
     		 	},
@@ -353,7 +369,7 @@ function sell(){
     		 	method: 'get',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
-					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');updateNumberText('mny',sump);}
 					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
 					else window.parent.Alert('卖出失败!');
     		 	},

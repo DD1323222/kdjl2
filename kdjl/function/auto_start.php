@@ -9,42 +9,29 @@
 */
 $czlxz = 65;
 require_once('../config/config.game.php');
-$props = unserialize($_pm['mem']->get('db_props'));
-$sl_fhtime = $_pm['mysql'] -> getOneRecord(" SELECT sums FROM userbag WHERE pid = 4038 AND uid =  {$_SESSION['id']}");
-$sl_fhtime = empty($sl_fhtime)?0:$sl_fhtime['sums'];
-$res = $_pm['mysql'] -> getOneRecord("SELECT F_saolei_points FROM player_ext WHERE uid = ".$_SESSION['id']);
-$configWelcome = unserialize($_pm['mem']->get('db_welcome'));
+require_once(dirname(__FILE__).'/saolei_common.php');
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$sl_fhtime = $_pm['mysql'] -> getOneRecord(" SELECT SUM(sums) AS sums
+                                               FROM userbag
+                                              WHERE pid = 4038
+                                                AND uid = {$uid}
+                                                AND sums > 0
+                                                AND zbing = 0
+                                                AND (cantrade IS NULL OR cantrade<>3)");
+$sl_fhtime = empty($sl_fhtime['sums'])?0:intval($sl_fhtime['sums']);
+$res = $_pm['mysql'] -> getOneRecord("SELECT F_saolei_points FROM player_ext WHERE uid = ".$uid);
+if(!is_array($res)) $res = array('F_saolei_points'=>1);
+if(!isset($res['F_saolei_points']) || intval($res['F_saolei_points']) < 1) $res['F_saolei_points'] = 1;
 $sl_pic = '<table id="leiqu" width="283" height="283"><tr>';
 
-$tj01 = false;	//条件1,是否扫过1次,默认没有且扫雷成长满足要求
-$tj02 = false;	//条件2,是否使用过扫雷卡,默认没有
-$today_sl = unserialize($_pm['mem']->get('today_sl_user'));
-$today_sl_ticket_use = unserialize($_pm['mem']->get('today_is_use_ticket'));
-foreach($today_sl as $info)
-{
-	if($info == $_SESSION['id'])	//满足已经扫过1次
-	{
-		$tj01 = true;
-	}
-}
-$czl = $_pm['mysql'] -> getOneRecord("SELECT userbb.czl FROM userbb,player WHERE player.id = '".$_SESSION['id']."' AND player.mbid = userbb.id");
+$tj01 = slTodayUserHas($_pm['mem'], $uid);
+$tj02 = slTodayTicketHas($_pm['mem'], $uid);
+$czl = $_pm['mysql'] -> getOneRecord("SELECT userbb.czl FROM userbb,player WHERE player.id = '".$uid."' AND player.mbid = userbb.id AND userbb.uid = player.id");
+if(!is_array($czl)) $czl = array('czl'=>0);
 if(intval($czl['czl']) < $czlxz)
 {
 	$tj01 = true;
-}
-if(!is_array($today_sl_ticket_use))
-{
-	$tj02 = false;
-}
-else
-{
-	foreach($today_sl_ticket_use as $info)
-	{
-		if($info == $_SESSION['id'])	//满足使用过
-		{
-			$tj02 = true;
-		}
-	}
 }
 if($tj01 && !$tj02 && $res['F_saolei_points'] == 1)
 {

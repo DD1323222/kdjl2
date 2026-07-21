@@ -33,7 +33,7 @@ function check_mysql_db_connection()
     if ($link == false) {
         $status = false;
     } else {
-        $status = @mysql_select_db(MYSQL_DB_NAME);
+        $status = @mysql_select_db(MYSQL_DB_NAME, $link);
         mysql_close($link);
     }
 

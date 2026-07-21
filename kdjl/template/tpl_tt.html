@@ -493,20 +493,7 @@ function startFatting(bbid,level,lid,obj){
 
 function Setbbs(bbid,level,lid,obj)	// Get pets.
 {
-	var mbid;
-	var opt = {
-					method: 'get',
-					 onSuccess: function(t) {
-						mbid = parseInt(t.responseText);
-					},
-					on404: function(t) {
-					},
-					onFailure: function(t) {
-					},
-					asynchronous:true        
-			}
-	var ajax=new Ajax.Request('/function/mapGate.php?type=6', opt);
-	if(bbid == mbid)
+	if(bbid == bid)
 	{
 		return;
 	}

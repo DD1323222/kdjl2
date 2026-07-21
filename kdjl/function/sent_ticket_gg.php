@@ -1,30 +1,62 @@
 <?php
+@session_start();
+require_once('../config/config.game.php');
+if(!kdjlCurrentUserIsAdmin())
+{
+	header('HTTP/1.1 404 Not Found');
+	exit;
+}
 require_once('../kernel/socketmsg.v1.php');
 require_once('../socketChat/config.chat.php');
 $s=new socketmsg();
+$gg = 0;
+$word = '';
+$thing_info_best = '';
+$thing_info_one = '';
+$thing_info_two = '';
+if(!isset($_POST['best'])) $_POST['best'] = '0,0|';
+if(!isset($_POST['one'])) $_POST['one'] = '0,0|';
+if(!isset($_POST['two'])) $_POST['two'] = '0,0|';
+if(!isset($_POST['null'])) $_POST['null'] = 0;
+if(!isset($_POST['all'])) $_POST['all'] = 0;
+if(!isset($_POST['nickname'])) $_POST['nickname'] = '';
+if(!isset($_POST['area'])) $_POST['area'] = '';
+if(!isset($_POST['props'])) $_POST['props'] = '';
+if(!isset($_POST['Award'])) $_POST['Award'] = 0;
+$ticketScalarKeys = array('best','one','two','null','all','nickname','area','props','Award','type');
+foreach($ticketScalarKeys as $ticketScalarKey)
+{
+	if(isset($_POST[$ticketScalarKey]) && is_array($_POST[$ticketScalarKey])) $_POST[$ticketScalarKey] = '';
+}
 if(isset($_POST['type']))
 {
 	$best_arr = explode(',',$_POST['best']);
+	if(!isset($best_arr[1])) $best_arr[1] = '0|';
 	$thing = explode('-',$best_arr[1]);
 	for($i = 0; $i<count($thing);$i++)
 	{
 		$mid_arr = explode('|',$thing[$i]);
+		if(!isset($mid_arr[1])) $mid_arr[1] = '';
 		$thing_info_best .= '<a>'.$mid_arr[1]."</a>,";
 	}
 	$thing_info_best = substr($thing_info_best,0,-1);
 	$one_arr = explode(',',$_POST['one']);
+	if(!isset($one_arr[1])) $one_arr[1] = '0|';
 	$thing = explode('-',$one_arr[1]);
 	for($i = 0; $i<count($thing);$i++)
 	{
 		$mid_arr = explode('|',$thing[$i]);
+		if(!isset($mid_arr[1])) $mid_arr[1] = '';
 		$thing_info_one .= '<a>'.$mid_arr[1]."</a>,";
 	}
-	$thing_info_one = substr($thing_info_one,0,-1);	
+	$thing_info_one = substr($thing_info_one,0,-1);
 	$two_arr = explode(',',$_POST['two']);
+	if(!isset($two_arr[1])) $two_arr[1] = '0|';
 	$thing = explode('-',$two_arr[1]);
 	for($i = 0; $i<count($thing);$i++)
 	{
 		$mid_arr = explode('|',$thing[$i]);
+		if(!isset($mid_arr[1])) $mid_arr[1] = '';
 		$thing_info_two .= '<a>'.$mid_arr[1]."</a>,";
 	}
 	$thing_info_two = substr($thing_info_two,0,-1);
@@ -50,9 +82,9 @@ if(isset($_POST['type']))
 }
 else
 {
-	$nickname = $_POST['nickname'];
-	$area = $_POST['area'];
-	$get_props = $_POST['props'];
+	$nickname = (isset($_POST['nickname']) && !is_array($_POST['nickname'])) ? $_POST['nickname'] : '';
+	$area = (isset($_POST['area']) && !is_array($_POST['area'])) ? $_POST['area'] : '';
+	$get_props = (isset($_POST['props']) && !is_array($_POST['props'])) ? $_POST['props'] : '';
 	switch($_POST['Award'])
 	{
 		case 1 :
@@ -90,9 +122,9 @@ else
 		}
 	}
 }
-if($gg == 1)
+if($gg == 1 && $word != '')
 {
-	$word = iconv('gbk','utf-8',$word);
+	$word = kdjlSafeIconv('gbk','utf-8',$word);
 	$r = $s->sendMsg($word);
 }
 ?>

@@ -23,7 +23,7 @@ a:active,a:focus{outline:none;}
 .icon{display:inline-block;vertical-align:middle;height:18px;width:16px;background:url(/images/trade/icon_wen.gif) no-repeat;}
 .icon-wen{background-position:0 0;}
 .navigation{background:url(/images/trade/nav_bg.gif) no-repeat; width:975px; height:36px}
-.nav-tabs a{text-decoration:none;cursor:hand;}
+.nav-tabs a{text-decoration:none;cursor:pointer;}
 .nav-tabs li{float:left;display:inline;padding-left:10px;padding-right:10px;}
 .nav-tabs li a,.nav-tabs li span{display:block;}
 .nav-tabs li a.on,.nav-tabs li a.on span,.nav-tabs li a:hover,.nav-tabs li a:hover span{background:url(/images/trade/nav_sprite.gif) no-repeat; width:80px; height:28px;font-size:14px; font-weight:bold;}
@@ -103,7 +103,7 @@ p.tags a:hover{color:#fff;text-decoration:none;}
 .list1 li {padding-left: 12px; line-height: 25px; text-align: left;}
 #newtitle {border-bottom: #AACCEF 1px solid; height: 29px; width:208px;}
 #new_title2 {font-weight: normal; font-size: 12px; float: right; font-family: "宋体"; height: 27px;}
-#new_title2 li {border: #AACCEF 1px solid; padding-right: 11px; padding-left: 11px; z-index: 100; float: left; padding-bottom: 0px;line-height: 23px; margin-right: 3px; padding-top: 0px;position: relative; top: 5px; height: 23px; text-align: center;cursor:hands;}
+#new_title2 li {border: #AACCEF 1px solid; padding-right: 11px; padding-left: 11px; z-index: 100; float: left; padding-bottom: 0px;line-height: 23px; margin-right: 3px; padding-top: 0px;position: relative; top: 5px; height: 23px; text-align: center;cursor:pointer;}
 #new_title2 li.on {font-weight: bold; border-bottom: #fff 1px solid; background-color: #fff; cursor:pointer;}
 #paihangb_title2 {font-weight: normal; font-size: 12px; float: right; font-family: "宋体"; height: 27px;}
 #paihangb_title2 li {border: #AACCEF 1px solid; padding-right: 11px; padding-left: 11px; z-index: 100; float: left; padding-bottom: 0px;line-height: 23px; margin-right: 3px; padding-top: 0px;position: relative; top: 5px; height: 23px; text-align: center;}
@@ -125,7 +125,7 @@ p.tags a:hover{color:#fff;text-decoration:none;}
 .jieshu-body th { height:22px; line-height:22px;}
 .jieshu-body td { height:20px; line-height:20px;}
 #jieshu_title2 {font-weight: normal; font-size: 12px; float: right; font-family: "宋体"; height: 27px;}
-#jieshu_title2 li {border: #AACCEF 1px solid; padding-right: 11px; padding-left: 11px; z-index: 100; float: left; padding-bottom: 0px;line-height: 23px; margin-right: 3px; padding-top: 0px;position: relative; top: 5px; height: 23px; text-align: center;cursor:hands;}
+#jieshu_title2 li {border: #AACCEF 1px solid; padding-right: 11px; padding-left: 11px; z-index: 100; float: left; padding-bottom: 0px;line-height: 23px; margin-right: 3px; padding-top: 0px;position: relative; top: 5px; height: 23px; text-align: center;cursor:pointer;}
 #jieshu_title2 li.on {font-weight: bold; border-bottom: #fff 1px solid; background-color: #fff; cursor:pointer;}
 #jieshu_content{ padding-top:4px;}
 #jieshu_content th { height:22px; line-height:22px;}

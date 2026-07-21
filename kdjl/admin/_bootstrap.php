@@ -6,7 +6,28 @@ $adminMem = $_pm['mem'];
 
 function adminH($value)
 {
+	if (is_array($value)) $value = '';
 	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function adminScalar($value, $default = '')
+{
+	return is_array($value) ? $default : $value;
+}
+
+function adminGet($key, $default = '')
+{
+	return isset($_GET[$key]) && !is_array($_GET[$key]) ? $_GET[$key] : $default;
+}
+
+function adminPost($key, $default = '')
+{
+	return isset($_POST[$key]) && !is_array($_POST[$key]) ? $_POST[$key] : $default;
+}
+
+function adminRequest($key, $default = '')
+{
+	return isset($_REQUEST[$key]) && !is_array($_REQUEST[$key]) ? $_REQUEST[$key] : $default;
 }
 
 function adminSetFlash($type, $message)
@@ -25,6 +46,11 @@ function adminRedirect($url)
 {
 	header('Location: ' . $url);
 	exit;
+}
+
+function adminStartTransaction($db)
+{
+	return $db->query('START TRANSACTION') !== false;
 }
 
 function adminNextFreeNumericId($rows, $field)
@@ -48,8 +74,10 @@ function adminNextFreeNumericId($rows, $field)
 
 function adminRefreshPropsCache($db, $mem)
 {
+	$oldRows = kdjlMemArrayValue($mem, 'db_props');
 	$rows = $db->getRecords('SELECT * FROM props ORDER BY stime');
 	if (!is_array($rows)) return false;
+	kdjlInvalidateChangedBaseConfigRows($mem, 'props', $oldRows, $rows);
 	$byId = array();
 	$byName = array();
 	foreach ($rows as $row)
@@ -65,23 +93,32 @@ function adminRefreshPropsCache($db, $mem)
 
 function adminRefreshGpcCache($db, $mem, $changedIds)
 {
+	$oldRows = kdjlMemArrayValue($mem, 'db_gpc');
 	$rows = $db->getRecords('SELECT * FROM gpc ORDER BY id');
 	if (!is_array($rows)) return false;
+	kdjlInvalidateChangedBaseConfigRows($mem, 'gpc', $oldRows, $rows, $changedIds);
 	$byId = array();
 	foreach ($rows as $row) $byId[intval($row['id'])] = $row;
 	$ok = $mem->set(array('k' => 'db_gpc', 'v' => $rows));
 	$ok = $mem->set(array('k' => 'db_gpcid', 'v' => $byId)) && $ok;
-	if (is_array($changedIds))
-	{
-		foreach ($changedIds as $id) $mem->del('base_gpc_info_' . intval($id));
-	}
 	return $ok;
 }
 
 function adminRefreshWelcomeCache($db, $mem)
 {
+	$oldRows = kdjlMemArrayValue($mem, 'db_welcome');
 	$rows = $db->getRecords('SELECT * FROM welcome ORDER BY Id');
-	return is_array($rows) ? $mem->set(array('k' => 'db_welcome', 'v' => $rows)) : false;
+	if (!is_array($rows)) return false;
+	kdjlInvalidateChangedBaseConfigRows($mem, 'welcome', $oldRows, $rows);
+	$byCode = array();
+	foreach ($rows as $row)
+	{
+		if (!isset($row['code'])) continue;
+		$byCode[$row['code']] = isset($row['contents']) ? $row['contents'] : '';
+	}
+	$ok = $mem->set(array('k' => 'db_welcome', 'v' => $rows));
+	$ok = $mem->set(array('k' => 'db_welcome1', 'v' => $byCode)) && $ok;
+	return $ok;
 }
 
 function adminRefreshTimeConfigCache($db, $mem)
@@ -97,27 +134,19 @@ function adminRefreshTimeConfigCache($db, $mem)
 
 function adminRefreshTaskCache($db, $mem, $changedIds = array())
 {
+	$oldRows = kdjlMemArrayValue($mem, MEM_TASK_KEY);
 	$rows = $db->getRecords('SELECT * FROM task ORDER BY id');
 	if (!is_array($rows)) return false;
+	kdjlInvalidateChangedBaseConfigRows($mem, 'task', $oldRows, $rows, $changedIds);
 	$byId = array();
 	foreach ($rows as $row) $byId[intval($row['id'])] = $row;
 	$ok = $mem->set(array('k' => MEM_TASK_KEY, 'v' => $byId));
-	if (is_array($changedIds))
-	{
-		$cleared = array();
-		foreach ($changedIds as $id)
-		{
-			$id = intval($id);
-			if ($id < 1 || isset($cleared[$id])) continue;
-			$mem->del('base_task_info_' . $id);
-			$cleared[$id] = true;
-		}
-	}
 	return $ok;
 }
 
 function adminNormalizeClockInput($value)
 {
+	if (is_array($value)) return false;
 	$minutes = clockTimeToMinutes($value);
 	if ($minutes === false) return false;
 	return sprintf('%02d:%02d', floor($minutes / 60), $minutes % 60);
@@ -132,11 +161,17 @@ function adminClockInput($value)
 function adminPostedDays($value)
 {
 	if (!is_array($value)) return array();
-	return weeklyDayList(implode('|', $value));
+	$days = array();
+	foreach ($value as $day)
+	{
+		if (!is_array($day)) $days[] = $day;
+	}
+	return weeklyDayList(implode('|', $days));
 }
 
 function adminNormalizeDate($value)
 {
+	if (is_array($value)) return false;
 	$value = trim((string)$value);
 	if ($value === '') return '';
 	if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/', $value, $parts)) return false;
@@ -146,6 +181,7 @@ function adminNormalizeDate($value)
 
 function adminCompactDateInput($value)
 {
+	if (is_array($value)) return '';
 	if (!preg_match('/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/', trim((string)$value), $parts)) return '';
 	return $parts[1] . '-' . $parts[2] . '-' . $parts[3] . 'T' . $parts[4] . ':' . $parts[5];
 }
@@ -158,12 +194,14 @@ function adminSqlDateTime($compact)
 
 function adminSqlDateInput($value)
 {
+	if (is_array($value)) return '';
 	$timestamp = strtotime(trim((string)$value));
 	return $timestamp === false ? '' : date('Y-m-d\\TH:i', $timestamp);
 }
 
 function adminScheduleState($timelimit)
 {
+	if (is_array($timelimit)) return 'active';
 	$timelimit = trim((string)$timelimit);
 	if ($timelimit === '' || $timelimit === '0') return 'active';
 	$parts = explode('|', $timelimit);
@@ -177,6 +215,7 @@ function adminScheduleState($timelimit)
 
 function adminStoredSchedule($timelimit)
 {
+	if (is_array($timelimit)) return '';
 	$timelimit = trim((string)$timelimit);
 	return $timelimit === '0' ? '' : $timelimit;
 }
@@ -189,15 +228,18 @@ function adminSalePriceActive($price)
 
 function adminOtherActiveChannels($row, $currentChannel, $limitedItems)
 {
-	if (!is_array($row) || adminCategory($row['stime']) === 0) return array();
+	$stime = (is_array($row) && isset($row['stime'])) ? $row['stime'] : 0;
+	if (!is_array($row) || adminCategory($stime) === 0) return array();
 	$labels = array('yb' => '神秘商店', 'sj' => '水晶商店', 'vip' => 'VIP商城');
 	$result = array();
 	foreach ($labels as $field => $label)
 	{
-		if ($field !== $currentChannel && adminSalePriceActive($row[$field])) $result[] = $label;
+		$price = isset($row[$field]) ? $row[$field] : 0;
+		if ($field !== $currentChannel && adminSalePriceActive($price)) $result[] = $label;
 	}
-	$id = intval($row['id']);
-	if ($currentChannel !== 'limit' && adminSalePriceActive($row['zhekouyb']) && isset($limitedItems[$id]))
+	$id = isset($row['id']) ? intval($row['id']) : 0;
+	$limitPrice = isset($row['zhekouyb']) ? $row['zhekouyb'] : 0;
+	if ($id > 0 && $currentChannel !== 'limit' && adminSalePriceActive($limitPrice) && isset($limitedItems[$id]))
 	{
 		$result[] = '抢购商城';
 	}
@@ -220,6 +262,7 @@ function adminSortSuffix($stime)
 
 function adminStoreCode($category, $sortSuffix, $db)
 {
+	if (is_array($sortSuffix)) $sortSuffix = '';
 	$sortSuffix = trim((string)$sortSuffix);
 	if ($sortSuffix === '')
 	{
@@ -234,6 +277,7 @@ function adminStoreCode($category, $sortSuffix, $db)
 function adminParseLimitedItems($contents)
 {
 	$items = array();
+	if (is_array($contents)) $contents = '';
 	foreach (explode(',', (string)$contents) as $entry)
 	{
 		$parts = explode(':', trim($entry));
@@ -263,11 +307,13 @@ function adminGetLimitedConfig($db)
 
 function adminSaveLimitedConfig($db, $config, $value2, $items)
 {
+	if (!is_array($config)) $config = array();
 	$valueSql = $db->escape($value2);
 	$contentsSql = $db->escape(adminBuildLimitedItems($items));
-	if (intval($config['Id']) > 0)
+	$configId = isset($config['Id']) ? intval($config['Id']) : 0;
+	if ($configId > 0)
 	{
-		return $db->query("UPDATE welcome SET value2='{$valueSql}',contents='{$contentsSql}' WHERE Id=" . intval($config['Id']));
+		return $db->query("UPDATE welcome SET value2='{$valueSql}',contents='{$contentsSql}' WHERE Id=" . $configId);
 	}
 	return $db->query("INSERT INTO welcome(code,value2,contents) VALUES('timelimitbuy','{$valueSql}','{$contentsSql}')");
 }
@@ -317,10 +363,16 @@ function adminFuzzyMatch($term, $id, $name)
 
 function adminPetMap($db)
 {
-	$rows = $db->getRecords('SELECT id,name,remakelevel,remakeid,remakepid FROM bb ORDER BY id');
+	$rows = $db->getRecords('SELECT id,name,wx,remakelevel,remakeid,remakepid FROM bb ORDER BY id');
 	$map = array();
 	if (is_array($rows)) foreach ($rows as $row) $map[intval($row['id'])] = $row;
 	return $map;
+}
+
+function adminIsGodPetId($pets, $id)
+{
+	$id = intval($id);
+	return $id > 0 && isset($pets[$id]) && intval($pets[$id]['wx']) == 6;
 }
 
 function adminPropsMap($db)
@@ -383,6 +435,7 @@ function adminSelectedIds($value)
 	if (!is_array($value)) return $ids;
 	foreach ($value as $id)
 	{
+		if (is_array($id)) continue;
 		$id = intval($id);
 		if ($id > 0) $ids[$id] = $id;
 	}

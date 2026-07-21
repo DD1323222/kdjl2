@@ -1,349 +1,260 @@
 <?php
 /**
-*@Version: %version%
-*@Copyright: %copyright%
-*@Author: 谭炜
-
-*@Write Date: 2008.09.12
-*@Update Date: 2008.09.12
-*@Usage: 装备强化
-*@Note: NO Add magic props.
-  本模块主要功能：
-  	 装备强化
-*/
+ * Equipment strengthening settlement.
+ */
 require_once('../config/config.game.php');
+require_once('../sec/dblock_fun.php');
 
 secStart($_pm['mem']);
 
-$srctime = 5;
-#################增加一个间隔时间################
-$time = $_SESSION['tgtimes'.$_SESSION['id']];
-if(empty($time))
-{	
-	$_SESSION['tgtimes'.$_SESSION['id']] = time();
+$zbStrengthUserLocked = false;
+$zbStrengthItemLocked = false;
+$zbStrengthItemId = 0;
+$zbStrengthTransactionActive = false;
+$zbStrengthPendingLogId = 0;
+$zbStrengthCommitted = false;
+
+function zbStrengthRelease()
+{
+	global $_pm, $zbStrengthUserLocked, $zbStrengthItemLocked, $zbStrengthItemId,
+		$zbStrengthTransactionActive, $zbStrengthPendingLogId, $zbStrengthCommitted;
+	if ($zbStrengthTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$zbStrengthTransactionActive = false;
+	}
+	if (!$zbStrengthCommitted && intval($zbStrengthPendingLogId) > 0)
+	{
+		$_pm['mysql']->query('DELETE FROM gamelog WHERE id='.intval($zbStrengthPendingLogId).' AND vary=5');
+		$zbStrengthPendingLogId = 0;
+	}
+	if ($zbStrengthItemLocked)
+	{
+		unLockItem($zbStrengthItemId);
+		$zbStrengthItemLocked = false;
+	}
+	if ($zbStrengthUserLocked && function_exists('realseLock'))
+	{
+		realseLock();
+		$zbStrengthUserLocked = false;
+	}
+}
+
+function zbStrengthFail($code)
+{
+	zbStrengthRelease();
+	die(strval($code));
+}
+
+register_shutdown_function('zbStrengthRelease');
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$pid = (isset($_REQUEST['pid']) && !is_array($_REQUEST['pid'])) ? intval($_REQUEST['pid']) : 0;
+$pids = (isset($_REQUEST['pids']) && !is_array($_REQUEST['pids'])) ? intval($_REQUEST['pids']) : 0;
+$bagId = (isset($_REQUEST['bid']) && !is_array($_REQUEST['bid'])) ? intval($_REQUEST['bid']) : 0;
+if ($uid < 1 || $pid < 1 || $pids < 0 || $bagId < 1) die('0');
+
+$propsById = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
+if (!is_array($propsById) || !isset($propsById[$pid]) || !is_array($propsById[$pid])) die('0');
+$equipment = $propsById[$pid];
+if (!isset($equipment['varyname']) || intval($equipment['varyname']) != 9 ||
+	!isset($equipment['plusflag']) || intval($equipment['plusflag']) != 1)
+{
+	die('0');
+}
+$requiredPid = isset($equipment['pluspid']) ? intval($equipment['pluspid']) : 0;
+$plusValues = isset($equipment['plusget']) ? explode(',', strval($equipment['plusget'])) : array();
+$maxStrengthLevel = min(is_array($harden) ? count($harden) : 0, count($plusValues));
+if ($requiredPid < 1 || $maxStrengthLevel < 1) die('0');
+
+$auxiliary = false;
+$auxiliaryEffect = '';
+if ($pids > 0)
+{
+	if (!isset($propsById[$pids]) || !is_array($propsById[$pids]) ||
+		!isset($propsById[$pids]['varyname']) || intval($propsById[$pids]['varyname']) != 11)
+	{
+		die('1');
+	}
+	$auxiliary = $propsById[$pids];
+	$auxiliaryEffect = isset($auxiliary['effect']) ? trim(strval($auxiliary['effect'])) : '';
+	if (!preg_match('/^(suc:[0-9]+|100suc:[0-9]+,[0-9]+|baodi:-?[0-9]+|baodeng:[0-9]+)$/', $auxiliaryEffect))
+	{
+		die('1');
+	}
+}
+
+$timerKey = 'tgtimes'.$uid;
+$now = time();
+$lastTime = isset($_SESSION[$timerKey]) ? intval($_SESSION[$timerKey]) : 0;
+if ($lastTime > 0 && $now - $lastTime < 5) die('11');
+$_SESSION[$timerKey] = $now;
+
+$zbStrengthItemId = $pid;
+if (lockItem($zbStrengthItemId) === false) die('已经在处理了！');
+$zbStrengthItemLocked = true;
+if (!is_array(getLock($uid))) zbStrengthFail('11');
+$zbStrengthUserLocked = true;
+$zbStrengthTransactionActive = true;
+
+$db = $_pm['mysql'];
+$player = $db->getOneRecord('SELECT money FROM player WHERE id='.$uid.' FOR UPDATE');
+$target = $db->getOneRecord(
+	'SELECT id,pid,plus_tms_eft AS plus_tmes_eft FROM userbag WHERE id='.$bagId.' AND uid='.$uid.
+	' AND pid='.$pid.' AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) FOR UPDATE'
+);
+$requiredItem = $db->getOneRecord(
+	'SELECT id FROM userbag WHERE uid='.$uid.' AND pid='.$requiredPid.
+	' AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) ORDER BY id LIMIT 1 FOR UPDATE'
+);
+if (!is_array($player) || !is_array($target)) zbStrengthFail('0');
+if (!is_array($requiredItem)) zbStrengthFail('4');
+
+$auxiliaryItem = false;
+if ($pids > 0)
+{
+	$auxiliaryItem = $db->getOneRecord(
+		'SELECT id FROM userbag WHERE uid='.$uid.' AND pid='.$pids.
+		' AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) ORDER BY id LIMIT 1 FOR UPDATE'
+	);
+	if (!is_array($auxiliaryItem)) zbStrengthFail('1');
+}
+
+$currentIndex = -1;
+$currentValue = isset($target['plus_tmes_eft']) ? trim(strval($target['plus_tmes_eft'])) : '';
+if ($currentValue !== '' && $currentValue !== '0')
+{
+	$currentParts = explode(',', $currentValue);
+	if (count($currentParts) < 2 || !preg_match('/^[0-9]+$/', trim($currentParts[0]))) zbStrengthFail('0');
+	$currentIndex = intval($currentParts[0]);
+	if ($currentIndex < 0 || $currentIndex >= $maxStrengthLevel) zbStrengthFail('0');
+}
+$attemptIndex = $currentIndex + 1;
+if ($attemptIndex >= $maxStrengthLevel) zbStrengthFail('15');
+$attemptPlusValue = trim($plusValues[$attemptIndex]);
+if (!preg_match('/^-?[0-9]+(?:\.[0-9]+)?%?(?:rn)?$/', $attemptPlusValue)) zbStrengthFail('0');
+$attemptPlusValue = preg_replace('/rn$/', '', $attemptPlusValue);
+
+$strengthConfig = explode(',', $harden[$attemptIndex]);
+if (count($strengthConfig) < 2 || !is_numeric($strengthConfig[0]) || !is_numeric($strengthConfig[1])) zbStrengthFail('0');
+$successThreshold = intval($strengthConfig[0]);
+$moneyCost = intval($strengthConfig[1]);
+if ($successThreshold < 0 || $successThreshold > 10 || $moneyCost < 0) zbStrengthFail('0');
+
+$protectMode = '';
+if ($pids > 0)
+{
+	$effectParts = explode(':', $auxiliaryEffect, 2);
+	if ($effectParts[0] == 'suc')
+	{
+		$successThreshold += intval($effectParts[1]);
+	}
+	else if ($effectParts[0] == '100suc')
+	{
+		$effectValues = explode(',', $effectParts[1]);
+		$guaranteedMax = isset($effectValues[1]) ? intval($effectValues[1]) : 0;
+		if ($attemptIndex < $guaranteedMax) $successThreshold = 10;
+	}
+	else if ($effectParts[0] == 'baodi')
+	{
+		$protectMode = 'baodi';
+	}
+	else if ($effectParts[0] == 'baodeng')
+	{
+		$protectMode = 'baodeng';
+	}
+}
+
+$success = rand(1, 10) <= $successThreshold;
+$equipmentName = isset($equipment['name']) ? $equipment['name'] : '';
+$log = '装备包裹ID：'.$bagId.',名字：'.$equipmentName.'-强化等级：'.($currentIndex < 0 ? 0 : $currentValue);
+
+if ($success)
+{
+	if (intval($player['money']) < $moneyCost) zbStrengthFail('3');
+	if ($moneyCost > 0 && (!$db->query(
+		'UPDATE player SET money=money-'.$moneyCost.' WHERE id='.$uid.' AND money>='.$moneyCost
+	) || mysql_affected_rows($db->getConn()) != 1))
+	{
+		zbStrengthFail('3');
+	}
+	$newStrength = $attemptIndex.','.$attemptPlusValue;
+	if (!$db->query('UPDATE userbag SET plus_tms_eft='.$db->quote($newStrength).
+		' WHERE id='.$bagId.' AND uid='.$uid.' AND pid='.$pid.' AND sums>0 AND zbing=0') ||
+		mysql_affected_rows($db->getConn()) != 1)
+	{
+		zbStrengthFail('0');
+	}
+	$resultCode = 10;
 }
 else
 {
-	$nowtime = time();
-	$ctime = $nowtime - $time;
-	if($ctime < $srctime)
+	if ($protectMode == 'baodi')
 	{
-		die("11");//没有达到间隔时间
+		if ($currentIndex >= 1) $newStrength = ($currentIndex - 1).','.$plusValues[$currentIndex - 1];
+		else $newStrength = '';
+		if (!$db->query('UPDATE userbag SET plus_tms_eft='.$db->quote($newStrength).
+			' WHERE id='.$bagId.' AND uid='.$uid.' AND pid='.$pid.' AND sums>0 AND zbing=0'))
+		{
+			zbStrengthFail('0');
+		}
 	}
-	else
+	else if ($protectMode != 'baodeng')
 	{
-		$_SESSION['tgtimes'.$_SESSION['id']] = time();
+		if (!$db->query('DELETE FROM userbag WHERE id='.$bagId.' AND uid='.$uid.
+			' AND pid='.$pid.' AND sums>0 AND zbing=0') || mysql_affected_rows($db->getConn()) != 1)
+		{
+			zbStrengthFail('0');
+		}
 	}
+	if (!$db->query('INSERT INTO gamelog(ptime,seller,buyer,pnote,vary) VALUES('.
+		time().','.$uid.','.$uid.','.$db->quote($log).',5)') || mysql_affected_rows($db->getConn()) != 1)
+	{
+		zbStrengthFail('0');
+	}
+	$zbStrengthPendingLogId = intval($db->last_id());
+	if ($zbStrengthPendingLogId < 1) zbStrengthFail('0');
+	$resultCode = 2;
 }
-##################增加在这里结束#################
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-//$props		= unserialize($_pm['mem']->get(MEM_PROPS_KEY));
-$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-$userBag	= $_pm['user']->getUserBagById($_SESSION['id']);
 
-$pid = intval($_REQUEST['pid']);
-$pids = intval($_REQUEST['pids']);
-$id = intval($_REQUEST['bid']);
-$err = "";
-$plus_tms_eft = "";
-$baodeng = '';
-if(!is_numeric($pid) || empty($pid))
+if ($pids > 0)
 {
-	die("0");//没有相应的要强化的装备
+	if (!$db->query('UPDATE userbag SET sums=sums-1 WHERE id='.intval($auxiliaryItem['id']).
+		' AND uid='.$uid.' AND pid='.$pids.' AND sums>0 AND zbing=0') ||
+		mysql_affected_rows($db->getConn()) != 1)
+	{
+		zbStrengthFail('您没有相应的物品！');
+	}
+	if (!$db->query('DELETE FROM userbag WHERE id='.intval($auxiliaryItem['id']).
+		' AND uid='.$uid.' AND pid='.$pids.
+		' AND sums<=0 AND bsum<=0 AND psum<=0 AND pyb=0 AND zbing=0'.
+		' AND (cantrade IS NULL OR cantrade<>3)'))
+	{
+		zbStrengthFail('0');
+	}
+}
+if (!$db->query('UPDATE userbag SET sums=sums-1 WHERE id='.intval($requiredItem['id']).
+	' AND uid='.$uid.' AND pid='.$requiredPid.' AND sums>0 AND zbing=0') ||
+	mysql_affected_rows($db->getConn()) != 1)
+{
+	zbStrengthFail('您没有相应的物品！');
+}
+if (!$db->query('DELETE FROM userbag WHERE id='.intval($requiredItem['id']).
+	' AND uid='.$uid.' AND pid='.$requiredPid.
+	' AND sums<=0 AND bsum<=0 AND psum<=0 AND pyb=0 AND zbing=0'.
+	' AND (cantrade IS NULL OR cantrade<>3)'))
+{
+	zbStrengthFail('0');
 }
 
-/*if(lockItem($pid) === false)
-{
-	die('已经在处理了！');
-}*/
-
-if(!is_numeric($pids))
-{
-	unLockItem($pid);
-	die("1");//辅助道具出错
-}
-//得到玩家该装备强化需要的道具ID
-if(!empty($pid))
-{
-	$p = $mempropsid[$pid];
-	//foreach($props as $p)
-	//{
-		//if($p['id'] == $pid)
-		//{
-			$pname = $p['name'];
-			$nid = $p['pluspid'];
-		//}
-	//}
-}
-$log .= '装备包裹ID：'.$id.',名字：'.$pname.'';
-$log .= '-强化等级：';
-foreach($userBag as $ubag)
-{
-	if($ubag['pid'] == $nid && $ubag['sums']>0)
-	{$rs = $ubag;
-		$nsums = $ubag['sums'];//强化所需要的物品在用户包裹中的个数
-		$fid = $ubag['id'];
-		break;
-	}
-}
-if($nsums < 1)
-{
-	unLockItem($pid);
-	die("4");
-}
-foreach($userBag as $ubag)
-{
-	if($ubag['id'] == $id)
-	{
-		if(empty($ubag['plus_tmes_eft']))
-		{
-			$nums = 0;//当前玩家要强化的次数
-			$num2 = 0;//如果成功，则玩家强化的次数
-			$log .= "0";
-		}
-		else
-		{
-			$plus_tms_eft = $ubag['plus_tmes_eft'];
-			$log .= $plus_tms_eft;
-			$effect = explode(",",$plus_tms_eft);
-			foreach($harden as $kh => $vh)
-			{
-				$khs = $kh + 1;
-				if($effect[0] == $kh)
-				{
-					$nums = $khs;
-					$num2 = $khs;//强化的次数
-					break;
-				}
-			}
-		}
-	}
-}
-//只能强化15次
-if($nums >= 15)
-{
-	unLockItem($pid);
-	die("15");
-}
-//判断玩家的强化次数,从而得到玩家该次强化的几率 $num
-//得到几率
-foreach($harden as $ks => $h)
-{
-	$a = $nums;
-	if($ks == $a)
-	{
-		$arr = explode(",",$h);
-		$num = $arr[0];
-		break;
-	}
-	else
-	{
-		$num = 6;
-	}
-}
-//当使用辅助道具后进化
-if(!empty($pids))
-{
-
-	//3.20
-	foreach($userBag as $ub)
-	{
-		if($ub['pid'] == $pids && $ub['sums'] >= 1)
-		{
-			$flag = $ub['sums'];
-			break;
-		}
-	}
-	if(empty($flag))
-	{
-		unLockItem($pid);
-		die("1");
-	}
-	
-	$log .= '-辅助道具：'.$pids;
-	$prop = $mempropsid[$pids];
-	//foreach($props as $prop)
-	//{
-		//if($prop['id'] == $pids)
-		//{
-			$peffarr = explode(":",$prop['effect']);
-			$peffe = explode(",",$peffarr[1]);
-			if($peffarr[0] == "suc")
-			{
-				if(count($peffe) == 1)
-				{
-					$num = $num + $peffarr[1];
-				}
-			}
-			else if($peffarr[0] == "100suc")
-			{
-				if($nums < $peffe[1])
-				{
-					$num = 10;
-				}
-			}
-			else if($peffarr[0] == "baodi")
-			{
-				$baodi = explode("-","-1");
-			}else if($peffarr[0] == "baodeng")
-			{
-				$baodeng = 1;
-			}
-		//}
-	//}
-}
-$sj = rand(1,10);
-if($sj <= $num)
-{
-	//装备强化成功，更新到数据库，同时扣除玩家相应的金币
-	/*foreach($props as $pv)
-	{
-		if($pv['id'] == $pid)
-		{
-			$plusget = $pv['plusget'];
-			break;
-		}
-	}*/
-	$plusget = $mempropsid[$pid]['plusget'];
-	$numarr = explode(",",$harden[$nums]);
-	$num = $numarr[0];
-	$moneys = $numarr[1];//装备强化所需金币
-	//首先判断玩家的金币是否足够
-	$money = $user['money'];
-	if($money < $moneys)
-	{
-		unLockItem($pid);
-		die("3");//金币不够
-	}
-	//减去玩家相应的金币
-	$money = $money - $moneys;
-	$sql = "UPDATE player 
-			SET money = {$money}
-			WHERE id = {$_SESSION['id']}";
-	$_pm['mysql'] -> query($sql);
-	//强化后加上的属性
-	$plusarr = explode(",",$plusget);
-	$plus = $plusarr[$nums];
-	$plusstr = $num2.",".$plus;
-	$sql = "UPDATE userbag
-			SET plus_tms_eft = '{$plusstr}' 
-			WHERE id = {$id}";
-	$_pm['mysql'] -> query($sql);
-	$err = 10;
-}
-else
-{
-	if(is_array($baodi))
-	{
-		if(!empty($plus_tms_eft))
-		{
-			$arr = explode(",",$plus_tms_eft);
-			/*foreach($props as $pv)
-			{
-				if($pv['id'] == $pid)
-				{
-					$plusget = $pv['plusget'];
-					break;
-				}
-			}*/
-			$plusget = $mempropsid[$pid]['plusget'];
-			$plusarr = explode(",",$plusget);
-			$a = $nums - 2;
-			$b = $num2 - 2;
-			if($a >= 0)
-			{
-				$plus = $plusarr[$a];
-				$plusstr = $b.",".$plus;
-				$sql = "UPDATE userbag
-						SET plus_tms_eft = '{$plusstr}' 
-						WHERE id = {$id}";
-			}
-			else
-			{
-				$sql = "UPDATE userbag
-						SET plus_tms_eft = 0
-						WHERE id = {$id}";
-			}
-		}
-		else
-		{
-			$sql = "UPDATE userbag
-						SET plus_tms_eft = ''
-						WHERE id = {$id}";
-		}
-		$_pm['mysql'] -> query($sql);
-	}
-	else if($baodeng != 1)
-	{
-		$sql = "DELETE FROM userbag
-				WHERE id={$id}";
-		$_pm['mysql'] -> query($sql);
-	}
-	
-	$sql = "INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		    VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','{$log}',5)";
-	$_pm['mysql'] -> query($sql);
-	$err = 2;//失败
-	
-}
-//不管是成功还是失败，如果用了辅助道具，就要减去
-if(!empty($pids))
-{
-	foreach($userBag as $v)
-	{
-		if($v['pid'] == $pids)
-		{
-			$sum = $v['sums'];
-			break;
-		}
-	}
-	/*
-	if($sum > 1)
-	{
-		$sql = "UPDATE userbag
-						SET sums = sums - 1
-						WHERE uid = {$_SESSION['id']} and pid = {$pids}";
-	}
-	else
-	{
-		$sql = "DELETE FROM userbag
-				WHERE uid = {$_SESSION['id']} and pid = {$pids}";
-	}*/
-	$sql = "UPDATE userbag
-			   SET sums = abs(sums-1) WHERE uid = {$_SESSION['id']} and pid = {$pids} and sums > 0";
-	$_pm['mysql'] -> query($sql);
-	$result = mysql_affected_rows($_pm['mysql'] -> getConn());
-	if($result != 1){
-		unLockItem($pid);
-		die("您没有相应的物品！");
-	}
-}
-//减去所需的道具
-/*
-if($nsums > 1)
-{
-	$sql = "UPDATE userbag
-			SET sums = sums - 1
-			WHERE uid = {$_SESSION['id']} and pid = {$nid};";
-}
-else
-{
-	$sql = "DELETE FROM userbag
-			WHERE uid = {$_SESSION['id']} and pid = {$nid}";
-}*/
-
-$sql = "UPDATE userbag
-		SET sums = abs(sums-1) WHERE uid = {$_SESSION['id']} and pid = {$nid} and id = {$fid} and sums > 0;";
-$_pm['mysql'] -> query($sql);
-$result = mysql_affected_rows($_pm['mysql'] -> getConn());
-if($result != 1){
-	unLockItem($pid);
-	die("您没有相应的物品！");
-}
-//清空session;
-$_SESSION['pid'.$_SESSION['id']] = "";
-$_SESSION['pids'.$_SESSION['id']] = "";
-$_SESSION['bid'.$_SESSION['id']] = "";
-unLockItem($pid);
-echo $err;
+if (!$db->query('COMMIT')) zbStrengthFail('0');
+$zbStrengthTransactionActive = false;
+$zbStrengthCommitted = true;
+$_pm['mem']->del(MEM_USER_KEY);
+$_pm['mem']->del(MEM_USERBAG_KEY);
+$_SESSION['pid'.$uid] = '';
+$_SESSION['pids'.$uid] = '';
+$_SESSION['bid'.$uid] = '';
+zbStrengthRelease();
+echo $resultCode;
 ?>

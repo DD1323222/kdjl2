@@ -13,6 +13,8 @@
 require_once('../config/config.game.php');
 require_once('../config/config.baike.php');
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
 
 
 /*
@@ -51,7 +53,7 @@ class PokeKnolMemory extends memory
      * @var integer $memExpire
      */
     private static $memExpire = KNOL_CACHE_TIME;
-    
+
     /**
      * constructor
      */
@@ -92,10 +94,10 @@ class PokeKnolMemory extends memory
      */
     public function putContentToCache($key, $content) {
         if (self::$memHandler) {
-            $storeKey = sprintf("%s_%s", self::$storePrefix/* $key */, $key);
+			$storeKey = sprintf("%s_%s", self::$storePrefix, md5((string)$key));
             //echo "put content to cache. $storeKey <br />";
 
-            return self::$memHandler->set($storeKey /* $key */, $content, 
+            return self::$memHandler->set($storeKey /* $key */, $content,
                 self::$storeFlag, self::$memExpire);
         }
 
@@ -110,9 +112,9 @@ class PokeKnolMemory extends memory
      */
     public function getContentFromCache($key) {
         if (self::$memHandler) {
-            $storeKey = self::$storePrefix . '_' . $key;
+			$storeKey = self::$storePrefix . '_' . md5((string)$key);
             //echo "get content from cache. $storeKey <br />";
-            return self::$memHandler->get($storeKey, self::$storeFlag);
+			return self::$memHandler->get($storeKey);
         }
 
         return false;
@@ -141,10 +143,10 @@ function get_knol_from_remote($title, $id) {
         return false;
     }
     if ($title != '') {
-        $server_url = KNOL_SERVER_SEARCH_ADDR . sprintf("?key=%s", $title);
+        $server_url = KNOL_SERVER_SEARCH_ADDR . '?key=' . rawurlencode($title);
     } elseif ($id > 0) {
         $server_url = KNOL_SERVER_SEARCH_ADDR . sprintf("?id=%d", $id);
-        if (isset($_GET['check']) && $_GET['check'] == 'tag') {
+        if (isset($_GET['check']) && !is_array($_GET['check']) && $_GET['check'] == 'tag') {
             // get the tag informatin
             $server_url .= '&check=tag';
         }
@@ -171,7 +173,7 @@ function get_knol_from_cache($title, $id) {
     if (strlen($title) > 0) {
         $key = $title;
     } elseif ($id > 0) {
-        if (isset($_GET['check']) && $_GET['check'] == 'tag') {
+        if (isset($_GET['check']) && !is_array($_GET['check']) && $_GET['check'] == 'tag') {
             $key = sprintf("tag_%d", $id);
         } else {
             $key = $id;
@@ -181,7 +183,7 @@ function get_knol_from_cache($title, $id) {
     if ($key) {
         $knolMem = PokeKnolMemory::getInstance();
         //$knolMem = new PokeKnolMemory();
-        return $knolMem->getContentFromCache($key); 
+        return $knolMem->getContentFromCache($key);
     }
     return false;
 }
@@ -190,7 +192,7 @@ function get_knol_from_cache($title, $id) {
 /**
  * put the knowledge content to cache
  *
- * @param string  $content 
+ * @param string  $content
  * @param string  $title
  * @param integer $id
  * @return false
@@ -201,7 +203,7 @@ function put_knol_to_cache($content, $title, $id) {
     if (strlen($title) > 0) {
         $key = $title;
     } elseif ($id > 0) {
-        if (isset($_GET['check']) && $_GET['check'] == 'tag') {
+        if (isset($_GET['check']) && !is_array($_GET['check']) && $_GET['check'] == 'tag') {
             $key = sprintf("tag_%d", $id);
         } else {
             $key = $id;
@@ -210,7 +212,7 @@ function put_knol_to_cache($content, $title, $id) {
 
     if ($key) {
         $knolMem = PokeKnolMemory::getInstance();
-        return $knolMem->putContentToCache($key, $content); 
+        return $knolMem->putContentToCache($key, $content);
     }
     return false;
 }
@@ -225,7 +227,7 @@ function get_knol_id_from_remote_by_title($title) {
     $server_url = false;
 
     if ($title != '') {
-        $server_url = KNOL_SERVER_SEARCH_ADDR . sprintf("?key=%s&ask_exist=query_title", $title);
+        $server_url = KNOL_SERVER_SEARCH_ADDR . '?key=' . rawurlencode($title) . '&ask_exist=query_title';
     } else {
         return false;
     }
@@ -271,15 +273,9 @@ function get_bug_reporting_params($post_array) {
     if (!isset($post_array['knol_content'])) {
         return false;
     }
-    if (!isset($post_array['host']) || trim($post_array['host']) == '') {
-        return false;
-    }
-    if (!isset($post_array['player']) || trim($post_array['player']) == '') {
-        return false;
-    }
-    if (!isset($post_array['nickname']) || trim($post_array['nickname']) == '') {
-        return false;
-    }
+	if (!isset($_SESSION['username'], $_SESSION['nickname'])) {
+		return false;
+	}
     $search_title = trim($post_array['knol_title']);
     $knol_id = intval($post_array['knol_id']);
     $knol_content = strip_tags(trim($post_array['knol_content']));
@@ -289,13 +285,15 @@ function get_bug_reporting_params($post_array) {
     if ($knol_content == '') {
         return false;
     }
-    $ret['knol_title'] = iconv('UTF-8', 'gbk', $search_title);
+    $ret['knol_title'] = kdjlSafeIconv('UTF-8', 'gbk', $search_title);
     $ret['knol_id'] = $knol_id;
-    $ret['knol_content'] = iconv('UTF-8', 'gbk', $knol_content);
-    $ret['host'] = trim($post_array['host']);
-    $ret['player'] = trim($post_array['player']);
-    $ret['nickname'] = iconv('UTF-8', 'gbk', trim($post_array['nickname']));
-    $ret['client_addr'] = $_SERVER['REMOTE_ADDR'];
+    $ret['knol_content'] = kdjlSafeIconv('UTF-8', 'gbk', $knol_content);
+	$httpHost = (isset($_SERVER['HTTP_HOST']) && !is_array($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : '';
+	if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $httpHost)) $httpHost = '';
+	$ret['host'] = $httpHost;
+	$ret['player'] = is_array($_SESSION['username']) ? '' : trim($_SESSION['username']);
+	$ret['nickname'] = kdjlSafeIconv('UTF-8', 'gbk', is_array($_SESSION['nickname']) ? '' : trim($_SESSION['nickname']));
+    $ret['client_addr'] = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
 
     return $ret;
 }
@@ -322,11 +320,11 @@ function post_knol_bug_to_remote_server($post_array)
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $post_array);
-        ob_start();
-        /* $ret = */ curl_exec($ch);
-        curl_close($ch);
-        $ret = ob_get_contents();
-        ob_end_clean();
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$ret = curl_exec($ch);
+		curl_close($ch);
     }
 
     return $ret;
@@ -339,19 +337,19 @@ function post_knol_bug_to_remote_server($post_array)
 // submit the bug reporting of the knowledge to remote server
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
     && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-    $bug_report_param = get_bug_reporting_params($_POST); 
-    header('Content-Type:text/html;charset=GBK');
-
-    try {
-        if ($_GET['acKey'] && trim($_GET['acKey']) == 'searchTitle') {
+    $bug_report_param = get_bug_reporting_params($_POST);
+	try {
+        $requestAcKey = (isset($_GET['acKey']) && !is_array($_GET['acKey'])) ? trim($_GET['acKey']) : '';
+		if ($requestAcKey == 'searchTitle') {
+			header('Content-Type:text/html;charset=GBK');
             // search the key words of the title, return the matched title list
             // this response is used for autocomplete
-            $titleKey = isset($_GET['q']) ? trim($_GET['q']) : '';
+            $titleKey = (isset($_GET['q']) && !is_array($_GET['q'])) ? trim($_GET['q']) : '';
             if (strlen($titleKey) > 0) {
                 if (!isset($_GET['m'])) {
-                    $titleKey = iconv('UTF-8', 'gbk', $titleKey);
+                    $titleKey = kdjlSafeIconv('UTF-8', 'gbk', $titleKey);
                 }
-                $titleSearchURL = KNOL_SERVER_SEARCH_ADDR . '?acTitle=' . $titleKey;
+                $titleSearchURL = KNOL_SERVER_SEARCH_ADDR . '?acTitle=' . rawurlencode($titleKey);
                 if (isset($_GET['m'])) {
                     $titleSearchURL .= '&m=prototype';
                 }
@@ -360,8 +358,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
                 echo $tList;
             }
 
-            exit();
-        }
+			exit();
+		}
+		header('Content-Type:application/json;charset=UTF-8');
 
         if ($bug_report_param === false) {
             //die('{code:1, msg:"不好意思，不能提交你的建议!"}');
@@ -380,16 +379,16 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
             }
         }
     } catch (Exception $e) {
-        echo json_encode(array('code' => $e->getCode(),
-            'msg' => iconv('gbk', 'UTF-8', $e->getMessage())));
+        echo json_encode(array('code' => $e->getCode(), 'msg' => '不好意思，不能提交你的建议!'));
         //echo json_encode(array('code' => $e->getCode(), 'msg' => '不好意思，不能提交你的建议!'));
+        exit();
     }
 
-    $res = post_knol_bug_to_remote_server($bug_report_param); //echo '{code:1, msg:"'.$res.'"}';
-    if ($res == 'Add Success') {
-        echo '{code:1, msg:"谢谢您的举报，我们将稍后进行校正!"}';
-    } else {
-        echo '{code:2, msg:"举报失败!"}';
+	$res = post_knol_bug_to_remote_server($bug_report_param); //echo '{code:1, msg:"'.$res.'"}';
+	if (is_string($res) && trim($res) === 'Add Success') {
+		echo json_encode(array('code' => 1, 'msg' => '谢谢您的举报，我们将稍后进行校正!'));
+	} else {
+		echo json_encode(array('code' => 2, 'msg' => '举报失败!'));
         //echo '{code:2, msg:"举报失败!' . $res . '"}';
     }
     // ajax should exit at here
@@ -397,8 +396,8 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
 }
 
 // handle for searching knoledge
-$search_key = isset($_GET['key']) ? trim($_GET['key']) : '';
-$search_id  = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$search_key = (isset($_GET['key']) && !is_array($_GET['key'])) ? trim($_GET['key']) : '';
+$search_id  = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
 if ($search_key == '' && $search_id <= 0) {
     die('未找到相关词条!');
 } elseif ($search_key == '口袋百科') {
@@ -409,46 +408,49 @@ if ($search_key == '' && $search_id <= 0) {
 }
 
 // try to get content from memory
-$knol = get_knol_from_cache($search_key, &$search_id); 
-$knol = get_knol_from_remote($search_key, &$search_id); 
+$knol = get_knol_from_cache($search_key, $search_id);
+$loadedFromRemote = false;
+if ($knol === false) {
+    $knol = get_knol_from_remote($search_key, $search_id);
+	$loadedFromRemote = true;
+}
 
-preg_match("/#key_id(\d+)#/",$knol,$outsearch_id);
-if(!$out)
+$outsearch_id = array();
+$has_key_id = is_string($knol) && preg_match('/#key_id(\d+)#/', $knol, $outsearch_id) === 1;
+$notFound = $knol === '未找到相关词条!';
+if(!$has_key_id && !$notFound)
 {
 	$knol = false;
 }
 
 if ($knol === false) {
-
-    $knol = get_knol_from_remote($search_key, &$search_id); 
-	preg_match("/#key_id(\d+)#/",$knol,$outsearch_id);
-
-	//var_dump($knol);
-    if ($knol !== false && !in_array($knol, array('未找到相关词条!', 'Server Error!'))) {
-        // put the content to memory
-        $ret = put_knol_to_cache($knol, $search_key, $search_id);
-        //var_dump($ret);
-    } elseif ($knol === false || $knol == 'Server Error!') {
-        $knol = '请等待，百科服务稍后开放!';
-    }
-} else {
-    //echo 'get content from memory!<br />';
+	$knol = '请等待，百科服务稍后开放!';
+} else if($loadedFromRemote && $has_key_id) {
+	put_knol_to_cache($knol, $search_key, $search_id);
 }
-if($outsearch_id&&$search_id<1)
+if(!empty($outsearch_id[1]) && $search_id < 1)
 {
 	$search_id = $outsearch_id[1];
 }
 
 if ($knol !== false) {
-    $content = html_entity_decode($knol);
+	$content = html_entity_decode($knol, ENT_QUOTES, 'UTF-8');
 
     //@Load template.
     $tn = $_game['template'] . 'tpl_search_knol.html';
-    if (file_exists($tn))
-    {
-       $tpl = @file_get_contents($tn);
-        $src = array('#knol#', '#search_key#', '#search_id#', '#player_name#', '#player_nick#');
-        $des = array($content, $search_key, $search_id, $_SESSION['username'], $_SESSION['nickname']);
+	if (file_exists($tn))
+	{
+	   $tpl = @file_get_contents($tn);
+		$sessionUsername = (isset($_SESSION['username']) && !is_array($_SESSION['username'])) ? $_SESSION['username'] : '';
+		$sessionNickname = (isset($_SESSION['nickname']) && !is_array($_SESSION['nickname'])) ? $_SESSION['nickname'] : '';
+		$src = array('#knol#', '#search_key#', '#search_id#', '#player_name#', '#player_nick#');
+		$des = array(
+			$content,
+			htmlspecialchars($search_key, ENT_QUOTES, 'UTF-8'),
+			$search_id,
+			htmlspecialchars($sessionUsername, ENT_QUOTES, 'UTF-8'),
+			htmlspecialchars($sessionNickname, ENT_QUOTES, 'UTF-8')
+		);
         $res = str_replace($src, $des, $tpl);
         // gzip echo. if maybe.
         ob_start('ob_gzip');
@@ -457,12 +459,15 @@ if ($knol !== false) {
     }
 }
 function curlS($url,$port=80){
+	if(!function_exists('curl_init')) return false;
 	$post = 1;
 	$returntransfer = 1;
 	$header = 0;
 	$nobody = 0;
 	$followlocation = 1;
-	
+	$request = '';
+	$cookie_jar = tempnam(sys_get_temp_dir(), 'kdjl_cookie_');
+
 	$ch = curl_init();
 	$options = array(CURLOPT_URL => $url,
 						CURLOPT_HEADER => $header,
@@ -474,11 +479,14 @@ function curlS($url,$port=80){
 						CURLOPT_FOLLOWLOCATION => $followlocation,
 						CURLOPT_COOKIEJAR => $cookie_jar,
 						CURLOPT_COOKIEFILE => $cookie_jar,
-						CURLOPT_REFERER => $url
+						CURLOPT_REFERER => $url,
+						CURLOPT_CONNECTTIMEOUT => 2,
+						CURLOPT_TIMEOUT => 3
 						);
 	curl_setopt_array($ch, $options);
 	$result = curl_exec($ch);
 	curl_close($ch);
+	if($cookie_jar && file_exists($cookie_jar)) @unlink($cookie_jar);
 	return $result;
 }
 ?>

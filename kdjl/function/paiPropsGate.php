@@ -2,26 +2,28 @@
 
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid <= 0)
+{
+	die('0');
+}
 if (!defined('MAX_PAI_VALIDTIME'))
-define(MAX_PAI_VALIDTIME, 10800);
+define('MAX_PAI_VALIDTIME', 10800);
 $err = 0;
-$user = $_pm['user'] -> getUserById($_SESSION['id']);
-$userBag = $_pm['user'] -> getUserBagById($_SESSION['id']);
-$bid = intval($_REQUEST['bid']);
-$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
-$sql = "SELECT paisj,sj FROM player_ext WHERE uid = {$_SESSION['id']}";
-$sjarr = $_pm['mysql'] -> getOneRecord($sql);
-if(is_array($sjarr)){
-	$user['sj'] = $sjarr['sj'];
-	$user['paisj'] = $sjarr['paisj'];
-}else $user['sj'] = $user['paisj'] = 0;
+$user = $_pm['user'] -> getUserById($uid);
+if(!is_array($user)) die('0');
+del_bag_expire();
+$bid = (isset($_REQUEST['bid']) && !is_array($_REQUEST['bid'])) ? intval($_REQUEST['bid']) : 0;
+$bagid = (isset($_REQUEST['bagid']) && !is_array($_REQUEST['bagid'])) ? intval($_REQUEST['bagid']) : 0;
+$action = (isset($_REQUEST['action']) && !is_array($_REQUEST['action'])) ? $_REQUEST['action'] : '';
 //增加一个冷却时间
 $srctime = 5;
 #################增加一个间隔时间################
-$time = $_SESSION['checktimes'.$_SESSION['id']];
+$timeKey = 'checktimes'.$uid;
+$time = isset($_SESSION[$timeKey]) ? $_SESSION[$timeKey] : 0;
 if(empty($time))
-{	
-	$_SESSION['checktimes'.$_SESSION['id']] = time();
+{
+	$_SESSION[$timeKey] = time();
 }
 else
 {
@@ -33,7 +35,7 @@ else
 	}
 	else
 	{
-		$_SESSION['checktimes'.$_SESSION['id']] = time();
+		$_SESSION[$timeKey] = time();
 	}
 }
 
@@ -43,58 +45,110 @@ if($action == "")
 	{
 		die('0');
 	}
-	$_pm['mysql']->query('START TRANSACTION');
-	$sql = "SELECT id,psum FROM userbag WHERE uid = {$_SESSION['id']} and id = {$bid} FOR UPDATE";
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('2');
+	$sql = "SELECT id,psum,sums,zbing FROM userbag WHERE uid = {$uid} and id = {$bid} FOR UPDATE";
 	$row = $_pm['mysql'] -> getOneRecord($sql);
-	if(!is_array($row) || $row['psum'] <= 0)
+	if(!is_array($row) || intval($row['psum']) <= 0 || intval($row['zbing']) != 0)
 	{
 		$_pm['mysql']->query('ROLLBACK');
 		die('2');
 	}
-	$sql = "UPDATE userbag 
-			SET sums = sums + psum,psum = 0,pstime = 0,petime = 0,psell = 0,psj = 0,pyb = 0,buycode = 0
-			WHERE uid = {$_SESSION['id']} and id = {$bid} and psum > 0";
-	$_pm['mysql'] -> query($sql);
-	if(mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT'))
+	$lockedPlayer = $_pm['mysql']->getOneRecord("SELECT maxbag FROM player WHERE id={$uid} FOR UPDATE");
+	$lockedBags = $_pm['mysql']->getRecords("SELECT id,sums,zbing FROM userbag WHERE uid={$uid} FOR UPDATE");
+	if(!is_array($lockedPlayer) || !is_array($lockedBags))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('2');
+	}
+	$bagNum = 0;
+	foreach($lockedBags as $lockedBag)
+	{
+		if(!is_array($lockedBag)) continue;
+		if(intval($lockedBag['sums']) > 0 && intval($lockedBag['zbing']) == 0) $bagNum++;
+	}
+	$needBagSlot = intval($row['sums']) > 0 ? 0 : 1;
+	if($bagNum + $needBagSlot > intval($lockedPlayer['maxbag']))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('1');
+	}
+	$newSums = kdjlSafeNonNegativeSum($row['sums'], $row['psum']);
+	if($newSums === false || $newSums <= 0)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('2');
+	}
+	$sql = "UPDATE userbag
+			SET sums = {$newSums},psum = 0,pstime = 0,petime = 0,psell = 0,psj = 0,pyb = 0,buycode = 0
+			WHERE uid = {$uid} and id = {$bid} and psum = ".intval($row['psum'])." and COALESCE(sums,0) = ".intval($row['sums']);
+	if(!$_pm['mysql'] -> query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT'))
 	{
 		$_pm['mysql']->query('ROLLBACK');
 		die('2');
 	}
 	$err = 3;
+	$_pm['mem']->del($uid.'bag');
 	$_pm['mem']->memClose();
 	echo $err;
 }
 else if($action == "money")
 {
-	$_pm['mysql']->query('START TRANSACTION');
-	$player = $_pm['mysql']->getOneRecord("SELECT id,paimoney FROM player WHERE id={$_SESSION['id']} FOR UPDATE");
-	$playerExt = $_pm['mysql']->getOneRecord("SELECT uid,paisj,paiyb FROM player_ext WHERE uid={$_SESSION['id']} FOR UPDATE");
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('0');
+	if(!$_pm['mysql']->query("INSERT INTO player_ext(uid,bbshow) VALUES({$uid},5) ON DUPLICATE KEY UPDATE uid=uid"))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('0');
+	}
+	$player = $_pm['mysql']->getOneRecord("SELECT id,money,paimoney,yb FROM player WHERE id={$uid} FOR UPDATE");
+	$playerExt = $_pm['mysql']->getOneRecord("SELECT uid,sj,paisj,paiyb FROM player_ext WHERE uid={$uid} FOR UPDATE");
 	if(!is_array($player) || !is_array($playerExt))
 	{
 		$_pm['mysql']->query('ROLLBACK');
 		die('0');
 	}
-	$paiMoney = intval($player['paimoney']);
-	$paiSj = intval($playerExt['paisj']);
-	$paiYb = intval($playerExt['paiyb']);
+	$paiMoney = max(0, intval($player['paimoney']));
+	$paiSj = max(0, intval($playerExt['paisj']));
+	$paiYb = max(0, intval($playerExt['paiyb']));
 	if($paiMoney <= 0 && $paiSj <= 0 && $paiYb <= 0)
 	{
 		$_pm['mysql']->query('ROLLBACK');
 		die('0');
 	}
-	if($paiMoney > 0 || $paiYb > 0)
+	$currentMoney = max(0, intval($player['money']));
+	$currentSj = max(0, intval($playerExt['sj']));
+	$currentYb = max(0, intval($player['yb']));
+	$moneyRoom = max(0, 1000000000 - min(1000000000, $currentMoney));
+	$sjRoom = max(0, 2147483647 - min(2147483647, $currentSj));
+	$ybRoom = max(0, 2147483647 - min(2147483647, $currentYb));
+	$claimMoney = min($paiMoney, $moneyRoom);
+	$claimSj = min($paiSj, $sjRoom);
+	$claimYb = min($paiYb, $ybRoom);
+	$remainMoney = $paiMoney - $claimMoney;
+	$remainSj = $paiSj - $claimSj;
+	$remainYb = $paiYb - $claimYb;
+	$claimedAny = ($claimMoney > 0 || $claimSj > 0 || $claimYb > 0);
+	$partialClaim = ($remainMoney > 0 || $remainSj > 0 || $remainYb > 0);
+	if(!$claimedAny)
 	{
-		$_pm['mysql']->query("UPDATE player SET money=money+{$paiMoney},paimoney=0,yb=yb+{$paiYb} WHERE id={$_SESSION['id']}");
-		if(mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+		$_pm['mysql']->query('ROLLBACK');
+		die($partialClaim ? '6' : '0');
+	}
+	if($claimMoney > 0 || $claimYb > 0)
+	{
+		$newMoney = $currentMoney + $claimMoney;
+		$newYb = $currentYb + $claimYb;
+		if(!$_pm['mysql']->query("UPDATE player SET money={$newMoney},paimoney={$remainMoney},yb={$newYb} WHERE id={$uid}") ||
+			mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 		{
 			$_pm['mysql']->query('ROLLBACK');
 			die('0');
 		}
 	}
-	if($paiSj > 0 || $paiYb > 0)
+	if($claimSj > 0 || $claimYb > 0)
 	{
-		$_pm['mysql']->query("UPDATE player_ext SET sj=sj+{$paiSj},paisj=0,paiyb=0 WHERE uid={$_SESSION['id']}");
-		if(mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+		$newSj = $currentSj + $claimSj;
+		if(!$_pm['mysql']->query("UPDATE player_ext SET sj={$newSj},paisj={$remainSj},paiyb={$remainYb} WHERE uid={$uid}") ||
+			mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 		{
 			$_pm['mysql']->query('ROLLBACK');
 			die('0');
@@ -106,18 +160,23 @@ else if($action == "money")
 		die('0');
 	}
 
-	$err = 1;
+	$err = $partialClaim ? 6 : 1;
+	$_pm['mem']->del($uid);
 	$_pm['mem']->memClose();
 	echo $err;
 }
 
 else if($action == "sale")
 {
-	$err = 5;
-	$_pm['mysql']->query('START TRANSACTION');
-	$sql = "SELECT id,psum,petime 
+	if($bagid < 1 && $bid < 1)
+	{
+		die("1");
+	}
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('1');
+	$saleWhere = $bagid > 0 ? 'id = '.$bagid : 'pid = '.$bid;
+	$sql = "SELECT id,psum,petime
 			FROM userbag
-			WHERE pid = {$bid} and uid = {$_SESSION['id']} and psum > 0
+			WHERE {$saleWhere} and uid = {$uid} and psum > 0
 			ORDER BY id ASC LIMIT 1 FOR UPDATE";
 	$bag = $_pm['mysql'] -> getOneRecord($sql);
 	if(is_array($bag))
@@ -133,13 +192,13 @@ else if($action == "sale")
 			{
 				$time = time();
 				$et  = $time + MAX_PAI_VALIDTIME;
-				$sql = "UPDATE userbag set pstime = {$time},petime = {$et} WHERE uid = {$_SESSION['id']} and id = {$bag['id']} and psum > 0";
-				$_pm['mysql'] -> query($sql);
-				if(mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT'))
+				$sql = "UPDATE userbag set pstime = {$time},petime = {$et} WHERE uid = {$uid} and id = {$bag['id']} and psum > 0 and petime < {$time}";
+				if(!$_pm['mysql'] -> query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT'))
 				{
 					$_pm['mysql']->query('ROLLBACK');
 					die('1');
 				}
+				$_pm['mem']->del($uid.'bag');
 			}
 			else
 			{
@@ -151,6 +210,7 @@ else if($action == "sale")
 	else
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		die("1");
 	}
 	echo "5";
 }

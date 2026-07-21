@@ -113,7 +113,7 @@ ol,ul {list-style:none}
 .plus a{color:#f00}
 .con{display:none;}
 .intxt{border:#b4a449 1px solid;padding:2px;margin:0 10px 0 200px;}
-.stu{background:url(../new_images/ui/i_bnt.gif) no-repeat 0 -34px;width:39px;height:17px;cursor:pointer;border:0 none;margin:1px 0}
+.stu{background:url(../images/i_bnt.gif) no-repeat 0 -34px;width:39px;height:17px;cursor:pointer;border:0 none;margin:1px 0}
 .tit01{ border-collapse:collapse;width:100%; font-size:12px}
 .tit01 td{ text-align:center;padding:1px;line-height:20px;color:#bf7d1a}
 #textarea{background:#fffceb;width:615px;height:235px;border:#c6b764 1px  solid;color:#bf7d1a;font-size:12px;margin:10px 0 0 10px;padding:5px;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;}
@@ -142,24 +142,27 @@ ol,ul {list-style:none}
 </style>
 <script type="text/javascript">
 	function setTab(name,cursel,n){
-	for(i=1;i<=n;i++){
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
+	  if(!menu || !con) continue;
 	  menu.className=i==cursel?"on":"";
 	  con.style.display=i==cursel?"block":"none";
 	}
 	}
 	function setTab6(name,cursel,n){
-	for(i=1;i<=n;i++){
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
+	  if(!menu || !con) continue;
 	  menu.className=i==cursel?"on":"";
 	  con.style.display=i==cursel?"block":"none";
 	}
 	}
 	function setTabH(name,cursel,n){
-	for(i=1;i<=n;i++){
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
+	  if(!menu) continue;
 	  menu.className=i==cursel?"on":"";
 	}
 	}
@@ -227,7 +230,7 @@ ol,ul {list-style:none}
   </tr>
 </table>
 				  <div class="dt_list clearfix">
-				  <table class="tit01" id="shoplist">
+				  <table class="tit01" id="yb_top_list">
 				    #ybtop#
 			      </table>
 				</div>  
@@ -245,7 +248,7 @@ ol,ul {list-style:none}
   </tr>
 </table>
 				  <div class="dt_list clearfix">
-				  <table class="tit01" id="shoplist">
+				  <table class="tit01" id="yb_prize_list">
 				    #ybprize#
 			      </table>
 				</div>  
@@ -340,10 +343,7 @@ ol,ul {list-style:none}
 		<div id="cmd">
 		#cmd#	
 		</div>
-		<div id="userdeal">
-			<img style="float:left" src="../new_images/ui/bm.jpg" onclick="user(1)" />
-			<img style="float:right" src="../new_images/ui/lj.jpg" onclick="user(2)" />
-		</div>
+		#kfuserdeal#
 	</div>
 	
 	</div>
@@ -354,9 +354,9 @@ ol,ul {list-style:none}
 <script type="text/javascript">
 var type = "#type#";
 if(type == 'active'){
-	setTab('tab',5,6);
+	setTab('tab',5,5);
 }else
-setTab('tab',1,6);
+setTab('tab',1,5);
 function seethepet(para)
 {
 	var bbidinfo = para.parentNode.id;

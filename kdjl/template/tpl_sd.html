@@ -22,7 +22,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:90px;display:block;}
@@ -48,7 +48,7 @@ ol,ul {list-style:none}
 	top: 5px;
 }
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 
 .sd_hc_l{width:300px; height:281px; float:left; padding-left:20px;}
 .sd_hc_01{width:263px; height:212px; background-image:url(../new_images/ui/sd06.jpg); float:left; margin:2px 0 0 0;}
@@ -75,7 +75,7 @@ ol,ul {list-style:none}
 	top: 5px;
 }
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 
 .sd_l{width:360px;height:281px;float:left; background-image:url(../new_images/ui/sd03.jpg);}
 .sd_l p{color:#333;line-height:18px;padding:50px 90px 20px 20px;}
@@ -109,6 +109,17 @@ ol,ul {list-style:none}
 .sd_item04{width:330px; height:85px; float:left; margin-top:35px;color:#653E17; line-height:20px;}
 .sd_item05{width:330px; height:110px; float:left; margin-top:25px;color:#653E17; line-height:20px;}
 .sd_item06{width:330px;margin-left:0px; margin-top:55px;}
+
+.sd_l p,
+.sd_step p,
+.sd_hc_02,
+.sd_hc_r,
+.sd_item02,
+.sd_item03,
+.sd_item04,
+.sd_item05{font-weight:bold;}
+.nirvana-material-label{display:inline-block;width:84px;white-space:nowrap;}
+.nirvana-material-select{width:116px;box-sizing:border-box;vertical-align:middle;}
 
 .sd_hc_l{width:300px; height:281px; float:left; padding-left:20px;}
 .sd_hc_01{width:263px; height:212px; background-image:url(../new_images/ui/sd06.jpg); float:left; margin:2px 0 0 0;}
@@ -156,11 +167,6 @@ var sszsbbid=0;
 </p>
     <div class="sd_item">
     <div class="sd_pet r00" id="p1">#one#</div><div class="sd_pet r00" id="p2">#two#</div><div class="sd_pet" id="p3">#three#</div>
-	<br />
-	<select name="sd_150" id="sd_150">
-	<option value="0">选择保护成长道具</option>
-	#keepCzl#
-	</select>
     </div>
     </div>
     <div class="sd_r">
@@ -306,11 +312,11 @@ var sszsbbid=0;
 1）添加的道具可以通过神秘商店、副本等获得<br />
 2）合成时请先取下宠物装备，否则宠物消失时装备也会一起消失。<br />
 3）合成冷却为60秒，需等待冷却后才能继续合成。<br />
-添加材料一：<select name="zswp1" id="zswp1">
+<span class="nirvana-material-label">选择材料一：</span><select class="nirvana-material-select" name="zswp1" id="zswp1">
 				<option value=''>选择材料一</option>
 				#zswupinone#
 			</select><br />
-添加材料二：<select name="zswp2" id="zswp2"><option value=''>涅槃加成材料</option>#zswupintwo#</select><br />
+<span class="nirvana-material-label">选择材料二：</span><select class="nirvana-material-select" name="zswp2" id="zswp2"><option value=''>选择材料二</option>#zswupintwo#</select><br />
       
 <table width="300" border="0" cellspacing="0" cellpadding="0" style="margin-top:10px;">
   <tr>
@@ -418,7 +424,7 @@ var sszsbbid=0;
   </tr>
   <tr>
     <td width="153" height="30" align="left"><label>
-      <select id="sszswp1" name="select4" id="select3">
+      <select id="sszswp1" name="select4">
         <option value="">增加道具</option>
 		#sszswp#
       </select>
@@ -428,7 +434,7 @@ var sszsbbid=0;
     <td width="153" align="left">选择道具二：</td>
     </tr>
   <tr>
-    <td height="20" align="left"><select id="sszswp2" name="select5" id="select4">
+    <td height="20" align="left"><select id="sszswp2" name="select5">
       <option value="">增加道具</option>
 	  #sszswp#
     </select></td>
@@ -523,7 +529,7 @@ function JinHua(n,id,pids)
      	asynchronous:true        
 	}
 	//alert('../function/jhGate.php?n='+n+'&id='+id+'&pids='+pids);
-	var ajax=new Ajax.Request('../function/jhGate.php?n='+n+'&id='+id+'&pids='+pids+'&bhid='+$('sd_150').value, opt);	
+	var ajax=new Ajax.Request('../function/jhGate.php?n='+n+'&id='+id+'&pids='+pids, opt);
 }
 
 
@@ -955,7 +961,10 @@ function zsmoneysum()
 // Jinhua function.
 function ssJinHua()
 {
-	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') {
+		window.parent.Alert('请选择宠物');
+		return;
+	}
 	var opt = {
      	method: 'get',
 		onSuccess: function(t) {					
@@ -1060,7 +1069,10 @@ function displayInfo(id)
 
 function chouqu()
 {
-	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') {
+		window.parent.Alert('请选择宠物');
+		return;
+	}
 	var opt = {
      	method: 'get',
 		onSuccess: function(t) {					
@@ -1130,7 +1142,10 @@ function chouqu()
 
 function zhuanhua()
 {
-	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') window.parent.Alert('请选择宠物');
+	if(setBBId==0||typeof(bbjs[setBBId])=='undefined') {
+		window.parent.Alert('请选择宠物');
+		return;
+	}
 	var opt = {
      	method: 'get',
 		onSuccess: function(t) {					

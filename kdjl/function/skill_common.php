@@ -3,6 +3,7 @@ function skillFlowFail($message)
 {
 	global $_pm;
 	$_pm['mysql']->query('ROLLBACK');
+	realseLock();
 	die($message);
 }
 
@@ -12,8 +13,13 @@ function skillFlowCommit()
 	if (!$_pm['mysql']->query('COMMIT'))
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		realseLock();
 		die('0');
 	}
+	$_pm['mem']->del(MEM_USERBB_KEY);
+	$_pm['mem']->del(MEM_USERSK_KEY);
+	$_pm['mem']->del(MEM_USERBAG_KEY);
+	realseLock();
 }
 
 function skillFlowValue($values, $index)
@@ -46,7 +52,7 @@ function skillFlowApplyPermanent($uid, $pet, $effect, &$storedEffect)
 	if (!is_numeric($percentText)) return false;
 
 	$field = $fields[$parts[0]];
-	$current = floatval($pet[$field]);
+	$current = isset($pet[$field]) ? floatval($pet[$field]) : 0;
 	$newValue = sprintf('%.0f', round($current * floatval($percentText) / 100) + $current);
 	$sql = 'UPDATE userbb SET '.$field.'='.$newValue.' WHERE uid='.intval($uid).' AND id='.
 		intval($pet['id']).' AND muchang IN (0,1) AND tgflag=0';

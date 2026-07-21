@@ -17,7 +17,7 @@ li { display: inline; list-style-type: none; }
 .nav01_center{width:233px; float:left; height:43px; text-align:center; padding-top:20px;}
 .nav01_right{width:300px; float:left; background:url(../images/ys/jl_bg.jpg); height:63px;}
  
-.team {position:relative; width:200px; height:54px;background:url(../images/ys/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/team.png');}
+.team {position:relative; width:200px; height:54px;background:url(../images/ys/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='../images/ys/team.png');}
 .name {position:absolute; left:85px; top:5px; width:102px; height:16px; line-height:16px; text-align:center}
 .avatar {position:absolute; width:48px; height:48px; left:30px; top:2px;}
 .avatar img {position:absolute; width:48px; height:48px; display:block}
@@ -46,37 +46,15 @@ li { display: inline; list-style-type: none; }
  <script language="javascript" src="/javascript/prototype.js"></script>
 <script language="javascript">
 window.parent.autoack = false;
-var curbb="#sbb#";
 #timejs#
-function Setbbs(obj,bb)
-{
-	curbb=bb;
-	for(var j=1;j<4;j++)
-	{	
-		try{
-			if(document.all)
-			{
-				$('i'+j).style.filter = "alpha(opacity=50)";
-			}else{
-				$('i'+j).style.opacity= 0.5;
-			}
-		}catch(e){
-			var x=e;
-			continue;
-		}
-	}
-
-	if(document.all)
-	{
-		$('i'+obj).style.filter ="alpha(opacity=100)";
-	}else{
-		$('i'+obj).style.opacity= 1;
-	}
-}
-
 var lefttime=-10;
 function do_count_down()
 {
+	if(!fortressStolenActive)
+	{
+		$('count_down').innerHTML='已结束';
+		return;
+	}
 	if(lefttime<-5)
 	{
 		if(times[2]>times[1]){
@@ -107,7 +85,7 @@ function do_count_down()
 		  <table width="230" border="0" cellspacing="0" cellpadding="0" style="margin:10px 0 0 65px;">
             <tr>
               <td height="22">击败次数：#v_times# </td>
-              <td>连击次数：#sv_times#</td>
+              <td>连胜次数：#sv_times#</td>
             </tr>
             <tr>
               <td height="22">失败次数：#f_times#</td>
@@ -119,9 +97,9 @@ function do_count_down()
 	<div class="nav02">
 		<div class="nav02_left text02">
 
-1.20:25-20:30此段时间内，玩家可以通过点击使用道具来掠夺其他玩家积分；<br />
+1.活动最后五分钟内，玩家可以通过点击使用道具来掠夺其他玩家积分；<br />
 
-2.掠夺积分是随机选择一名玩家进行掠夺；<br />
+	2.掠夺积分是随机选择一名玩家进行掠夺；<br />
 
 3.能够掠夺的积分为1%-50%的随机数；<br />
 

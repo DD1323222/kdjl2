@@ -10,232 +10,223 @@
 *@Note: none
 */
 
-header('Content-Type:text/html;charset=GBK');
+header('Content-Type:text/html;charset=utf-8');
 
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-$_REQUEST['name'] = trim($_REQUEST['name']);
-$tu	= $_pm['mysql']->escape($_REQUEST['name']);
-define("MEM_BLACKLIST_KEY","db_blacklist");
-$blacklist = unserialize($_pm['mem'] -> get(MEM_BLACKLIST_KEY));
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid <= 0)
+{
+	die('登录状态已失效，请重新登录！');
+}
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) die('玩家数据不存在，请重新登录！');
+$name = (isset($_REQUEST['name']) && !is_array($_REQUEST['name'])) ? trim($_REQUEST['name']) : '';
+$op = (isset($_REQUEST['op']) && !is_array($_REQUEST['op'])) ? $_REQUEST['op'] : '';
+$tu	= $_pm['mysql']->escape($name);
 if ($tu=='' or empty($tu)) die('请正确输入玩家角色名！');
-	
-if ($_REQUEST['op'] == 'add')	//	添加好友。
+
+if ($op == 'add')
 {
-	$fret = $_pm['mysql']->getOneRecord("SELECT nickname FROM player WHERE nickname='{$tu}'");
-	if (is_array($fret))
+	$target = $_pm['mysql']->getOneRecord("SELECT id FROM player WHERE nickname='{$tu}'");
+	if(!is_array($target) || intval($target['id']) < 1) die('无效的玩家角色名!');
+	$targetId = intval($target['id']);
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存好友数据失败！');
+	$ids = array($uid,$targetId);
+	sort($ids,SORT_NUMERIC);
+	$lockedPlayers = $_pm['mysql']->getRecords('SELECT id,nickname,friendlist FROM player WHERE id IN ('.implode(',',array_unique($ids)).') ORDER BY id FOR UPDATE');
+	$self = false;
+	$fret = false;
+	if(is_array($lockedPlayers)) foreach($lockedPlayers as $lockedPlayer)
 	{
-		$fname = $fret['nickname'];
-		
-		$friendlist = $user['friendlist'];
-		
-		$black = $_pm['mysql'] -> getOneRecord("SELECT nickname,list FROM blacklist WHERE uid = {$_SESSION['id']}");
-		if($black['list'] != ''){
-			$farr = explode(',',$black['list']);
-			if(array_search($fname, $farr) !== FALSE){
-				die('该玩家在您的黑名单中，不能加入好友！');
-			}
-		}
-		
-		$self = $_pm['mysql'] -> getOneRecord("SELECT nickname FROM player WHERE id = {$_SESSION['id']}");
-		if($self['nickname'] == $fname){
-			die('您不能添加您自己！');
-		}
-		
-		if (strlen($friendlist)<3)
-		{
-			$friendlist = $fname;
-		}
-		else
-		{
-			$arr = explode(',', $friendlist);
-			if (count($friendlist)>=20)
-				die('您目前只能添加20个好友！');
-			
-			if (array_search($fname, $arr) === FALSE)
-			{
-				$friendlist .= ',' . $fname;
-			}
-			else die('该用户已经是好友了！');
-		}
-		
-		$_pm['mysql']->query("UPDATE player 
-					   SET friendlist='{$friendlist}'
-					 WHERE id={$_SESSION['id']}
-				  ");
-		liststr($friendlist);
+		if(intval($lockedPlayer['id']) === $uid) $self = $lockedPlayer;
+		if(intval($lockedPlayer['id']) === $targetId) $fret = $lockedPlayer;
 	}
-	else die('无效的玩家角色名!');
+	if(!is_array($self) || !is_array($fret) || $fret['nickname'] !== $name) friendGateRollback('无效的玩家角色名!');
+	if($targetId === $uid) friendGateRollback('您不能添加您自己！');
+	$fname = $fret['nickname'];
+	$blackRows = $_pm['mysql']->getRecords("SELECT Id,list FROM blacklist WHERE uid={$uid} ORDER BY Id FOR UPDATE");
+	$firstBlacklistId = 0;
+	$blackNames = friendGateBlacklistNames($blackRows,$firstBlacklistId);
+	if(in_array($fname,$blackNames,true)) friendGateRollback('该玩家在您的黑名单中，不能加入好友！');
+	$friends = friendGateNames(isset($self['friendlist']) ? $self['friendlist'] : '');
+	if(in_array($fname,$friends,true)) friendGateRollback('该用户已经是好友了！');
+	if(count($friends) >= 20) friendGateRollback('您目前只能添加20个好友！');
+	$friends[] = $fname;
+	$friendlist = implode(',',$friends);
+	$friendlistSql = $_pm['mysql']->escape($friendlist);
+	if(!$_pm['mysql']->query("UPDATE player SET friendlist='{$friendlistSql}' WHERE id={$uid}") ||
+		mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT')) friendGateRollback('保存好友数据失败！');
+	$_pm['mem']->del($uid);
+	liststr($friendlist);
 }
-else if($_REQUEST['op'] == 'del') // 删除好友。
-{	
-		$friendlist = $_REQUEST['name'];
-		if (strlen($friendlist)<3)
-		{
-			die('该用户不是您的好友！');
-		}
-		else
-		{
-			$arr = explode(',', $user['friendlist']);
-			$s = array_search($_REQUEST['name'], $arr);
-			if ($s === FALSE)
-			{
-				die('该用户不是您的好友！');
-			}
-			else
-			{
-				$friendlist = '';
-				foreach($arr as $k => $v)
-				{
-					if ($v == $_REQUEST['name']) continue;
-					$friendlist .= ','.$v;
-				}
-				$friendlist = substr($friendlist,1);
-			}
-		}
-		
-		$_pm['mysql']->query("UPDATE player 
-					   SET friendlist='{$friendlist}'
-					 WHERE id={$_SESSION['id']}
-				  ");
-		liststr($friendlist);
+else if($op == 'del')
+{
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存好友数据失败！');
+	$self = $_pm['mysql']->getOneRecord("SELECT friendlist FROM player WHERE id={$uid} FOR UPDATE");
+	if(!is_array($self)) friendGateRollback('玩家数据不存在，请重新登录！');
+	$friends = friendGateNames(isset($self['friendlist']) ? $self['friendlist'] : '');
+	$friendIndex = array_search($name,$friends,true);
+	if($friendIndex === false) friendGateRollback('该用户不是您的好友！');
+	unset($friends[$friendIndex]);
+	$friendlist = implode(',',array_values($friends));
+	$friendlistSql = $_pm['mysql']->escape($friendlist);
+	if(!$_pm['mysql']->query("UPDATE player SET friendlist='{$friendlistSql}' WHERE id={$uid}") ||
+		mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !$_pm['mysql']->query('COMMIT')) friendGateRollback('保存好友数据失败！');
+	$_pm['mem']->del($uid);
+	liststr($friendlist);
 }
-else if($_REQUEST['op'] == 'addblacklist')//加入黑名单
+else if($op == 'addblacklist')
+{
+	$target = $_pm['mysql']->getOneRecord("SELECT id FROM player WHERE nickname='{$tu}'");
+	if(!is_array($target) || intval($target['id']) < 1) die('请正确输入您要加黑名单的角色名！');
+	$targetId = intval($target['id']);
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存好友数据失败！');
+	$ids = array($uid,$targetId);
+	sort($ids,SORT_NUMERIC);
+	$lockedPlayers = $_pm['mysql']->getRecords('SELECT id,nickname,friendlist FROM player WHERE id IN ('.implode(',',array_unique($ids)).') ORDER BY id FOR UPDATE');
+	$self = false;
+	$fret = false;
+	if(is_array($lockedPlayers)) foreach($lockedPlayers as $lockedPlayer)
+	{
+		if(intval($lockedPlayer['id']) === $uid) $self = $lockedPlayer;
+		if(intval($lockedPlayer['id']) === $targetId) $fret = $lockedPlayer;
+	}
+	if(!is_array($self) || !is_array($fret) || $fret['nickname'] !== $name) friendGateRollback('请正确输入您要加黑名单的角色名！');
+	if($targetId === $uid) friendGateRollback('您不能添加您自己！');
+	$fname = $fret['nickname'];
+	if(in_array($fname,friendGateNames(isset($self['friendlist']) ? $self['friendlist'] : ''),true)) friendGateRollback('该玩家是您的好友，您不能加入黑名单！');
+	$blackRows = $_pm['mysql']->getRecords("SELECT Id,list FROM blacklist WHERE uid={$uid} ORDER BY Id FOR UPDATE");
+	$firstBlacklistId = 0;
+	$blackNames = friendGateBlacklistNames($blackRows,$firstBlacklistId);
+	if(in_array($fname,$blackNames,true)) friendGateRollback('该用户已经被您加入黑名单了！');
+	if(count($blackNames) >= 30) friendGateRollback('您当前只能加30个人入黑名单!');
+	$blackNames[] = $fname;
+	if(!friendGateSaveBlacklist($uid,$firstBlacklistId,$blackNames) || !$_pm['mysql']->query('COMMIT')) friendGateRollback('保存好友数据失败！');
+	friendGateRefreshBlacklistCache();
+	liststr1(implode(',',$blackNames));
+}
+else if($op == 'deleteblacklist')//从黑名单取消
 {
 	$err = 10;
-	
-	$fret = $_pm['mysql']->getOneRecord("SELECT nickname FROM player WHERE nickname='{$tu}'");//找到要加入黑名单的用户
-	$fname = $fret['nickname'];
-	if(!is_array($fret))
-	{
-		die("请正确输入您要加黑名单的角色名！");
-	}
-	$friend = $_pm['mysql'] -> getOneRecord("SELECT nickname,friendlist FROM player WHERE id = {$_SESSION['id']}");
-	if($friend['friendlist'] != ''){
-		$farr = explode(',',$friend['friendlist']);
-		if(array_search($fname, $farr) !== FALSE){
-			die('该玩家是您的好友，您不能加入黑名单！');
-		}
-	}
-	if($friend['nickname'] == $fname){
-		die('您不能添加您自己！');
-	}
-	
-	$barr = $_pm['mysql'] -> getOneRecord("SELECT list FROM blacklist WHERE uid = {$_SESSION['id']}");
-	
-	if(!empty($barr['list']))
-	{
-		//$list = substr($blacklist[$_SESSION['id']],1,-1);
-		$arr = explode(",",$barr['list']);
-		$num = count($arr);
-		if($num >= 30)
-		{
-			die("您当前只能加30个人入黑名单!");
-		}
-		if (array_search($fname, $arr) === FALSE)
-		{
-			$blacklist = $barr['list'].','.$fname;
-			$_pm['mysql'] -> query("UPDATE blacklist SET list = '{$blacklist}' WHERE uid = {$_SESSION['id']}");
-			$_pm['mem']->del('db_blacklist');//重新加载内存数据
-			$ret2 = $_pm['mysql']->getRecords("select uid,list from blacklist");
-			foreach($ret2 as $k => $v)
-			{
-				$newarr[$v['uid']] = $v['list'];
-			}
-			$_pm['mem']->set(array('k'=>'db_blacklist','v'=>$newarr));
-			liststr1($blacklist);
-		}
-		else die('该用户已经被您加入黑名单了！');
-	}
-	else
-	{
-		$_pm['mysql'] -> query("INSERT INTO blacklist (uid,list) VALUES ({$_SESSION['id']},'{$fname}');");
-		$_pm['mem']->del('db_blacklist');//重新加载内存数据
-		$ret2 = $_pm['mysql']->getRecords("select uid,list from blacklist");
-		foreach($ret2 as $k => $v)
-		{
-			$newarr[$v['uid']] = $v['list'];
-		}
-		$_pm['mem']->set(array('k'=>'db_blacklist','v'=>$newarr));
-	}
-	liststr1($fname);
-	echo $err;
-}
-else if($_REQUEST['op'] == 'deleteblacklist')//从黑名单取消
-{
-	$err = 10;
-	$fret = $_pm['mysql']->getOneRecord("SELECT nickname FROM player WHERE nickname='{$tu}'");//找到要取消黑名单的用户
-	if(!is_array($fret))
-	{
-		die("请正确输入您要从黑名单取消的角色名！");
-	}
-	$fname = $fret['nickname'];
-	$blacklist = $_pm['mysql']->getOneRecord("SELECT list FROM blacklist WHERE uid='{$_SESSION['id']}'");
-	//$arr = explode(',',$blacklist[$_SESSION['id']]);
-	if(!is_array($blacklist))
-	{
-		die("该用户不在您的黑名单中！");
-	}
-	
-	$arr = explode(',',$blacklist['list']);
-	$s = array_search($fname,$arr);
-	if ($s === FALSE)
-	{
-		die('该用户不在您的黑名单中！');
-	}
-	else
-	{
-		$blacklist = 0;
-		foreach($arr as $k => $v)
-		{
-			if ($v == $fname) continue;
-			if(empty($blacklist)){
-				$blacklist = $v;
-			}else{
-				$blacklist .= ','.$v;
-			}
-		}
-		$blacklists = $blacklist;
-	}
-	if(empty($blacklists)){
-		$_pm['mysql'] -> query("delete from blacklist where uid = {$_SESSION['id']}");
-	}else{
-		$_pm['mysql'] -> query("UPDATE blacklist SET list = '{$blacklists}' WHERE uid = {$_SESSION['id']}");
-	}
-	$_pm['mem']->del('db_blacklist');//重新加载内存数据
-	$ret2 = $_pm['mysql']->getRecords("select uid,list from blacklist");
-	foreach($ret2 as $k => $v)
-	{
-		$newarr[$v['uid']] = $v['list'];
-	}
-	$_pm['mem']->set(array('k'=>'db_blacklist','v'=>$newarr));
-	if(empty($blacklists)){
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存好友数据失败！');
+	$blackRows = $_pm['mysql']->getRecords("SELECT Id,list FROM blacklist WHERE uid={$uid} ORDER BY Id FOR UPDATE");
+	$firstBlacklistId = 0;
+	$blackNames = friendGateBlacklistNames($blackRows,$firstBlacklistId);
+	$blackIndex = array_search($name,$blackNames,true);
+	if($blackIndex === false) friendGateRollback('该用户不在您的黑名单中！');
+	unset($blackNames[$blackIndex]);
+	$blackNames = array_values($blackNames);
+	if(!friendGateSaveBlacklist($uid,$firstBlacklistId,$blackNames) || !$_pm['mysql']->query('COMMIT')) friendGateRollback('保存好友数据失败！');
+	friendGateRefreshBlacklistCache();
+	if(empty($blackNames)){
 		echo $err;
 	}else
 	{
-		liststr1($blacklists);
+		liststr1(implode(',',$blackNames));
 	}
+}
+
+function friendGateNames($value)
+{
+	$result = array();
+	foreach(explode(',',(string)$value) as $name)
+	{
+		$name = trim($name);
+		if($name !== '' && !in_array($name,$result,true)) $result[] = $name;
+	}
+	return $result;
+}
+
+function friendGateBlacklistNames($rows,&$firstId)
+{
+	$firstId = 0;
+	$result = array();
+	if(!is_array($rows)) return $result;
+	foreach($rows as $row)
+	{
+		if(!is_array($row)) continue;
+		$rowId = isset($row['Id']) ? intval($row['Id']) : (isset($row['id']) ? intval($row['id']) : 0);
+		if($firstId < 1 && $rowId > 0) $firstId = $rowId;
+		foreach(friendGateNames(isset($row['list']) ? $row['list'] : '') as $name)
+		{
+			if(!in_array($name,$result,true)) $result[] = $name;
+		}
+	}
+	return $result;
+}
+
+function friendGateSaveBlacklist($uid,$firstId,$names)
+{
+	global $_pm;
+	$uid = intval($uid);
+	$firstId = intval($firstId);
+	if($uid < 1 || !is_array($names)) return false;
+	if(empty($names)) return $_pm['mysql']->query("DELETE FROM blacklist WHERE uid={$uid}");
+	$listSql = $_pm['mysql']->escape(implode(',',$names));
+	if($firstId > 0)
+	{
+		if(!$_pm['mysql']->query("UPDATE blacklist SET list='{$listSql}' WHERE Id={$firstId} AND uid={$uid}")) return false;
+		return $_pm['mysql']->query("DELETE FROM blacklist WHERE uid={$uid} AND Id<>{$firstId}");
+	}
+	return $_pm['mysql']->query("INSERT INTO blacklist(uid,list) VALUES({$uid},'{$listSql}')");
+}
+
+function friendGateRefreshBlacklistCache()
+{
+	global $_pm;
+	$rows = $_pm['mysql']->getRecords('SELECT uid,list FROM blacklist ORDER BY Id');
+	$cache = array();
+	if(is_array($rows)) foreach($rows as $row)
+	{
+		$cacheUid = isset($row['uid']) ? intval($row['uid']) : 0;
+		if($cacheUid < 1) continue;
+		$current = isset($cache[$cacheUid]) ? friendGateNames($cache[$cacheUid]) : array();
+		foreach(friendGateNames(isset($row['list']) ? $row['list'] : '') as $name)
+		{
+			if(!in_array($name,$current,true)) $current[] = $name;
+		}
+		$cache[$cacheUid] = implode(',',$current);
+	}
+	$_pm['mem']->del('db_blacklist');
+	$_pm['mem']->set(array('k'=>'db_blacklist','v'=>$cache));
+}
+
+function friendGateRollback($message)
+{
+	global $_pm;
+	$_pm['mysql']->query('ROLLBACK');
+	die($message);
 }
 
 
 function liststr($friendlist)
 {
-	if (empty($friendlist)) return false;
+	if ($friendlist === '')
+	{
+		header('Content-Type:text/html;charset=utf-8');
+		die('#您还未添加任何好友！');
+	}
 	$arr = explode(',',$friendlist);
 	if(!is_array($arr)) $arr[0]=$friendlist;
 	$f = '';
 	foreach($arr as $k => $v)
 	{
-		$f .= "<span style='cursor:pointer;display:block;' onclick=\"chat('{$v}');\"><u>".$v . '</u></span>';
+		$vHtml = friendGateHtml($v);
+		$vJs = friendGateHtml(friendGateJsSingle($v));
+		$f .= "<span style='cursor:pointer;display:block;' onclick=\"chat('{$vJs}');\"><u>".$vHtml . '</u></span>';
 	}
-	header('Content-Type:text/html;charset=GBK');
+	header('Content-Type:text/html;charset=utf-8');
 	die('#'.$f);
 }
 function liststr1($friendlist)
 {
-	if (empty($friendlist)) return false;
+	if ($friendlist === '')
+	{
+		header('Content-Type:text/html;charset=utf-8');
+		die('#');
+	}
 	$arr = explode(',',$friendlist);
 	if(!is_array($arr)) $arr[0]=$friendlist;
 	$f = '';
@@ -244,9 +235,24 @@ function liststr1($friendlist)
 		if(empty($v)){
 			continue;
 		}
-		$f .= "<span style='cursor:pointer;display:block;' onclick=\"blacks('{$v}');\"><u>".$v . '</u></span>';
+		$vHtml = friendGateHtml($v);
+		$vJs = friendGateHtml(friendGateJsSingle($v));
+		$f .= "<span style='cursor:pointer;display:block;' onclick=\"blacks('{$vJs}');\"><u>".$vHtml . '</u></span>';
 	}
-	header('Content-Type:text/html;charset=GBK');
+	header('Content-Type:text/html;charset=utf-8');
 	die('#'.$f);
+}
+
+function friendGateHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function friendGateJsSingle($value)
+{
+	$value = str_replace("\\", "\\\\", (string)$value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	return $value;
 }
 ?>

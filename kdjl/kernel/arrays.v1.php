@@ -1,67 +1,63 @@
 <?php
+require_once(dirname(__FILE__).'/legacy_expression.v1.php');
+
 /**
 @Usage: Array class
 @Copyright:www.webgame.com.cn
 @Version:1.0
 */
-class arrays{
+class arrays
+{
+	private $errMsg = '';
 
-	private $errMsg	=	'';
-
-	function __construct(){
-	
+	function __construct()
+	{
 	}
 
-	// return error info.
-	public function getError(){
+	public function getError()
+	{
 		return $this->errMsg;
 	}
-	
-	public function addArray($src, $des){
-		if(!is_array($src)) return false;
 
-		if(!is_array($des))
-		{
-			$des = array(0 => $src);
-		}
-		else
-		{
-			$des = array_merge($des, array((count($des)+1) => $src) );
-		}
+	public function addArray($src, $des)
+	{
+		if(!is_array($src)) return false;
+		if(!is_array($des)) $des = array();
+		$des[] = $src;
 		return $des;
 	}
-	
-	// Get find $rs array.
-	public function dataGet($arr, $des){
-		if(!is_array($arr) || !is_array($des)) return false;
-		
-		$ret = 0;
-		foreach($des as $k => $rs)
+
+	public function dataGet($arr, $des)
+	{
+		if(!is_array($arr) || !isset($arr['v']) || !is_array($des)) return false;
+		foreach($des as $rs)
 		{
-			eval($arr['v']);
-			if (is_array($ret)) return $ret;
+			if(is_array($rs) && $this->rowMatches($rs, $arr['v'])) return $rs;
 		}
 		return false;
 	}
-	
-	// Get find $rs array.
-	public function dataGetAll($arr, $des){
-		if(!is_array($arr) || !is_array($des)) return false;
 
-		$ret = 0;
-		$r=array();
-		$i=0;
-		foreach($des as $k => $rs)
+	public function dataGetAll($arr, $des)
+	{
+		if(!is_array($arr) || !isset($arr['v']) || !is_array($des)) return false;
+		$result = array();
+		foreach($des as $rs)
 		{
-			eval($arr['v']);
-			if (is_array($ret)) $r[$i++]=$ret;
-			unset($ret);
+			if(is_array($rs) && $this->rowMatches($rs, $arr['v'])) $result[] = $rs;
 		}
-		return $r;
+		return $result;
 	}
 
-	function __destruct(){
-	
+	private function rowMatches($row, $expression)
+	{
+		$error = '';
+		$matched = KdjlLegacyExpression::matches($row, $expression, $error);
+		if($error !== '') $this->errMsg = $error;
+		return $matched;
+	}
+
+	function __destruct()
+	{
 	}
 }
 ?>

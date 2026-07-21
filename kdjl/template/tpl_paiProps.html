@@ -44,7 +44,7 @@ var pid = 0;
   <tr>
     <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
       <tr>
-        <td><img src="../images/ui/pai/pm07.gif" width="140" height="149"></td>
+        <td><img src="../images/ui/props/dj01.gif" width="140" height="149" alt="" /></td>
       </tr>
       <tr>
         <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif"><div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
@@ -216,7 +216,7 @@ function sale(){
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/paiPropsGate.php?action=sale&bid='+pid,opt);
+			var ajax=new Ajax.Request('../function/paiPropsGate.php?action=sale&bagid='+bid+'&bid='+pid,opt);
 		}
 		else return;
 	}
@@ -236,6 +236,7 @@ function money()
 					window.location.reload();
 				 }
 				 else if(n==100) {window.parent.Alert('您操作太快，请稍侯再试！');}
+				 else if(n==6) {window.parent.Alert('达到余额上限的款项仍保留在拍卖所，其余可领取款项已到账。');window.location.reload();}
 				 else
 				 {
 				 	window.parent.Alert('您的拍卖所的钱为0！');
@@ -261,21 +262,13 @@ function ajaxfun()
 
 var equipInfos = {};
 var LastKey = "";
-if(!document.all){
-	var Event;
-	window.onmousemove = function(){
-							Event = event;
-					}
-}
+var Event = null;
+document.onmousemove = function(e){ Event = e || window.event || null; };
 function showTip(id,bid,sign,type)
 {
-	if(!document.all){
-		var x=Event.x;
-		var y=Event.y;
-	}else{
-		var x=event.x;
-		var y=event.y;
-	}
+	var activeEvent = Event || window.event;
+	var x = activeEvent ? (typeof activeEvent.clientX == 'number' ? activeEvent.clientX : activeEvent.x) : 500;
+	var y = activeEvent ? (typeof activeEvent.clientY == 'number' ? activeEvent.clientY : activeEvent.y) : 100;
 	var key = id+"_"+bid+"_"+sign+"_"+type;
 	if(typeof(equipInfos[key])!='undefined'){
 		window.parent.showTips(equipInfos[key],x,y);

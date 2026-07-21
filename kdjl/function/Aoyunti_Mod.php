@@ -12,35 +12,45 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
+require_once('../sec/dblock_fun.php');
+require_once(dirname(__FILE__).'/aoyun_common.php');
 secStart($_pm['mem']);
-$_SESSION[$_SESSION['id']."aoyun"] = "checked";
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) exit;
+$aoyunQuestionModLocked = false;
+if(!function_exists('aoyunQuestionModUnlock'))
+{
+	function aoyunQuestionModUnlock()
+	{
+		global $aoyunQuestionModLocked;
+		if(!$aoyunQuestionModLocked) return;
+		if(function_exists('realseLock')) realseLock();
+		$aoyunQuestionModLocked = false;
+	}
+}
+register_shutdown_function('aoyunQuestionModUnlock');
+$user	 = $_pm['user']->getUserById($uid);
 //Word part.
 //$taskword= taskcheck($user['task'],6);
+$taskword = '';
+$king = '';
 
-$aoyunti = unserialize($_pm['mem']->get(MEM_AOYUN_KEY));
-$num = count($aoyunti) - 1;
+$aoyunti = kdjlSafeMemValue($_pm['mem']->get(MEM_AOYUN_KEY), array());
+if(!is_array($aoyunti) || empty($aoyunti)) exit;
+$maxQuestion = 30;
 
 // 加入时间段限制开始
 // time limit start
-$tl = intval(date("H",time()));
-$day = intval(date("Ymd"));
-$timearr1 = unserialize($_pm['mem']->get(MEM_TIMENEW_KEY));
-$timearr = $timearr1['dati'];
-foreach($timearr as $k => $v)
-{
-	$dayarr = explode("-",$v['days']);
-	if($tl >= $v['starttime'] && $tl < $v['endtime'])
-	{
-		$checktime = 1;
-		break;
-	}
-}
-
-if($day < $dayarr[0] || $day > $dayarr[1])
+$now = time();
+$timearr1 = kdjlSafeMemValue($_pm['mem']->get(MEM_TIMENEW_KEY), array());
+$timearr = (is_array($timearr1) && isset($timearr1['dati']) && is_array($timearr1['dati'])) ? $timearr1['dati'] : array();
+if(kdjlAoyunActiveWindow($timearr, $now) === false)
 {
 	exit;
 }
+if(!getScopedLock('aoyun', $uid, 5)) exit;
+$aoyunQuestionModLocked = true;
+$_SESSION[$uid."aoyun"] = "checked";
 // 加入时间段限制结束
 
 // 检查用户是否参与过该活动。
@@ -49,68 +59,87 @@ if($day < $dayarr[0] || $day > $dayarr[1])
 
 
 $rs = $_pm['mysql']->getOneRecord("SELECT *
-									 FROM aoyun_player 
-									WHERE uid={$_SESSION['id']}");
+									 FROM aoyun_player
+									WHERE uid={$uid}
+								 ORDER BY id LIMIT 1");
+$todayStart = kdjlAoyunTodayStart($now);
+$questionarrs = false;
 
 if (!is_array($rs))
 {
-	$questionarrs = randq();
-	$rs['tid'] = $questionarrs[1]['id'];
-	$rs['qsums']=1;
-	$_pm['mysql']->query("INSERT INTO aoyun_player(uid,stime,tid,qsums,oksum,times,result)
-						  VALUES({$_SESSION['id']},unix_timestamp(),{$rs['tid']},1,0,0,0)
-						");
-	
-} 
-else if (($checktime == 1) && ($rs['qsums']==31))
+	$questionarrs = randq($uid);
+	if(count($questionarrs) < $maxQuestion || !isset($questionarrs[1]['id'])) exit;
+	$tid = intval($questionarrs[1]['id']);
+	if($tid < 1 || !$_pm['mysql']->query("INSERT INTO aoyun_player(uid,stime,tid,qsums,oksum,times,result)
+						  VALUES({$uid},unix_timestamp(),{$tid},1,0,0,0)")) exit;
+	$rs = array('id'=>intval(mysql_insert_id($_pm['mysql']->getConn())), 'tid'=>$tid, 'qsums'=>1, 'stime'=>$now, 'oksum'=>0, 'times'=>0, 'result'=>0);
+}
+else if(!isset($rs['stime']) || intval($rs['stime']) < $todayStart)
 {
-	$questionarrs = randq();
-	$rs['qsums']=1;
-	$nowtime = time();
-	$ctime = $nowtime - $rs['stime'];
-	if (($checktime == 1) && ($ctime > 3600))
-	{
-		$_pm['mysql']->query("UPDATE aoyun_player
+	$questionarrs = randq($uid);
+	if(count($questionarrs) < $maxQuestion || !isset($questionarrs[1]['id'])) exit;
+	$rs['tid'] = intval($questionarrs[1]['id']);
+	$rs['qsums'] = 1;
+	$rs['stime'] = $now;
+	$rowId = isset($rs['id']) ? intval($rs['id']) : 0;
+	if($rowId < 1 || $rs['tid'] < 1 || !$_pm['mysql']->query("UPDATE aoyun_player
 								 SET qsums=1,
 								     tid={$rs['tid']},
 									 stime=unix_timestamp(),
 									 oksum=0,
 									 result=0,
 									 times=0
-							   WHERE uid={$_SESSION['id']}
-							");
+							   WHERE id={$rowId} AND uid={$uid}")) exit;
+}
+else
+{
+	$rs['qsums'] = isset($rs['qsums']) ? intval($rs['qsums']) : 0;
+	if($rs['qsums'] > $maxQuestion) exit;
+	if($rs['qsums'] < 1)
+	{
+		$rowId = isset($rs['id']) ? intval($rs['id']) : 0;
+		if($rowId < 1 || !$_pm['mysql']->query("UPDATE aoyun_player SET qsums=1 WHERE id={$rowId} AND uid={$uid}")) exit;
+		$rs['qsums'] = 1;
 	}
-}else{
-	$tiarr = unserialize($_pm['mem']->get('quest'.$_SESSION['id']));
-	if(is_array($tiarr)){
+	$tiarr = kdjlSafeMemValue($_pm['mem']->get('quest'.$uid), array());
+	if(is_array($tiarr) && count($tiarr) >= $maxQuestion){
 		$questionarrs = $tiarr;
 	}else{
-		$questionarrs = randq();
+		$questionarrs = randq($uid);
 	}
-	
 }
-$_SESSION['datiid'.$_SESSION['id']] = "";
+$_SESSION['datiid'.$uid] = array();
+if(!is_array($questionarrs) || count($questionarrs) < $maxQuestion) exit;
 foreach($questionarrs as $k=>$v)
 {
-	foreach($v as $kk=>$vv)
-	{//echo $v['id'].'<br />';
-		$_SESSION['datiid'.$_SESSION['id']][$v['id']] = 1;
+	if(intval($k) >= intval($rs['qsums']) && is_array($v) && isset($v['id']))
+	{
+		$_SESSION['datiid'.$uid][intval($v['id'])] = intval($k);
 	}
 }//print_r($_SESSION['datiid'.$_SESSION['id']]);
 $questionarr = json_encode($questionarrs);
+if($questionarr === false) exit;
 
+$rs['qsums'] = isset($rs['qsums']) ? intval($rs['qsums']) : 0;
+if(!isset($questionarrs[$rs['qsums']]['id'])) exit;
 $rs['tid'] = $questionarrs[$rs['qsums']]['id'];
 if(!empty($rs['tid']))
 {
-	$_pm['mysql']->query("UPDATE aoyun_player
+	$rowId = isset($rs['id']) ? intval($rs['id']) : 0;
+	if($rowId < 1 || !$_pm['mysql']->query("UPDATE aoyun_player
 								 SET
 								     tid={$rs['tid']}
-							   WHERE uid={$_SESSION['id']}
-							");
+							   WHERE id={$rowId} AND uid={$uid}")) exit;
 }
 // 获得所答题信息。
 //$qst = $_pm['mysql']->getOneRecord("SELECT * FROM aoyun WHERE id={$rs['tid']}");
+if(!isset($aoyunti[$rs['tid']]) || !is_array($aoyunti[$rs['tid']])) exit;
 $qst = $aoyunti[$rs['tid']];
+$qst['title'] = isset($qst['title']) ? $qst['title'] : '';
+$qst['a'] = isset($qst['a']) ? $qst['a'] : '';
+$qst['b'] = isset($qst['b']) ? $qst['b'] : '';
+$qst['c'] = isset($qst['c']) ? $qst['c'] : '';
+$qst['d'] = isset($qst['d']) ? $qst['d'] : '';
 
 
 
@@ -119,7 +148,7 @@ $tn = $_game['template'] . 'tpl_aoyunti.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#word#',
 				 '#order#',
 				 '#title#',
@@ -148,49 +177,34 @@ ob_end_flush();
 
 
 
-function randq( )
+function randq($uid)
 {
 	global $_pm,$aoyunti;
-	$ti = "";
-	$idarr = array();
+	$ti = array();
 	//$ret = $_pm['mysql']->getRecords("SELECT * FROM aoyun");
 	//$ret = unserialize($_pm['mem']->get(MEM_AOYUN_KEY));
-	
-	$num1 = count($aoyunti) - 1;
-	for($i = 1;$i <= 30;$i++)
+	if(!is_array($aoyunti)) return array();
+	$pool = array();
+	foreach($aoyunti as $row)
 	{
-		$num = 1;
-		$num = rand(1,$num1);
-		$ct=0;
-		$tmp=0;
-		while
-		(
-			($aoyunti[$num]['title'] == "" || in_array($num,$idarr))
-			&&
-			$ct<10
-		)
-		{			
-			$ct++;
-			$num = rand(1,$num1);
-			if($aoyunti[$num]['title'] != "")
-			{
-				$tmp = $num;
-			}
-		}
-		if($ct>9)
+		if(is_array($row) && isset($row['title']) && $row['title'] != '')
 		{
-			$num = $tmp>0?$tmp:rand(1,$num1);
+			$pool[] = $row;
 		}
-		
-		$idarr[] = $aoyunti[$num]['id'];
-		$ti[$i]['id'] = $aoyunti[$num]['id'];
-		$ti[$i]['title'] = $aoyunti[$num]['title'];
-		$ti[$i]['a'] = $aoyunti[$num]['a'];
-		$ti[$i]['b'] = $aoyunti[$num]['b'];
-		$ti[$i]['c'] = $aoyunti[$num]['c'];
-		$ti[$i]['d'] = $aoyunti[$num]['d'];
 	}
-	 $_pm['mem']->set(array('k' => 'quest'.$_SESSION['id'], 'v' => $ti));
+	for($i = 1;$i <= 30 && count($pool) > 0;$i++)
+	{
+		$num = rand(0, count($pool) - 1);
+		$row = $pool[$num];
+		array_splice($pool, $num, 1);
+		$ti[$i]['id'] = isset($row['id']) ? $row['id'] : 0;
+		$ti[$i]['title'] = isset($row['title']) ? $row['title'] : '';
+		$ti[$i]['a'] = isset($row['a']) ? $row['a'] : '';
+		$ti[$i]['b'] = isset($row['b']) ? $row['b'] : '';
+		$ti[$i]['c'] = isset($row['c']) ? $row['c'] : '';
+		$ti[$i]['d'] = isset($row['d']) ? $row['d'] : '';
+	}
+	 $_pm['mem']->set(array('k' => 'quest'.$uid, 'v' => $ti));
 	return $ti;
 }
 ?>

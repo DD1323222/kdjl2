@@ -1,22 +1,32 @@
 
-function g(url,id,script)
+function g(url,id,callback)
 {
-	if($('gw').src!=url) $('gw').src=url;
-	if(typeof($('gw').contentWindow.document.getElementById(id))=='undefined')
-	{
-		setTimeout('g("'+url+'","'+id+'","'+script+'")',500);
-	}else{
-		eval(script);
+	var gameWindow = $('gw');
+	if(!gameWindow){
+		setTimeout(function(){ g(url,id,callback); },500);
+		return;
+	}
+	if(gameWindow.getAttribute('src') != url) gameWindow.src=url;
+	var target = null;
+	try{
+		target = gameWindow.contentWindow.document.getElementById(id);
+	}catch(e){}
+	if(!target){
+		setTimeout(function(){ g(url,id,callback); },500);
+	}else if(typeof callback == 'function'){
+		callback();
 	}
 }
 
 function robot()
 {
-	g('/function/Team_Mod.php?n=1','teamlistifr','checkExistsTeam()');
+	g('/function/Team_Mod.php?n=1','teamlistifr',checkExistsTeam);
 }
 var teamApplyTimes=0;
 function checkExistsTeam()
 {
+	var i;
+	var tmp;
 	try{
 		var o=$('gw').contentWindow.document.getElementById('teamlistifr').contentWindow;
 		if(o.inteam)
@@ -45,10 +55,10 @@ function checkExistsTeam()
 				{
 					autoack=true;
 					$('gw').src='/function/Fight_Mod.php?team_auto=1&team_auto=1&setteamauto=1&rd='+Math.random();
-					setTimeout('checkExistsTeam()',3000);
+					setTimeout(checkExistsTeam,3000);
 					return;
 				}
-				setTimeout('checkExistsTeam()',3000);
+				setTimeout(checkExistsTeam,3000);
 			}else{
 				var datas=o.datas;			
 				for(i=0;i<datas.length;i++)
@@ -58,11 +68,11 @@ function checkExistsTeam()
 					if(myUid==tmp[0]&&tmp[2]=='0')
 					{
 						$('gw').contentWindow.swapState();
-						setTimeout('checkExistsTeam()',3000);
+						setTimeout(checkExistsTeam,3000);
 						return;
 					}
 				}
-				setTimeout('checkExistsTeam()',3000);
+				setTimeout(checkExistsTeam,3000);
 			}
 		}else{
 			var datas=o.datas;
@@ -77,15 +87,15 @@ function checkExistsTeam()
 					}	
 				}
 				teamApplyTimes++;
-				setTimeout('checkExistsTeam()',5000);
+				setTimeout(checkExistsTeam,5000);
 			}else{
 				$('gw').contentWindow.createTeam();
-				setTimeout('checkExistsTeam()',5000);
+				setTimeout(checkExistsTeam,5000);
 			}
 		}
 	}
 	catch(e)
 	{
-		setTimeout('checkExistsTeam()',15000);
+		setTimeout(checkExistsTeam,15000);
 	}
 }

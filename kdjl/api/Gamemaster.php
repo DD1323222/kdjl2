@@ -16,7 +16,7 @@ type       禁言==1    封号==2
 
 
 
-return 
+return
 
 1001 限制访问
 1002 加密串
@@ -41,12 +41,13 @@ type       禁言==1  封号==2
 **/
 
 //http://xjtest1.webgame.com.cn/api/Gamemaster.php?locktime=
-$locktime=$_GET['locktime'];
-$roleName=iconv('utf-8','gbk',$_GET['roleName']);
-$ServerUrl=$_GET['ServerUrl'];
-$type=$_GET['type'];
-$key=$_GET['key'];
-$userid = intval($_GET['userid']);
+$locktime = (isset($_GET['locktime']) && !is_array($_GET['locktime'])) ? $_GET['locktime'] : '';
+$roleNameRaw = (isset($_GET['roleName']) && !is_array($_GET['roleName'])) ? $_GET['roleName'] : '';
+$roleName = iconv('utf-8','gbk',$roleNameRaw);
+$ServerUrl = (isset($_GET['ServerUrl']) && !is_array($_GET['ServerUrl'])) ? $_GET['ServerUrl'] : '';
+$type = (isset($_GET['type']) && !is_array($_GET['type'])) ? $_GET['type'] : '';
+$key = (isset($_GET['key']) && !is_array($_GET['key'])) ? $_GET['key'] : '';
+$userid = (isset($_GET['userid']) && !is_array($_GET['userid'])) ? intval($_GET['userid']) : 0;
 
 
 
@@ -58,7 +59,7 @@ if(!is_numeric($locktime)||empty($roleName)||empty($ServerUrl)||!is_numeric($typ
 }
 
 //die($locktime.$roleName.$ServerUrl.$type.'315sab');
-$sgin = md5($locktime.$_GET['roleName'].$ServerUrl.$type.'315sab');
+$sgin = md5($locktime.$roleNameRaw.$ServerUrl.$type.'315sab');
 
 if($key!=$sgin){
 	die("1002");
@@ -88,7 +89,7 @@ $s=new socketmsg();
 if($type==1){
 	/*$msg_key = 'chatMsgList';
 	$nowMsgList = unserialize($_pm['mem']->get($msg_key));
-	$arr = split('linend', $nowMsgList);
+	$arr = explode('linend', $nowMsgList);
 	if( count($arr)>20 ) // cear old
 	{
 		$arrt = array_shift($arr);
@@ -105,7 +106,7 @@ if($type==1){
 		}else{
 			echo '1000';
 		}
-		$old = unserialize($_pm['mem']->get($players['id']));
+		$old = kdjlSafeMemValue($_pm['mem']->get($players['id']), array());
 		$old['password']=1;
 		$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
 		$s->sendMsg($players['id'].'|YZ');
@@ -120,12 +121,12 @@ if($type==1){
 		}else{
 			echo '1000';
 		}
-		$old = unserialize($_pm['mem']->get($players['id']));
+		$old = kdjlSafeMemValue($_pm['mem']->get($players['id']), array());
 		$old['password']=1;
 		$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
 		$s->sendMsg($players['id'].'|JY');
 		//$newstr = '<font color=red>[系统公告]'. $nickname . ' 因为违反江湖道义，被众英雄送入思过涯思过'.$hour.'小时！';
-	}	
+	}
 	/*foreach($arr as $k=>$v)
 	{
 		$retstr .= $v.'linend';
@@ -136,7 +137,7 @@ if($type==1){
 
 	//----------------------------------------------------------------------------------------------------------------------
 	$_olddata = @unserialize($_pm['mem']->get('ttmt_data_notice'));
-	
+
 	$swfData = iconv('gbk','utf-8',$newstr);
 	$_olddata['an'] = isset($_olddata['an'])?$_olddata['an']."\n".$swfData:$swfData;
 	$_pm['mem']->set(array('k'=>'ttmt_data_notice','v'=>$_olddata));*/

@@ -190,11 +190,17 @@ function copyWord(words)
 {
 	window.parent.$('baike_input').value=words;
 }
-function sel(obj)
+function sel(obj,isShop)
 {
 	if(selid!=0) selid.style.backgroundColor='#fff';
 	selid=obj;
 	obj.style.backgroundColor='#DFD496';
+	if(isShop)
+	{
+		types=-1;
+		$('prenum').value=1;
+		return;
+	}
 	try
 	{
 		var pro = $(obj.id.replace("t","s")).innerHTML;
@@ -206,34 +212,31 @@ function sel(obj)
 	}
 }
 function prebuy(){
-	var nums = parseInt($('prenum').value);
-	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
-	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
-	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
-	else{
-		var sump = prestige*parseInt($('prenum').value);
-		if (sump==0) window.parent.Alert('数据错误！');
-		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 点威望！'))
-		{
-			var opt = {
-    		 	method: 'get',
-				 onSuccess: function(t) {
-			 		var n=parseInt(t.responseText);
-					if(n==10) window.parent.Alert('您的威望不够！');
-					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');window.location.reload();}//refresh bag.
-					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
-					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
-    		 	},
-    		 	on404: function(t) {
-    		 	},
-    		 	onFailure: function(t) {
-    		 	},
-    		 	asynchronous:true        
-			}
-			var ajax=new Ajax.Request('../function/PrestigeGate.php?bid='+bid+'&n='+nums, opt);
-		}
-		else return;
+	var rawNums = $('prenum').value;
+	if(bid == 0 ){window.parent.Alert('请先选择要购买的物品。');return;}
+	if(!validInt(rawNums)){window.parent.Alert('数量必须是数字!');return;}
+	var nums = parseInt(rawNums,10);
+	if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	var sump = prestige*nums;
+	if (sump<=0) {window.parent.Alert('数据错误！');return;}
+	if(!confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 点威望！')) return;
+	var opt = {
+		method: 'post',
+		parameters: 'bid='+encodeURIComponent(bid)+'&n='+encodeURIComponent(nums),
+		onSuccess: function(t) {
+			var n=parseInt(t.responseText,10);
+			if(n==10) window.parent.Alert('您的威望不够！');
+			else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');window.location.reload();}
+			else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
+			else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+		},
+		on404: function(t) {
+		},
+		onFailure: function(t) {
+		},
+		asynchronous:true
 	}
+	var ajax=new Ajax.Request('../function/PrestigeGate.php', opt);
 }
 
 function ajaxfun()
@@ -249,40 +252,33 @@ function ajaxfun()
 }
 
 function sell(){
-	var nums = parseInt($('num').value);
+	var rawNums = $('num').value;
 	if(bid == 0 ){window.parent.Alert('请先选择要卖出的物品。');return;}
-	else{
-	    if(!validInt(nums)) {window.parent.Alert('数量只能是数字！');return false;}
-		else if(nums<1 || nums>100){window.parent.Alert('卖出数量范围是1-100之间的整数！');return;}
-		
-		if (types==2 && nums!=1)
-		{
-			window.parent.Alert('不可叠加物品只能单一卖出');return;
-		}
-
-		var sump = price*parseInt(nums);
-		if(confirm('你确定卖出选中的物品吗? 总共将获得 '+sump+' 金币！'))
-		{
-			var opt = {
-    		 	method: 'get',
-				 onSuccess: function(t) {
-			 		var n=parseInt(t.responseText);
-					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)+sump;}
-					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
-					else window.parent.Alert('卖出失败!');
-    		 	},
-    		 	on404: function(t) {
-    		 	},
-    		 	onFailure: function(t) {
-    		 	},
-    		 	asynchronous:true        
-			}
-			var ajax=new Ajax.Request('../function/sellBag.php?bid='+bid+'&n='+nums, opt);
-		}
-		else return;
+	if(!validInt(rawNums)) {window.parent.Alert('数量只能是数字！');return false;}
+	var nums = parseInt(rawNums,10);
+	if(nums<1 || nums>100){window.parent.Alert('卖出数量范围是1-100之间的整数！');return;}
+	if (types==2 && nums!=1)
+	{
+		window.parent.Alert('不可叠加物品只能单一卖出');return;
 	}
-	
-	
+	var sump = price*nums;
+	if(!confirm('你确定卖出选中的物品吗? 总共将获得 '+sump+' 金币！')) return;
+	var opt = {
+		method: 'post',
+		parameters: 'bid='+encodeURIComponent(bid)+'&n='+encodeURIComponent(nums),
+		onSuccess: function(t) {
+			var n=parseInt(t.responseText,10);
+			if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML,10)+sump;}
+			else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
+			else window.parent.Alert('卖出失败!');
+		},
+		on404: function(t) {
+		},
+		onFailure: function(t) {
+		},
+		asynchronous:true
+	}
+	var ajax=new Ajax.Request('../function/sellBag.php', opt);
 }
 function showTip(id,bid,sign,type)
 {

@@ -30,7 +30,7 @@ body {
 <![endif]-->
 </head>
 <!--background-image:url(../images/ui/map/map1.gif)-->
-<body style="margin:0px;" oncontextmenu="event.returnValue=false" onkeydown="KeyDown()">
+<body style="margin:0px;" oncontextmenu="event.returnValue=false">
 
 <div style="width:786px;height:321px;margin-left:5px;margin-top:5px; background-image:url(../images/ui/map/map5.jpg)" oncontextmenu="event.returnValue=false">
 </div>
@@ -117,7 +117,7 @@ function copyWord(words)
 							if(v == 11)
 							{
 								window.parent.Alert("开启地图成功！");
-							czl(t);
+							window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
 							//window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
 							}
 						},
@@ -132,7 +132,7 @@ function copyWord(words)
 					}
 					else if(v == 10)
 					{
-						czl(t);
+						window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
 						//window.parent.$('gw').src='./function/Team_Mod.php?n='+t;
 					}
 					else if(v == 1)
@@ -187,4 +187,4 @@ function copyWord(words)
 			window.parent.$('gw').src = './function/fb_Mod.php?mapid='+id;
 		}
 	}
-</script> 
+</script>

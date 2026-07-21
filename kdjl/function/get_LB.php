@@ -1,35 +1,42 @@
 <?php //props:734:85:86:87:733|3,money:20000
 exit();
 require_once('../config/config.game.php');
-define(MEM_PROPS_KEY, "db_props");
-define(MEM_TASK_KEY, "db_task");
-define(MEM_WX_KEY, "db_wx");
-define(MEM_EXP_KEY, "db_exptolv");
-define(MEM_BB_KEY, $_SESSION['id']."bb");
-define(MEM_BAG_KEY, $_SESSION['id']."bag");
+define('MEM_PROPS_KEY', "db_props");
+define('MEM_TASK_KEY', "db_task");
+define('MEM_WX_KEY', "db_wx");
+define('MEM_EXP_KEY', "db_exptolv");
+define('MEM_BB_KEY', $_SESSION['id']."bb");
+define('MEM_BAG_KEY', $_SESSION['id']."bag");
 
 $m = new memory();
 $db = new mysql();
 secStart($m);
 
-$user = unserialize($m->get($_SESSION['id']));
-$_bag = unserialize($m->get(MEM_BAG_KEY));
+$user = kdjlSafeMemValue($m->get($_SESSION['id']), array());
+$_bag = kdjlSafeMemValue($m->get(MEM_BAG_KEY), array());
+if (!is_array($user) || empty($user))
+{
+	die('玩家数据错误！');
+}
 
-$drs = $db->getOneRecord("select cet from libao where pname='{$_SESSION['username']}'");
+$sessionUsernameSql = $db->escape(isset($_SESSION['username']) ? $_SESSION['username'] : '');
+$userNameSql = $db->escape(isset($user['name']) ? $user['name'] : '');
+
+$drs = $db->getOneRecord("select cet from libao where pname='{$sessionUsernameSql}'");
 if (!is_array($drs))
 {
 	die('您没资格领取吧！');
 }
 $wps = explode(',',$drs['cet']);
 
-$wp = $wps[0];
-$money = $wps[1];
+$wp = isset($wps[0]) ? $wps[0] : '';
+$money = isset($wps[1]) ? intval($wps[1]) : 0;
 
 
-// Check 
-$hd = $db->getOneRecord("select pname from libao where pname='{$user['name']}' and flag=0");
+// Check
+$hd = $db->getOneRecord("select pname from libao where pname='{$userNameSql}' and flag=0");
 if(!is_array($hd)) die('您已经领取过礼包或没有资格领取!');
-else $db->query("update libao set flag=1 where pname='{$user['name']}'");
+else $db->query("update libao set flag=1 where pname='{$userNameSql}'");
 
 saveGetProps($wp);
 
@@ -52,15 +59,15 @@ function saveGetProps($idlist)
 			if ($y['sums']>0) $l++;
 		}
 	}
-	if ($l >= $user['maxbag']) return false;	
-	
-	$arr = split(',', $idlist);
-	
+	if ($l >= $user['maxbag']) return false;
+
+	$arr = explode(',', $idlist);
+
 	foreach ($arr as $k => $v)
 	{
-		$rs = $m->dataGet(array('k' => MEM_BAG_KEY, 
+		$rs = $m->dataGet(array('k' => MEM_BAG_KEY,
 								'v' => "if(\$rs['uid']=='{$_SESSION['id']}' && \$rs['pid']=='{$v}') \$ret=\$rs;"
-							  )); 
+							  ));
 
 		if (is_array($rs))
 		{
@@ -78,7 +85,7 @@ function saveGetProps($idlist)
 				$newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbag');
 				$m->addArray(array(
 				              'k' => MEM_BAG_KEY,
-					 	      'v' => array('id' 	=> $newid,
+						      'v' => array('id' 	=> $newid,
 											'pid'   => $v,
 							                'uid' 	=> $_SESSION['id'],
 											'sell'  => $rs['sell'],
@@ -96,10 +103,10 @@ function saveGetProps($idlist)
 											)
 							 ));
 			   $l++;
-		   }	   
+		   }
 		}
 		else{
-			$rs = $m->dataGet(array('k' => MEM_PROPS_KEY, 
+			$rs = $m->dataGet(array('k' => MEM_PROPS_KEY,
 								    'v' => "if(\$rs['id'] == '{$v}') \$ret=\$rs;"
 								  ));
 			if (is_array($rs))
@@ -107,7 +114,7 @@ function saveGetProps($idlist)
 				$newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbag');
 				$m->addArray(array(
 				              'k' => MEM_BAG_KEY,
-					 	      'v' => array('id' 	=> $newid,
+						      'v' => array('id' 	=> $newid,
 											'pid'   => $v,
 							                'uid' 	=> $_SESSION['id'],
 											'sell'  => $rs['sell'],
@@ -125,12 +132,12 @@ function saveGetProps($idlist)
 											)
 							 ));
 				$l++;
-			}	
-		}		
+			}
+		}
 		unset($rs);
 		// 检测是否超出包裹，
 		if ($l >= $user['maxbag']) return false;
-	}	
+	}
 	unset($db,$arr);
 }
 ?>

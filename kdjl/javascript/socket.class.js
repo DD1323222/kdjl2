@@ -54,7 +54,7 @@ function checkCard(dcardid)
 		var strJiaoYan  =[  "1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2"];
 		var intQuan =[7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2, 1];
 		var intTemp=0;
-		for(i = 0; i < dcardid.length - 1; i++)
+		for(var i = 0; i < dcardid.length - 1; i++)
 			intTemp +=  dcardid.substring(i, i + 1)  * intQuan[i];  
 		intTemp %= 11;
 		if(dcardid.substring(dcardid.length - 1,dcardid.length).toUpperCase()!=strJiaoYan[intTemp])
@@ -73,12 +73,17 @@ function checkCard(dcardid)
 
 function fcminput()
 {
+	var oldForm = document.getElementById('fcmform');
+	if(oldForm){
+		oldForm.style.display='block';
+		return;
+	}
 	var oj=document.createElement("div");
 	oj.id="fcmform";
 	oj.style.cssText="position:absolute;width:150px;height:18px;color:#ff0000;border:1px solid #f00;left:845px;top:590px;padding-top:3px;z-index:1000;padding-left:2px;background-color:#CCCCCC;";
 	oj.innerHTML='<form id="form1" name="form1" method="post" action="/function/fcminput.php" target="_blank" style="background-color:#006666;border:2px solid #003366; padding:3px">\
 请填写身份证号：<input type="text" name="card_no" id="card_no"/>\
-<input type="button" name="Submit" value="提交" onclick="if(checkCard($(\'card_no\').value)){form.submit();}" />\
+<input type="button" name="Submit" value="提交" onclick="if(checkCard($(\'card_no\').value)){this.form.submit();}" />\
 <input type="button" value="关闭" onclick="$(\'fcmform\').style.display=\'none\'">\
 </form>';
 	document.body.appendChild(oj);
@@ -114,14 +119,14 @@ function fcmlink(){
 }
 
 function fcmalert(h)
-{	
+{
 	var o=parent.document.getElementById("fcmdiv");
-	omsgfcm=o.innerHTML;
+	if(!o) return;
 	var msg="你累计在线已满 <strong>"+h+" </strong>小时!";
 	o.innerHTML=msg;
 	setTimeout('fcmlink()',60000);	
 }
-CURSOR_HAND='pointor';
+CURSOR_HAND='c:pointer';
 
 //alert(1)
 var comet_initialize=false;
@@ -131,13 +136,7 @@ var _comet = function(){
   this.initStatus   = false,
   this.msgHandle    = false,
   
-  this.initialize= function() {
-	
-	if(typeof(arguments[0])!='undefined')
-	{
-		setTimeout(function(){comet.initialize},1000);
-	}
-	
+	this.initialize= function() {
 	if(comet_initialize) return;
 	comet_initialize=true;
     if (navigator.appVersion.indexOf("MSIE") != -1) {
@@ -164,21 +163,20 @@ var _comet = function(){
       }
       document.body.appendChild(comet.connection);
 
-    } else {
-    
-      // For other browser (Firefox...)
-      comet.connection = document.createElement('iframe');
-      comet.connection.setAttribute('id',     'comet_iframe');
-      with (comet.connection.style) {
-        left       = top   = "-100px";
+	} else {
+
+	  // For other browser (Firefox...)
+	  comet.connection = document.createElement('iframe');
+	  comet.connection.setAttribute('id',     'comet_iframe');
+	  comet.connection.setAttribute('src',    './function/serverGate.php');
+	  with (comet.connection.style) {
+		position   = "absolute";
+		left       = top   = "-100px";
         height     = width = "1px";
         visibility = "hidden";
         display    = 'none';
       }
-      comet.iframediv = document.createElement('iframe');
-      comet.iframediv.setAttribute('src', './function/serverGate.php');
-      comet.connection.appendChild(comet.iframediv);
-      document.body.appendChild(comet.connection);
+	  document.body.appendChild(comet.connection);
     }
   };
 
@@ -202,7 +200,6 @@ var _comet = function(){
 }
 
 comet=new _comet();
-setTimeout('comet.initialize();',5000);
 try{
 	Event.observe(window, "load",   comet.initialize);
 	Event.observe(window, "unload", comet.onUnload);
@@ -211,4 +208,4 @@ catch(e)
 {
 
 }
-setTimeout(function(){comet.initialize()},5000);
+setTimeout(function(){comet.initialize();},5000);

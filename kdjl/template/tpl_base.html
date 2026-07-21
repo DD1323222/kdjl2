@@ -55,13 +55,10 @@ function showContent() {
     $('props_types').style.display = '';
 }
 /* addded by Zheng.Ping */
-//-->
-</script>
-</head>
-<script language="javascript">
 var bid=0;
 var selid=0;
 var types=-1;
+//-->
 </script>
 </head>
 
@@ -85,7 +82,7 @@ var types=-1;
 				<div class="box02">
 					<div class="bb01"><img src="../new_images/ui/icon03.jpg" width="65" height="25" /></div>
 					<div class="bb02"><span class="txt01">分类查看</span>
-					  <select id="sel01" name="menu1" onchange="MM_jumpMenu('self',this,0)">
+					  <select id="base_type_select" name="menu1" onchange="MM_jumpMenu('self',this,0)">
                     #baseoption#
                   </select>
 				    </div>
@@ -122,7 +119,7 @@ var types=-1;
 				<div class="box02">
 					<div class="bb01"><img src="../new_images/ui/icon04.jpg" width="65" height="25" /></div>
 					<div class="bb02"><span class="txt01">分类查看</span>
-				    <select id="sel01" name="menu2" onchange="MM_jumpMenu('self',this,0)">
+				    <select id="bag_type_select" name="menu2" onchange="MM_jumpMenu('self',this,0)">
                     #bagoption#
                   </select></div>
 				</div>
@@ -136,7 +133,7 @@ var types=-1;
                   	  </tr>
                 	  </table>
 				 	 <div class="dt_list clearfix">
-      				  <table class="tit01" id="shoplist">#mybag#</table>
+					  <table class="tit01" id="baglist">#mybag#</table>
 					</div>
 				</div>
 				<div class="box04" style="font-size:12px"><label>背包空间：#baglimit#  </label>
@@ -177,7 +174,8 @@ function gets(){
 	else if (!validInt(nums)){window.parent.Alert('数量必须为整数。');return;} 
 	else{
 		var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'bid='+encodeURIComponent(bid)+'&n='+encodeURIComponent(nums)+'&op=g',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==0) {window.location.reload();   }
@@ -191,7 +189,7 @@ function gets(){
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/baseGate.php?bid='+bid+'&n='+nums+'&op=g', opt);
+			var ajax=new Ajax.Request('../function/baseGate.php', opt);
 		}
 }
 
@@ -212,9 +210,11 @@ function saves(){
 	var nums = $('num').value; 
 	
 	if(bid == 0 ){window.parent.Alert('请先选择要存放的物品。');return;}
+	else if (!validInt(nums)){window.parent.Alert('数量必须为整数。');return;}
 	else{
 		var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'bid='+encodeURIComponent(bid)+'&n='+encodeURIComponent(nums)+'&op=s',
 				 onSuccess: function(t) {
 			 		var n=t.responseText;
 					if(n==0) {window.location.reload();   }
@@ -228,7 +228,7 @@ function saves(){
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/baseGate.php?bid='+bid+'&n='+nums+'&op=s', opt);
+			var ajax=new Ajax.Request('../function/baseGate.php', opt);
 		}
 }
 var equipInfos = {};
@@ -255,7 +255,8 @@ function showTip(id,bid,sign,type)
 	}
 	LastKey=key;
 	var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'pwd='+encodeURIComponent(pwd)+'&repwd='+encodeURIComponent(repwd)+'&action=reg',
 				 onSuccess: function(t){
 				 	equipInfos[key] = t.responseText;
 					window.parent.showTips(t.responseText,x,y);
@@ -348,7 +349,7 @@ function jiami()
     		 	},
     		 	asynchronous:true
 			}
-			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&repwd='+repwd+'&action=reg',opt);
+			var ajax=new Ajax.Request('../function/ext_Base.php',opt);
 }
 
 //设置密码
@@ -360,7 +361,8 @@ function dos(pwd)
 		return false;
 	}
 	var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'pwd='+encodeURIComponent(pwd)+'&action=do',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n == 0)
@@ -380,7 +382,7 @@ function dos(pwd)
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=do',opt);
+			var ajax=new Ajax.Request('../function/ext_Base.php',opt);
 }
 
 //登陆
@@ -393,7 +395,8 @@ function login()
 		return false;
 	}
 	var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'pwd='+encodeURIComponent(pwd)+'&action=login',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n == 0)
@@ -416,7 +419,7 @@ function login()
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=login',opt);
+			var ajax=new Ajax.Request('../function/ext_Base.php',opt);
 }
 
 //修改密码
@@ -429,7 +432,8 @@ function update()
 		return false;
 	}
 	var opt = {
-    		 	method: 'get',
+			 method: 'post',
+				 parameters: 'pwd='+encodeURIComponent(pwd)+'&action=login',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n == 0)
@@ -453,6 +457,6 @@ function update()
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/ext_Base.php?pwd='+pwd+'&action=login',opt);
+			var ajax=new Ajax.Request('../function/ext_Base.php',opt);
 }
 </script>

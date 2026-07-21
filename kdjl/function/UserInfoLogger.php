@@ -11,7 +11,7 @@
 class UserInfoLogger {
     /**
      * the user's id
-     * integer 
+     * integer
      */
     private $id;
 
@@ -82,7 +82,7 @@ class UserInfoLogger {
     }
     /**
      * log the a msg to the log file
-     * 
+     *
      * @param string $logMsg
      * @return void
      */
@@ -91,10 +91,33 @@ class UserInfoLogger {
             $fHandler = @fopen($this->logPath, 'a+');
             if ($fHandler) {
                 $msg = sprintf("[%s] %s", date('Y-m-d H:i:s'), $logMsg);
+                flock($fHandler, LOCK_EX);
                 fwrite($fHandler, $msg);
+                flock($fHandler, LOCK_UN);
                 fclose($fHandler);
             }
         }
+    }
+
+    private function sanitizePostForLog($post) {
+        if (!is_array($post)) return $post;
+        $clean = array();
+        foreach ($post as $key => $value) {
+            $keyText = strtolower((string)$key);
+            if (preg_match('/pass|pwd|password|token|sid|sess|answer|ans|card|receipt|sig/', $keyText)) {
+                $clean[$key] = '***';
+            } else if (is_array($value)) {
+                $clean[$key] = $this->sanitizePostForLog($value);
+            } else {
+                $clean[$key] = $value;
+            }
+        }
+        return $clean;
+    }
+
+    private function sanitizeServerForLog($value) {
+        if (is_array($value)) return '';
+        return str_replace(array("\r", "\n"), ' ', (string)$value);
     }
 
     /**
@@ -103,9 +126,10 @@ class UserInfoLogger {
      * @return string
      */
     function getPlayerEntranceInfo() {
-        $remoteAddr = $_SERVER['REMOTE_ADDR'];
-        $requestUrl = $_SERVER['REQUEST_URI'].',post:'.print_r($_POST,1);
-        $userAgent  = $_SERVER['HTTP_USER_AGENT'];
+        $remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? $this->sanitizeServerForLog($_SERVER['REMOTE_ADDR']) : '';
+        $requestUri = isset($_SERVER['REQUEST_URI']) ? $this->sanitizeServerForLog($_SERVER['REQUEST_URI']) : '';
+        $requestUrl = $requestUri.',post:'.print_r($this->sanitizePostForLog($_POST),1);
+        $userAgent  = isset($_SERVER['HTTP_USER_AGENT']) ? $this->sanitizeServerForLog($_SERVER['HTTP_USER_AGENT']) : '';
 
         return sprintf("Player:%d from %s request %s with [%s]\n\n\n", $this->id, $remoteAddr, $requestUrl, $userAgent);
     }

@@ -1,6 +1,4 @@
-<?php 
-session_start();
-require_once('../config/config.game.php');
-$_pm['mysql'] -> query('UPDATE player_ext SET tgt = 29 WHERE uid = '.$_SESSION['id']);
+<?php
+header('HTTP/1.1 404 Not Found');
+exit;
 ?>
-OK

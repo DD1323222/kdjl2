@@ -1,49 +1,39 @@
 <?php
-ini_set('display_errors',true);
+ini_set('display_errors',false);
 error_reporting(E_ALL);
-$socket_port = getSocketPortgt($_SERVER['HTTP_HOST']);
+header('Content-Type: application/javascript; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 set_time_limit(180);
 ignore_user_abort(true);
 
-define('MAX_SLEEP_TIME', 10);
-define('WAIT_TIME', 120);
-define('WAIT_TIME_LONG', 360);
-$ip = "127.0.0.1";
-
-$socket = socket_create (AF_INET, SOCK_DGRAM, SOL_UDP);
-$bind = @socket_bind ($socket, $ip, $socket_port); 
-if(!$bind)
-{
-	die("//exit ".$socket_port);
-}
-//
 require_once(dirname(__FILE__).'/config/config.game.php');
 require_once(dirname(__FILE__).'/kernel/socketmsg.v1.php');
-require_once('sec/dblock_fun.php');
-require_once('socketChat/config.chat.php');	
+require_once(dirname(__FILE__).'/sec/dblock_fun.php');
+require_once(dirname(__FILE__).'/socketChat/config.chat.php');
 
-//定时清除分解次数限制
-$day_zbfj = unserialize($_pm['mem'] -> get('SYS_ZBFJ_NEW'));
-$_pm['mysql']->query("UPDATE player SET heart_time = ".time()." WHERE id = '{$_SESSION['id']}'");
-//print_r($day_zbfj);
-$today = date('Ymd',time());
-if( empty($day_zbfj) )
+$guardLockHandle = (isset($_pm['mem']) && is_object($_pm['mem']) && method_exists($_pm['mem'], 'getHandle')) ? $_pm['mem']->getHandle() : false;
+$guardLockKey = 'kdjl_guard_thread_'.md5(isset($_mysql['db']) ? $_mysql['db'] : 'default');
+$guardLockToken = uniqid('guard_', true);
+$guardLockHeld = is_object($guardLockHandle) && @$guardLockHandle->add($guardLockKey, $guardLockToken, 0, 240);
+if(!$guardLockHeld)
 {
-	$_pm['mem']->set(array('k'=>'SYS_ZBFJ_NEW','v'=>$today));
+	echo "// guard busy";
+	exit;
 }
-else
+function kdjlGuardReleaseProcessLock()
 {
-	if( $day_zbfj != $today )
-	{
-		//清空
-		$day_zbfj = unserialize($_pm['mem'] -> get('zbfj_info'));
-		foreach( $day_zbfj as $key => $val )
-		{
-			$new_info[$key] = 5; 
-		}
-		$_pm['mem']->set(array('k'=>'zbfj_info','v'=>$new_info));
-		$_pm['mem']->set(array('k'=>'SYS_ZBFJ_NEW','v'=>$today));
-	}
+	global $guardLockHandle,$guardLockKey,$guardLockToken,$guardLockHeld;
+	if(!$guardLockHeld || !is_object($guardLockHandle)) return;
+	$currentToken = @$guardLockHandle->get($guardLockKey);
+	if($currentToken === $guardLockToken) @$guardLockHandle->delete($guardLockKey);
+	$guardLockHeld = false;
+}
+register_shutdown_function('kdjlGuardReleaseProcessLock');
+
+$guardUid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($guardUid > 0 && kdjlMysqlTableHasColumn($_pm['mysql'], 'player', 'heart_time'))
+{
+	$_pm['mysql']->query("UPDATE player SET heart_time = ".time()." WHERE id = '{$guardUid}'");
 }
 
 doWork1(time());
@@ -51,94 +41,153 @@ doWork2(time());
 //doWork3(time());
 doWork4(time());
 doWork5(time());
-require_once(dirname(__FILE__).'/socketChat/config.chat.php');	
 $s=new socketmsg();
 checkGuildFightEnd();
 function calcGuildFight($day='')
 {
 	global $_pm,$s;
-	if($day=='') $day=date('Ymd');
-	
-	$table=$_pm['mysql']->getOneRecord('show create TABLE guild_challenges'.$day);
-	if($table)//已经计算了！
-	{
-		return;
-	}
-	$_pm['mysql']->close();
-	$_pm['mysql']	= new mysql();
-	$tables=$_pm['mysql']->getRecords('show tables like "guild_challenges%"');
+	if($day==='') $day=date('Ymd');
+	if(!preg_match('/^[0-9]{8}$/D',$day)) return false;
 
-	$tl=count($tables);
-	if($tl>5)
+	$archive='guild_challenges'.$day;
+	$next='guild_challenges_next_'.$day;
+	$lockName='kdjl_guild_fight_'.$day;
+	$lockNameSql=mysql_real_escape_string($lockName,$_pm['mysql']->getConn());
+	$lock=$_pm['mysql']->getOneRecord("SELECT GET_LOCK('{$lockNameSql}',0) AS locked");
+	if(!is_array($lock) || intval($lock['locked'])!==1) return false;
+
+	$archiveInfo=$_pm['mysql']->getOneRecord('SHOW CREATE TABLE `'.$archive.'`');
+	if(is_array($archiveInfo))
 	{
-		$min=999999999;
-		   //20100818
-		foreach($tables as $v)
+		$baseInfo=$_pm['mysql']->getOneRecord('SHOW CREATE TABLE `guild_challenges`');
+		if(!is_array($baseInfo) && !$_pm['mysql']->query('CREATE TABLE `guild_challenges` LIKE `'.$archive.'`'))
 		{
-			foreach($v as $n)
-			{
-				if($tl>5&&strlen($n)>16)
-				{
-					$_pm['mysql']->query('drop table '.$n);
-					$tl--;
-				}
-			}		
+			kdjlGuardReleaseNamedLock($lockName);
+			return false;
 		}
-		
+		kdjlGuardReleaseNamedLock($lockName);
+		kdjlGuardPruneDatedTables('guild_challenges',5);
+		kdjlGuardPruneDatedTables('ticket_',5);
+		return true;
 	}
-	
-	$tables1=$_pm['mysql']->getRecords('show tables like "ticket_%"');
 
-	$tl1=count($tables1);
-	if($tl1>5)
+	$baseInfo=$_pm['mysql']->getOneRecord('SHOW CREATE TABLE `guild_challenges`');
+	if(!is_array($baseInfo))
 	{
-		$min=999999999;
-		   //20100818
-		foreach($tables1 as $v1)
-		{
-			foreach($v1 as $n1)
-			{
-				if($tl1>5&&strlen($n1)>7)
-				{
-					$_pm['mysql']->query('drop table '.$n1);
-					$tl1--;
-				}
-			}		
-		}
-		
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
 	}
 
-	$challenges=$_pm['mysql']->getRecords('select challenger_id,defenser_id,challenger_score,defenser_score from guild_challenges where flags=1');
-	
+	$_pm['mysql']->query('DROP TABLE IF EXISTS `'.$next.'`');
+	if(!$_pm['mysql']->query('CREATE TABLE `'.$next.'` LIKE `guild_challenges`'))
+	{
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
+	}
+
+	if(!$_pm['mysql']->query('START TRANSACTION'))
+	{
+		$_pm['mysql']->query('DROP TABLE IF EXISTS `'.$next.'`');
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
+	}
+	$challenges=$_pm['mysql']->getRecords('SELECT id,challenger_id,defenser_id,challenger_score,defenser_score FROM guild_challenges WHERE flags=1 FOR UPDATE');
+	if(!is_array($challenges) && mysql_errno($_pm['mysql']->getConn())!==0)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$_pm['mysql']->query('DROP TABLE IF EXISTS `'.$next.'`');
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
+	}
+	if(!is_array($challenges)) $challenges=array();
+
+	$messages=array();
+	$settleOk=true;
 	foreach($challenges as $challenge)
 	{
-		$c=$_pm['mysql']->getOneRecord('select name from guild where id='.$challenge['challenger_id']);
-		$d=$_pm['mysql']->getOneRecord('select name from guild where id='.$challenge['defenser_id']);
-		if($challenge['challenger_score']!=$challenge['defenser_score'])
+		$challengeId=intval($challenge['id']);
+		$challengerId=intval($challenge['challenger_id']);
+		$defenserId=intval($challenge['defenser_id']);
+		$c=$_pm['mysql']->getOneRecord('SELECT name FROM guild WHERE id='.$challengerId.' FOR UPDATE');
+		$d=$_pm['mysql']->getOneRecord('SELECT name FROM guild WHERE id='.$defenserId.' FOR UPDATE');
+		$msg='';
+		if(is_array($c) && isset($c['name']) && is_array($d) && isset($d['name']))
 		{
-			if($challenge['challenger_score']>$challenge['defenser_score'])
+			$challengerName=htmlspecialchars((string)$c['name'],ENT_QUOTES,'UTF-8');
+			$defenserName=htmlspecialchars((string)$d['name'],ENT_QUOTES,'UTF-8');
+			$challengerScore=intval($challenge['challenger_score']);
+			$defenserScore=intval($challenge['defenser_score']);
+			if($challengerScore>$defenserScore)
 			{
-				$sql1='update guild set victory_times=victory_times+1 where id='.$challenge['challenger_id'];
-				$sql2='update guild set failed_times =failed_times+1  where id='.$challenge['defenser_id'];
-				$msg=iconv('utf-8','utf-8','<strong>《'.$c['name'].'》</strong>家族在与<strong>《'.$d['name'].'》</strong>家族的战斗中获得胜利！');
-			}	
-			else if($challenge['challenger_score']<$challenge['defenser_score'])
-			{
-				$sql1='update guild set failed_times =failed_times +1 where id='.$challenge['challenger_id'];
-				$sql2='update guild set victory_times=victory_times+1 where id='.$challenge['defenser_id'];
-				$msg=iconv('utf-8','utf-8','<strong>《'.$c['name'].'》</strong>家族在与<strong>《'.$d['name'].'》</strong>家族的战斗中失败！');
+				$settleOk=$_pm['mysql']->query('UPDATE guild SET victory_times=COALESCE(victory_times,0)+1 WHERE id='.$challengerId)
+					&& $_pm['mysql']->query('UPDATE guild SET failed_times=COALESCE(failed_times,0)+1 WHERE id='.$defenserId);
+				$msg='<strong>《'.$challengerName.'》</strong>家族在与<strong>《'.$defenserName.'》</strong>家族的战斗中获得胜利！';
 			}
-			$_pm['mysql']->query($sql1);
-			$_pm['mysql']->query($sql2);
-		}else{
-			$msg=iconv('utf-8','utf-8','<strong>《'.$c['name'].'》</strong>家族与<strong>《'.$d['name'].'》</strong>家族战成平局');
+			else if($challengerScore<$defenserScore)
+			{
+				$settleOk=$_pm['mysql']->query('UPDATE guild SET failed_times=COALESCE(failed_times,0)+1 WHERE id='.$challengerId)
+					&& $_pm['mysql']->query('UPDATE guild SET victory_times=COALESCE(victory_times,0)+1 WHERE id='.$defenserId);
+				$msg='<strong>《'.$challengerName.'》</strong>家族在与<strong>《'.$defenserName.'》</strong>家族的战斗中失败！';
+			}
+			else
+			{
+				$msg='<strong>《'.$challengerName.'》</strong>家族与<strong>《'.$defenserName.'》</strong>家族战成平局';
+			}
 		}
-		$s->sendMsg('SYS|'.$msg,'__ALL__');
+		if(!$settleOk || !$_pm['mysql']->query('UPDATE guild_challenges SET flags=2 WHERE id='.$challengeId.' AND flags=1') || mysql_affected_rows($_pm['mysql']->getConn())!==1)
+		{
+			$settleOk=false;
+			break;
+		}
+		if($msg!=='') $messages[]=$msg;
 	}
-	
-	$table=$_pm['mysql']->getOneRecord('show create TABLE guild_challenges');
-	$_pm['mysql']->query('rename table guild_challenges to guild_challenges'.$day);	
-	$_pm['mysql']->query($table['Create Table']);
+
+	if(!$settleOk || !$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$_pm['mysql']->query('DROP TABLE IF EXISTS `'.$next.'`');
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
+	}
+	if(!$_pm['mysql']->query('RENAME TABLE `guild_challenges` TO `'.$archive.'`, `'.$next.'` TO `guild_challenges`'))
+	{
+		$_pm['mysql']->query('DROP TABLE IF EXISTS `'.$next.'`');
+		kdjlGuardReleaseNamedLock($lockName);
+		return false;
+	}
+	foreach($messages as $msg) $s->sendMsg('SYS|'.$msg,'__ALL__');
+
+	kdjlGuardReleaseNamedLock($lockName);
+	kdjlGuardPruneDatedTables('guild_challenges',5);
+	kdjlGuardPruneDatedTables('ticket_',5);
+	return true;
+}
+
+function kdjlGuardReleaseNamedLock($lockName)
+{
+	global $_pm;
+	$lockNameSql=mysql_real_escape_string($lockName,$_pm['mysql']->getConn());
+	$_pm['mysql']->getOneRecord("SELECT RELEASE_LOCK('{$lockNameSql}') AS released");
+}
+
+function kdjlGuardPruneDatedTables($prefix,$keep)
+{
+	global $_pm;
+	$keep=max(0,intval($keep));
+	$prefixSql=mysql_real_escape_string($prefix.'%',$_pm['mysql']->getConn());
+	$rows=$_pm['mysql']->getRecords("SHOW TABLES LIKE '{$prefixSql}'");
+	if(!is_array($rows)) return;
+	$tables=array();
+	$pattern=$prefix==='ticket_' ? '/^ticket_[0-9]{8}$/D' : '/^guild_challenges[0-9]{8}$/D';
+	foreach($rows as $row)
+	{
+		foreach($row as $tableName)
+		{
+			if(preg_match($pattern,$tableName)) $tables[]=$tableName;
+		}
+	}
+	rsort($tables,SORT_STRING);
+	for($i=$keep;$i<count($tables);$i++) $_pm['mysql']->query('DROP TABLE `'.$tables[$i].'`');
 }
 
 
@@ -147,27 +196,17 @@ function checkGuildFightEnd()
 	global $_pm;
 	$week = date("N", time());
 	$hourM= date("Hi", time());
-	
-	$battletimearr = unserialize($_pm['mem']->get(MEM_TIME_KEY));
+
+	$battletimearr = kdjlSafeMemValue($_pm['mem']->get(MEM_TIME_KEY), array());
+	if(!is_array($battletimearr)) $battletimearr = array();
 	foreach($battletimearr as $bv)
 	{
 		if($bv['titles'] != "guild_battle")
 		{
 			continue;
 		}
-		//if($bv['days']!=0&&$week==0) $week=7;
-		if(isset($_GET['manual']))
+		if(isWeeklyDayTimeFinished($bv['days'], $bv['endtime'], $week, $hourM))//家族战结束了
 		{
-			$recentDay = weeklyMostRecentDay($bv['days'], $week);
-			if($recentDay !== false)
-			{
-				$daysAgo = $week - $recentDay;
-				if($daysAgo < 0) $daysAgo += 7;
-				calcGuildFight(date('Ymd', time() - $daysAgo * 86400));
-			}
-		}
-		else if(isWeeklyDayTimeFinished($bv['days'], $bv['endtime'], $week, $hourM))//家族战结束了
-		{			
 			calcGuildFight();
 		}
 		else
@@ -179,14 +218,12 @@ function checkGuildFightEnd()
 }
 
 $curminute = intval(date("i"));
-if($curminute%2==0) 
-{	
+if($curminute%2==0)
+{
 	$cur = $_pm['mysql']->getOneRecord('select left(from_unixtime(ctime),16) lastct from game_count order by id desc limit 1');
 	if(!$cur||$cur['lastct']!=date("Y-m-d H:i")){
-		//$domainPrefix = substr($_SERVER['HTTP_HOST'],0,strpos($_SERVER['HTTP_HOST'],"."));
-		$domainPrefix = substr($_SERVER['HTTP_HOST'],0,strpos($_SERVER['HTTP_HOST'],"."));
 		$domainPrefix = "pokeelf";
-		$old = unserialize($_pm['mem']->get($domainPrefix.'_online_user_list'));
+		$old = kdjlSafeMemValue($_pm['mem']->get($domainPrefix.'_online_user_list'), array());
 		if(!is_array($old)) $old=array();
 		$time = time()-300;
 		foreach($old as $k=>$t)
@@ -195,8 +232,6 @@ if($curminute%2==0)
 		}
 		$_pm['mem']->set(array('k'=>$domainPrefix.'_online_user_list','v'=>$old));
 		$_pm['mem']->set(array('k'=>$domainPrefix.'_online_user','v'=>count($old)));
-		$_pm['mysql']->close();
-		$_pm['mysql']	= new mysql();
 		$sql = "insert into game_count(ctime,online) values('".time()."','".(count($old))."')";
 		//$_pm['mysql']->query('delete from game_count where left(from_unixtime(ctime),16)="'.date("Y-m-d H:i").'"');
 		$_pm['mysql']->query($sql);
@@ -204,80 +239,19 @@ if($curminute%2==0)
 	sleep(1);
 }
 
-//杀死掉的mysql线程
+// 记录数据库连接状态。连接回收和慢查询终止由 MySQL 自身配置处理。
 function doWork1($time)
 {
-	global $_pm,$port;
-	$minute = date("YmdHi",$time);			
-	$curminute = intval(date("i",$time));
-
-	$_pm['mem']->set(array('k'=>memKeyStep1,'v'=>'game_count_ended_'.time()));
-	//杀mysql死线程
-	if($time%10<=5)
+	global $_pm;
+	$result = $_pm['mysql']->getRecords('SHOW PROCESSLIST');
+	if(is_array($result))
 	{
-		mysql_close($_pm['mysql']->getConn());
-		$_pm['mysql']->close();
-		$_pm['mysql']	= new mysql();
-		$conn = $_pm['mysql']->getConn();
-		//$result = mysql_query("SHOW PROCESSLIST",$conn);
-		$result = $_pm['mysql']->getRecords("SHOW PROCESSLIST");
-		//logsqlerr(__LINE__.' - '.$conn.' - '.$conn);
-		if($result){
-			$_pm['mem']->set(
-							array('k'=>'guard_threadk'.$port,'v'=>$time.' - thread num: '.count($result))
-						);
-		}else{			
-			$_pm['mem']->set(
-							array('k'=>'guard_threadk'.$port,'v'=>$time.' - error: '.mysql_error())
-						);
-			logsqlerr(__LINE__.' - '.$conn.' - '.$conn);
-		}
-		
-		foreach ($result as $proc)
-		{
-			//echo '$proc["Command"]='.$proc["Command"].', $proc["State"]='.$proc["State"].', $proc["Time"]='.$proc["Time"].'<br/>';
-			//flush();
-			if($proc["Command"] == "Locked")
-			{
-				@$_pm['mysql']->query("KILL query " . $proc["Id"], $conn);
-				@$_pm['mysql']->query("KILL " . $proc["Id"], $conn);
-				logsqlerr(__LINE__);
-			}
-			
-			if($proc["Command"] == "Sleep" && $proc["Time"] > MAX_SLEEP_TIME) {
-				@$_pm['mysql']->query("KILL " . $proc["Id"], $conn);
-				logsqlerr(__LINE__);
-				//echo 'kill 1<br>';
-				//flush();
-			}
-			else if
-			( 
-				($proc["State"] == "Sending data"||$proc["State"] == "end") 
-				&& 
-				$proc["Time"] > WAIT_TIME
-			)
-			{
-				@$_pm['mysql']->query("KILL query " . $proc["Id"], $conn);
-				@$_pm['mysql']->query("KILL " . $proc["Id"], $conn);
-				logsqlerr(__LINE__);
-				//echo 'kill 1<br>';
-				//flush();
-			}else if($proc["Time"] > WAIT_TIME_LONG){
-				@$_pm['mysql']->query("KILL query " . $proc["Id"], $conn);
-				@$_pm['mysql']->query("KILL " . $proc["Id"], $conn);
-				logsqlerr(__LINE__);
-				//echo 'kill 1<br>';
-				//flush();
-			}
-		}
-		logsqlerr(__LINE__);
-		//flush();
-	}else{
-		$_pm['mem']->set(
-							array('k'=>'guard_threadk'.$port,'v'=>$time.'=$time%10: '.($time%10))
-						);
+		$_pm['mem']->set(array('k'=>'guard_thread_status','v'=>$time.' - MySQL 线程数：'.count($result)));
+		return true;
 	}
-	$_pm['mem']->set(array('k'=>memKeyStep1,'v'=>'will_sleep_'.time()));
+	$_pm['mem']->set(array('k'=>'guard_thread_status','v'=>$time.' - 无法读取 MySQL 进程列表'));
+	logsqlerr('SHOW PROCESSLIST 查询失败');
+	return false;
 }
 
 //战场结束，统计排名，领取奖励
@@ -297,32 +271,30 @@ function doWork2($time)
 	$day = date('w');
 	$str = $arr[$day];
 	if(empty($str)) return;
-	$hi = date('H:i'); 
-	
+	$hi = date('H:i');
+
 	//避免重复发奖
 	$check = unserialize($_pm['mem'] -> get('battle_prize_check'));
 	$timenow = time() - 300;
 	if(!empty($check) && $check <= $timenow) return;
 	$_pm['mem'] -> set(array('k'=>'battle_prize_check','v'=>time()));
-	 
-	 
+
+
 	if($str != $hi) return;
-	//找到胜利方
-	$sql = "SELECT id,min(hp)AS hp,posname FROM battlefield LIMIT 1";
+    $sql = "SELECT id,min(hp)AS hp,posname FROM battlefield LIMIT 1";
 	$winner = $_pm['mysql'] -> getOneRecord($sql);
 	//// 战场胜利公告
 	if($winner['id'] == 1) $fail = '暗夜女神阵营';
 	else if($winner['id'] == 2 ) $fail = '自然女神阵营';
 	$pub = new task();
-	$word = '[系统公告] 本次战场结束，'.$fail.'被打得溃不成军，'.$winner['posname'].'取得了胜利！';
+    $word = '[系统公告] 本次战场结束，'.$fail.'被打得溃不成军，'.$winner['posname'].'取得了胜利！';
 	for($i=0;$i<5;$i++){
 		$pub-> saveGword($word, 1);
 	}
-	
-	
-	// 获取胜利方所有玩家的相关信息并进行本次战场发放奖励
-	$today = time() - 3600;
-	$winarr = $_pm['mysql']->getRecords("SELECT id 
+
+
+    $today = time() - 3600;
+	$winarr = $_pm['mysql']->getRecords("SELECT id
 													FROM battlefield_user
 												   WHERE lastvtime>$today and curjgvalue>0 and pos={$winner['id']}
 												   ORDER BY curjgvalue DESC
@@ -336,7 +308,7 @@ function doWork2($time)
 			switch(($k+1))
 		   {
 			  case 1: $boxnum=10; $jgvl = 2000; break;
-			  case 2: 
+			  case 2:
 			  case 3: $boxnum=6; $jgvl = 1500;break;
 			  case 4:
 			  case 5:
@@ -348,14 +320,13 @@ function doWork2($time)
 			  default: $boxnum=$jgvl=0;
 		   }
 		  // 更新玩家的排名.
-		  $_pm['mysql']->query("UPDATE battlefield_user 
+		  $_pm['mysql']->query("UPDATE battlefield_user
 								   SET tops=".($k+1).", boxnum={$boxnum}, curjgvalue=curjgvalue+{$jgvl}
 								 WHERE id={$v['id']}
 							   ");
 		}
 	}
-	// 获取失败方所有玩家的相关信息并进行本次战场排名更新。
-	$all = $_pm['mysql']->getRecords("SELECT id 
+    $all = $_pm['mysql']->getRecords("SELECT id
 										FROM battlefield_user
 									   WHERE lastvtime>$today and curjgvalue>0 and pos!={$winner['id']}
 									   ORDER BY curjgvalue DESC
@@ -370,7 +341,7 @@ function doWork2($time)
 		   switch(($k+1))
 		   {
 			  case 1: $boxnum=5; $jgvl = 1000; break;
-			  case 2: 
+			  case 2:
 			  case 3: $boxnum=3; $jgvl = 500;break;
 			  case 4:
 			  case 5:
@@ -382,13 +353,13 @@ function doWork2($time)
 			  default: $boxnum=$jgvl=0;
 		   }
 		   // 更新玩家的排名.
-		   $_pm['mysql']->query("UPDATE battlefield_user 
+		   $_pm['mysql']->query("UPDATE battlefield_user
 									SET tops=".($k+1).", boxnum={$boxnum}, curjgvalue=curjgvalue+{$jgvl}
 								  WHERE id={$rs['id']}
 							   ");
 	   }
    }
-   
+
    $time = time();
    $_pm['mysql'] -> query("INSERT INTO gamelog (ptime,buyer,seller,pnote,vary) VALUES($time,'1','1','jgprize','200')");
 }
@@ -410,9 +381,9 @@ function doWork3($time){
 			$ck=$_pm['mysql']->getOneRecord('select id from gamelog where vary=240 AND buyer="'.date('Ymd').'" limit 1');//检查发奖
 			if(!$ck){
 				//发公告
-				
+
 				$a = getLock(1);
-				
+
 				$now = date('Ymd');
 				$check = unserialize($_pm['mem'] -> get('fee_prize_check'));
 				if($check != $now){
@@ -431,7 +402,7 @@ function doWork3($time){
 								if($res[1] < $rv['fee']){
 									if($flag == 0){
 										$word = "恭喜 {$ruser['nickname']} ,荣登今日消费排行榜榜首，获得相应珍贵奖励。";
-										$swfData=iconv('utf-8','utf-8',$word);
+										$swfData=kdjlSafeIconv('utf-8','utf-8',$word);
 										$s=new socketmsg();
 										$s->sendMsg('an|'.$swfData);
 										$str = '<font color=red>'.$ruser['nickname'].'</font>';
@@ -440,7 +411,7 @@ function doWork3($time){
 									}else if($flag == 2){
 										$str = '<font color=green>'.$ruser['nickname'].'</font>';
 									}
-									givePrize($rv['nickname'],$res[0],&$task);
+									givePrize($rv['nickname'],$res[0],$task);
 									$sql = 'insert into gamelog set buyer="'.date('Ymd').'",vary=240,seller='.$ruser['id'].',ptime='.time().',pnote="'.$str.'"';
 									$_pm['mysql']->query($sql);
 									$flag++;
@@ -452,13 +423,13 @@ function doWork3($time){
 					$num = rand(0,(count($rows)-1));
 					$xprize = $rows[$num];//幸运奖
 					$ruser = $_pm['mysql'] -> getOneRecord('SELECT id,nickname FROM player WHERE name = "'.$xprize['nickname'].'"');
-					
+
 					$sql = 'insert into gamelog set buyer="'.date('Ymd').'",vary=240,seller='.$ruser['id'].',ptime='.time().',pnote="'.$ruser['nickname'].'"';
 					$_pm['mysql']->query($sql);
 					$word = "恭喜 {$ruser['nickname']} ,荣登今日消费排行幸运奖，获得相应奖励。";
-					$swfData=iconv('utf-8','utf-8',$word);
+					$swfData=kdjlSafeIconv('utf-8','utf-8',$word);
 					$s->sendMsg('an|'.$swfData);
-					givePrize($xprize['nickname'],$prizes[3],&$task);
+					givePrize($xprize['nickname'],$prizes[3],$task);
 				}
 			}
 		}
@@ -468,16 +439,46 @@ function doWork3($time){
 */
 
 
+$fortressPrizePendingLogIds = array();
+$fortressPrizeCommitted = true;
+$fortressPrizeTransactionActive = false;
+function fortressPrizeTrackLastLog()
+{
+	global $_pm,$fortressPrizePendingLogIds;
+	$id = intval($_pm['mysql']->last_id());
+	if($id < 1) return false;
+	$fortressPrizePendingLogIds[$id] = $id;
+	return true;
+}
+function fortressPrizeCleanupPendingLogs()
+{
+	global $_pm,$fortressPrizePendingLogIds,$fortressPrizeCommitted;
+	if(!$fortressPrizeCommitted && !empty($fortressPrizePendingLogIds) && isset($_pm['mysql']))
+	{
+		$_pm['mysql']->query('DELETE FROM gamelog WHERE id IN ('.implode(',',array_values($fortressPrizePendingLogIds)).')');
+	}
+	$fortressPrizePendingLogIds = array();
+}
+function fortressPrizeShutdown()
+{
+	global $_pm,$fortressPrizeTransactionActive;
+	if($fortressPrizeTransactionActive && isset($_pm['mysql'])) $_pm['mysql']->query('ROLLBACK');
+	$fortressPrizeTransactionActive = false;
+	fortressPrizeCleanupPendingLogs();
+	if(function_exists('realseLock')) realseLock();
+}
+
 function doWork4($time){
 	global $_pm;
+	global $fortressPrizePendingLogIds,$fortressPrizeCommitted,$fortressPrizeTransactionActive;
 	$setting = $_pm['mem']->get('db_welcome1');
-	if(!is_array($setting)) $setting=unserialize($setting);
+	if(!is_array($setting)) $setting=kdjlSafeMemValue($setting, array());
 	if(!is_array($setting))
 	{
-		return '后台配置数据读取失败(1)！'.print_r($setting,1);
+        return '后台配置数据读取失败(1)：'.print_r($setting,1);
 	}
 
-	$time_settings=explode("|",$setting['fortress_time']);
+	$time_settings=preg_split('/[\s|]+/',trim(isset($setting['fortress_time']) ? $setting['fortress_time'] : ''),-1,PREG_SPLIT_NO_EMPTY);
 	$w=date('w');
 	$hm=date('His');
 	if($w==0)
@@ -488,10 +489,11 @@ function doWork4($time){
 	foreach($time_settings as $s)
 	{
 		$tmp=explode(',',$s);
+		if(count($tmp) < 5) continue;
 		//1,210000,210459,212959,213459
-		if($w==$tmp[0])
+		if($w==intval($tmp[0]))
 		{
-			if($hm>$tmp[4])
+			if(intval($hm)>intval($tmp[4]))
 			{
 				$time_flag=true;
 			}
@@ -500,59 +502,143 @@ function doWork4($time){
 	}
 
 	if(!$time_flag){
-		return '现在不是要塞结束时间！';
+        return '现在不是要塞奖励结算时间！';
 	}
 
-	$a = getLock(1);
-	$mk='yaosai_prize_set2_'.date('Ymd');
-	$flag = $_pm['mem']->get($mk);
-	
-	
-	if(!$flag)
+	$a = getLock(-246);
+	if(!is_array($a))
 	{
-		$notice='';
-		$table_name="`fortress_users_".date("Ymd")."`";
-		$users_first=$_pm['mysql']->getRecords('select * from '.$table_name.' a, (select max(score_final) score_final from '.$table_name.'  where score_final != 0 group by at_section_num)z where a.score_final=z.score_final');
-		$set=explode(" ",$setting['fortress']);
-		$prize_set=array();
-		foreach($set as $k=>$s)
-		{
-			$tmp=explode(',',$s);
-			$prize_set[$k+1]=$tmp[3];
-		}
-		$props = unserialize($_pm['mem']->get("db_propsid"));
-		if( is_array($users_first) )
-		{
-			foreach($users_first as $user)
-			{
-				if($user['score_final']<0) continue;
-				$tmp=$prize_set[$user['at_section_num']];
-				$prizes=explode('|',$tmp);
-				$notice.=iconv('utf-8','utf-8','<br/>&nbsp;&nbsp;&nbsp;&nbsp;恭喜玩家：').iconv('utf-8','utf-8',$user['nickname']).iconv('utf-8','utf-8','获得女神要塞成长'.$user['at_section_num'].'阶段要塞第一名！获得:');
-				foreach($prizes as $p)
-				{
-					$t=explode(':',$p);
-					if(!saveGetPropsMore_S($t[0],$t[1],$user['user_id']))
-					{
-						$log='insert into gamelog set buyer="'.date('Ymd').'",vary=246,seller='.$user['user_id'].',ptime='.time().',pnote="发放奖励失败,成长范围阶段：'.$user['at_section_num'].',用户:'.$user['user_id'].',奖品id:'.$t[0].',数量:'.$t[1].'"';
-					}else{
-						$log='insert into gamelog set buyer="'.date('Ymd').'",vary=246,seller='.$user['user_id'].',ptime='.time().',pnote="发放奖励成功,成长范围阶段：'.$user['at_section_num'].',用户:'.$user['user_id'].',奖品id:'.$t[0].',数量:'.$t[1].'"';
-					}
-					$notice.=iconv('utf-8','utf-8',$props[$t[0]]['name'].' '.$t[1].'个 ');
-					$_pm['mysql']->query($log);
-				}
-			}
-		}
-		else
-		{
-			$notice = iconv('utf-8','utf-8','<br/>&nbsp;&nbsp;&nbsp;&nbsp;传说中纷争不断的女神要塞今天好像并没有发生过激烈的战斗...');
-		}
-		$s=new socketmsg();
-		$swfData=$notice;
-		$s->sendMsg('an|'.$swfData);
-		$_pm['mem']->set(array('k'=>$mk,'v'=>1));
+		return '要塞奖励正在结算，请稍候再试！';
 	}
+	$today = date('Ymd');
+	$mk='yaosai_prize_set2_'.$today;
+	$flag = $_pm['mem']->get($mk);
+	if($flag)
+	{
+		realseLock();
+		return '今日要塞奖励已经结算完成！';
+	}
+	$fortressPrizePendingLogIds = array();
+	$fortressPrizeCommitted = false;
+	$fortressPrizeTransactionActive = true;
+	register_shutdown_function('fortressPrizeShutdown');
+	$existing = $_pm['mysql']->getOneRecord('select id from gamelog where vary=246 and buyer="'.$today.'" limit 1 FOR UPDATE');
+	if(is_array($existing))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$fortressPrizeTransactionActive = false;
+		$fortressPrizeCommitted = true;
+		$_pm['mem']->set(array('k'=>$mk,'v'=>1));
+		realseLock();
+		return '今日要塞奖励已经结算完成！';
+	}
+
+	$notice='';
+	$allPrizeOk = true;
+	$recipientIds = array();
+	$table_name="`fortress_users_".$today."`";
+	$users_first=$_pm['mysql']->getRecords('select a.* from '.$table_name.' a inner join (select at_section_num,max(score_final) score_final from '.$table_name.' where score_final != 0 group by at_section_num) z on a.at_section_num=z.at_section_num and a.score_final=z.score_final');
+	if(!is_array($users_first) && mysql_errno($_pm['mysql']->getConn()) != 0)
+	{
+		$allPrizeOk = false;
+		$users_first = array();
+	}
+	if(!is_array($users_first)) $users_first = array();
+	$set=preg_split('/\s+/',trim(isset($setting['fortress']) ? $setting['fortress'] : ''),-1,PREG_SPLIT_NO_EMPTY);
+	$prize_set=array();
+	foreach($set as $k=>$s)
+	{
+		$tmp=explode(',',$s);
+		if(count($tmp) < 4 || trim($tmp[3]) === '')
+		{
+			$allPrizeOk = false;
+			break;
+		}
+		$prize_set[$k+1]=trim($tmp[3]);
+	}
+	$props = kdjlSafeMemValue($_pm['mem']->get("db_propsid"), array());
+	if(!is_array($props)) $props = array();
+	if($allPrizeOk && !empty($users_first))
+	{
+		foreach($users_first as $user)
+		{
+			if(!is_array($user) || !isset($user['score_final']) || intval($user['score_final']) < 0) continue;
+			$section = isset($user['at_section_num']) ? intval($user['at_section_num']) : 0;
+			$userId = isset($user['user_id']) ? intval($user['user_id']) : 0;
+			if($section < 1 || $userId < 1 || !isset($prize_set[$section]))
+			{
+				$allPrizeOk = false;
+				break;
+			}
+			$prizes=explode('|',$prize_set[$section]);
+			$userNotice='';
+			foreach($prizes as $p)
+			{
+				$t=explode(':',trim($p));
+				if(count($t) != 2)
+				{
+					$allPrizeOk = false;
+					break 2;
+				}
+				$pid = intval($t[0]);
+				$num = intval($t[1]);
+				if($pid < 1 || $num < 1 || !isset($props[$pid]) || !saveGetPropsMore_S($pid,$num,$userId))
+				{
+					$allPrizeOk = false;
+					break 2;
+				}
+                $log='insert into gamelog set buyer="'.$today.'",vary=246,seller='.$userId.',ptime='.time().',pnote="发放奖励成功,成长范围阶段：'.$section.',用户:'.$userId.',奖品id:'.$pid.',数量:'.$num.'"';
+				if(!$_pm['mysql']->query($log) || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+				{
+					$allPrizeOk = false;
+					break 2;
+				}
+				if(!fortressPrizeTrackLastLog())
+				{
+					$allPrizeOk = false;
+					break 2;
+				}
+				$propName = isset($props[$pid]['name']) ? $props[$pid]['name'] : $pid;
+				$userNotice.=$propName.' '.$num.'个 ';
+			}
+			$nickname = isset($user['nickname']) ? htmlspecialchars((string)$user['nickname'],ENT_QUOTES,'UTF-8') : $userId;
+            $notice.='<br/>&nbsp;&nbsp;&nbsp;&nbsp;恭喜玩家：'.$nickname.'获得女神要塞成长'.$section.'阶段要塞第一名！获得:'.$userNotice;
+			$recipientIds[$userId] = $userId;
+		}
+	}
+	else if($allPrizeOk)
+	{
+		$notice = '<br/>&nbsp;&nbsp;&nbsp;&nbsp;传说中纷争不断的女神要塞今天好像并没有发生过激烈的战斗...';
+	}
+	if($allPrizeOk)
+	{
+        $completeLog='insert into gamelog set buyer="'.$today.'",vary=246,seller=-246,ptime='.time().',pnote="女神要塞奖励发放完成"';
+		if(!$_pm['mysql']->query($completeLog) || mysql_affected_rows($_pm['mysql']->getConn()) != 1 || !fortressPrizeTrackLastLog()) $allPrizeOk = false;
+	}
+	if(!$allPrizeOk)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$fortressPrizeTransactionActive = false;
+		fortressPrizeCleanupPendingLogs();
+		realseLock();
+		return '要塞奖励发放失败！';
+	}
+	if(!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$fortressPrizeTransactionActive = false;
+		fortressPrizeCleanupPendingLogs();
+		realseLock();
+		return '提交要塞奖励结算失败！';
+	}
+	$fortressPrizeCommitted = true;
+	$fortressPrizeTransactionActive = false;
+	foreach($recipientIds as $recipientId) $_pm['mem']->del(intval($recipientId).'bag');
+	$s=new socketmsg();
+	$s->sendMsg('an|'.$notice);
+	$_pm['mem']->set(array('k'=>$mk,'v'=>1));
 	realseLock();
+	return '要塞奖励结算完成！';
 }
 
 
@@ -562,9 +648,10 @@ function write_log($vary,$log,$seller){
 }
 
 function in_arr($arr,$newarr){
+	if(!is_array($newarr) || empty($newarr)) return false;
 	$tarr = $newarr[rand(0,(count($newarr)-1))];
 	if(in_array($tarr['ticket_num'],$arr)){
-		in_arr($arr,$newarr);
+		return in_arr($arr,$newarr);
 	}else{
 		return $tarr;
 	}
@@ -573,86 +660,107 @@ function in_arr($arr,$newarr){
 function saveGetPropsMore_S($pid,$num,$uid)
 {
 	global $_pm;
-	if ($pid == '' or $pid == 0) return false;
-	global $db;
-	$l=0;
-	
+	$pid = intval($pid);
+	$num = intval($num);
+	$uid = intval($uid);
+	if ($pid < 1 || $num < 1 || $uid < 1) return false;
 	$rs = false;
-	$rs = $_pm['mysql']->getOneRecord("SELECT * FROM userbag WHERE uid={$uid} and pid={$pid}");
+	$ok = true;
+	$rs = $_pm['mysql']->getOneRecord("SELECT * FROM userbag WHERE uid={$uid} and pid={$pid} and zbing=0 and (cantrade IS NULL OR cantrade<>3) ORDER BY id LIMIT 1 FOR UPDATE");
 	if (is_array($rs))
 	{
 		if ($rs['vary'] == 1) // 可折叠道具.
 		{
 			$tt = time();
 			$sql = "UPDATE userbag
-						   SET sums=sums+$num,
+						   SET sums=COALESCE(sums,0)+$num,
 							   stime={$tt}
-						 WHERE id={$rs['id']}
+						 WHERE id={$rs['id']} and uid={$uid} and pid={$pid} and vary=1 and COALESCE(sums,0) <= 2147483647-$num and zbing=0 and (cantrade IS NULL OR cantrade<>3)
 					  ";
-			$_pm['mysql']->query($sql);
-			$str .= $sql;
+			if ($_pm['mysql']->query($sql) === false) $ok = false;
+			else if(mysql_affected_rows($_pm['mysql']->getConn()) != 1) $ok = false;
 		}
 		else
 		{
-			$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-						VALUES(
-							   '{$uid}',
-							   '{$pid}',
-							   '{$rs['sell']}',
-							   '{$rs['vary']}',
-							   {$num},
-							   unix_timestamp()
-							  );
-					  ";
-			$_pm['mysql']->query($sql);
-			$str .= $sql;
-	   }	   
+			$values = array();
+			for($i=0; $i<$num; $i++)
+			{
+				$values[] = "('{$uid}','{$pid}','{$rs['sell']}','{$rs['vary']}',1,unix_timestamp())";
+			}
+			$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES ".implode(',', $values);
+			if ($_pm['mysql']->query($sql) === false) $ok = false;
+			else if(mysql_affected_rows($_pm['mysql']->getConn()) != $num) $ok = false;
+	   }
 	}
 	else{
 		$rs = $_pm['mysql'] -> getOneRecord("SELECT * FROM props WHERE id = $pid");
 		if (is_array($rs))
 		{
-			$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-						VALUES(
-							   '{$uid}',
-							   '{$pid}',
-							   '{$rs['sell']}',
-							   '{$rs['vary']}',
-							   {$num},
-							   unix_timestamp()
-							  )
-					  ";
-			$_pm['mysql']->query($sql);
-			$str .= $sql;
+			if(intval($rs['vary']) == 1)
+			{
+				$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+							VALUES(
+								   '{$uid}',
+								   '{$pid}',
+								   '{$rs['sell']}',
+								   '{$rs['vary']}',
+								   {$num},
+								   unix_timestamp()
+								  )
+						  ";
+				$expectRows = 1;
+			}
+			else
+			{
+				$values = array();
+				for($i=0; $i<$num; $i++)
+				{
+					$values[] = "('{$uid}','{$pid}','{$rs['sell']}','{$rs['vary']}',1,unix_timestamp())";
+				}
+				$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES ".implode(',', $values);
+				$expectRows = $num;
+			}
+			if ($_pm['mysql']->query($sql) === false) $ok = false;
+			else if(mysql_affected_rows($_pm['mysql']->getConn()) != $expectRows) $ok = false;
 		}else{
 			return false;
 		}
-	}		
+	}
 	unset($rs);
-	return true;
+	return $ok;
 }
 
 function givePrize($name,$pstr,&$tsk)
 {
 	global $_pm;
-	$user=$_pm['mysql']->getOneRecord('select id from player where name="'.$name.'" limit 1');
-	if(!$user)
+	$safeName = $_pm['mysql']->escape($name);
+	$user=$_pm['mysql']->getOneRecord('select id from player where name="'.$safeName.'" limit 1');
+	if(!is_array($user) || !isset($user['id']))
 	{
-		echo mysql_error();
-		return;
+		return false;
 	}
 	$prize=explode('|',$pstr);
+	$issued = false;
 	foreach($prize as $p)
 	{
 		$t=explode(':',$p);
-		if(!saveGetPropsMore_S($t[0],$t[1],$user['id']))
+		if(count($t) < 2 || $t[0] == '') continue;
+		$pid = intval($t[0]);
+		$num = intval($t[1]);
+		if($pid < 1 || $num < 1) continue;
+		$logName = $_pm['mysql']->escape($name);
+		if(!saveGetPropsMore_S($pid,$num,$user['id']))
 		{
-			$log='insert into gamelog set buyer="'.date('Ymd').'",vary=239,seller='.$user['id'].',ptime='.time().',pnote="发放奖励失败,用户:'.$name.',奖品id:'.$t[0].',数量:'.$t[1].'"';
+			$log='insert into gamelog set buyer="'.date('Ymd').'",vary=239,seller='.$user['id'].',ptime='.time().',pnote="发放奖励失败,用户:'.$logName.',奖品id:'.$pid.',数量:'.$num.'"';
+			$_pm['mysql']->query($log);
+			return false;
 		}else{
-			$log='insert into gamelog set buyer="'.date('Ymd').'",vary=239,seller='.$user['id'].',ptime='.time().',pnote="发放奖励成功,用户:'.$name.',奖品id:'.$t[0].',数量:'.$t[1].'"';
+			$log='insert into gamelog set buyer="'.date('Ymd').'",vary=239,seller='.$user['id'].',ptime='.time().',pnote="发放奖励成功,用户:'.$logName.',奖品id:'.$pid.',数量:'.$num.'"';
+			$issued = true;
 		}
 		$_pm['mysql']->query($log);
 	}
+	return $issued;
 }
 
 
@@ -662,7 +770,6 @@ function wr($i){
 
     $handle = fopen($filename, 'a+');
 
-    // 将$somecontent写入到我们打开的文件中。
     if (fwrite($handle, $somecontent) === FALSE) {
         exit;
     }
@@ -678,82 +785,22 @@ function microtime_float()
 }
 
 
-function sstrgt($str)
-{
-	$ends = array('.com.cn','.cn','.com','.net','.net.cn');
-	$strs = str_replace($ends,'',strtolower($str));
-	$strs = explode('.',$strs);
-	return $strs[0].$strs[count($strs)-1];
-}
-
-function getSocketPortgt($str)
-{	
-	global $ax,$az;
-	$maxNum = 45100;
-	$rtn = abs(crc32(sstrgt($str)));
-	$x = intval($rtn/$maxNum);
-	
-	while($maxNum>10000&&($x<10000||$x>50000))
-	{
-		$maxNum -= 7000;
-		$x 		 = intval($rtn/$maxNum);
-	}	
-
-	if($x/63>$maxNum)
-	{
-		$x=$x/63;
-	}
-	if($x/33>$maxNum)
-	{
-		$x=$x/33;
-	}
-	if($x/13>$maxNum)
-	{
-		$x=$x/13;
-	}
-	if($x/7>$maxNum)
-	{
-		$x=$x/7;
-	}
-	if($x/3>$maxNum)
-	{
-		$x=$x/3;
-	}
-
-	while($x>50000)
-	{
-		$x=$x/1.26;
-	}
-	$rtn      = floor($x);
-	if($rtn<10000)
-	{
-		$rtn = substr('10000',0,5-strlen($rtn)).$rtn;
-	}	
-	
-	return $rtn;
-}
-
 function logsqlerr($msg="")
 {
-	global $_pm,$portadd;
-	if($err=mysql_error())
-	{
-		$old = date("Y-m-d H:i:s").'('.$portadd.'):'.$err.'<br>'.$msg.'<br/>'.unserialize($_pm['mem']->get('guard_thread_error'));
-		if(strlen($old )>1024*4) $old = substr($old ,0,1024*3);
-		$_pm['mem']->set(array('k'=>'guard_thread_error','v'=>$old));
-	}
-	else if($msg!="")
-	{
-		$old = date("Y-m-d H:i:s").'('.$portadd.'):'.$msg.'<br/>'.unserialize($_pm['mem']->get('guard_thread_error'.$portadd));
-		if(strlen($old )>1024*4) $old = substr($old ,0,1024*3);
-		$_pm['mem']->set(array('k'=>'guard_thread_error'.$portadd,'v'=>$old));
-	}
-	
+	global $_pm;
+	$err = mysql_error($_pm['mysql']->getConn());
+	if($err === '') return false;
+	$old = date('Y-m-d H:i:s').': '.$err;
+	if($msg !== '') $old .= '<br>'.$msg;
+	$old .= '<br/>'.kdjlSafeMemValue($_pm['mem']->get('guard_thread_error'), '');
+	if(strlen($old)>4096) $old = substr($old,0,3072);
+	$_pm['mem']->set(array('k'=>'guard_thread_error','v'=>$old));
+	return true;
 }
 function doWork5($time)
 {
 	global $_pm;
-	$clear = unserialize($_pm['mem']->get('SL_CLEAR_TIME'));
+	$clear = kdjlSafeMemValue($_pm['mem']->get('SL_CLEAR_TIME'), '');
 	$in = date('Ymd',$time);
 	if(empty($clear) || !isset($clear))
 	{

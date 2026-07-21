@@ -14,15 +14,15 @@ $catalog = $catalogGroups['all'];
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 {
-	$action = isset($_POST['action']) ? $_POST['action'] : '';
+	$action = adminPost('action');
 	$scopeIds = adminDropSelectedScopes(isset($_POST['scope_ids']) ? $_POST['scope_ids'] : array(), $catalog);
 	$gpcIds = adminDropSelectedMonsterIds(
 		isset($_POST['selected_gpc_ids']) ? $_POST['selected_gpc_ids'] : array(),
 		isset($_POST['selected_gpc_csv']) ? $_POST['selected_gpc_csv'] : ''
 	);
-	$search = isset($_POST['q']) ? trim($_POST['q']) : '';
-	$propId = isset($_POST['prop_id']) ? intval($_POST['prop_id']) : 0;
-	$denominator = isset($_POST['denominator']) ? intval($_POST['denominator']) : 0;
+	$search = trim(adminPost('q'));
+	$propId = intval(adminPost('prop_id', 0));
+	$denominator = intval(adminPost('denominator', 0));
 	$_SESSION[$dropStateKey] = array('scopes' => $scopeIds, 'gpcs' => $gpcIds, 'q' => $search, 'denominator' => $denominator);
 	if ($action === 'search_props') adminRedirect($dropPage . '?restore=1');
 	if ($action !== 'add_drop' && $action !== 'delete_drop')
@@ -85,8 +85,8 @@ else
 		isset($_GET['selected_gpc_ids']) ? $_GET['selected_gpc_ids'] : array(),
 		isset($_GET['selected_gpc_csv']) ? $_GET['selected_gpc_csv'] : ''
 	);
-	$search = isset($_GET['q']) ? trim($_GET['q']) : '';
-	$denominatorInput = isset($_GET['denominator']) && intval($_GET['denominator']) > 0 ? intval($_GET['denominator']) : 100;
+	$search = trim(adminGet('q'));
+	$denominatorInput = intval(adminGet('denominator', 0)) > 0 ? intval(adminGet('denominator', 0)) : 100;
 }
 $selectedScopes = adminDropSelectedScopes($scopeInput, $catalog);
 $queried = $restored || isset($_GET['query']) || isset($_GET['search_props']);

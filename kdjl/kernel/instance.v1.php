@@ -2,6 +2,11 @@
 class instance{
 	private $className = NULL;
 	private $x=null;
+	function __construct($name)
+	{
+		$this->instance($name);
+	}
+
 	function instance($name)
 	{
 		$this->className = $name;
@@ -10,15 +15,7 @@ class instance{
         if($this->x==null) {
 			$this->x = new $this->className();
 		}
-		$length = count($a);
-		if($length == 0)
-			return   call_user_func(array($this->x, $m));
-		else if($length == 1)
-			return   call_user_func(array($this->x, $m),$a[0]);
-		else if($length == 2) 
-			return   call_user_func(array($this->x, $m),$a[0],$a[1]);
-		else if($length == 3)
-			return   call_user_func(array($this->x, $m),$a[0],$a[1],$a[2]);
+		return call_user_func_array(array($this->x, $m), $a);
     }
 }
 ?>

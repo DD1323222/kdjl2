@@ -14,23 +14,51 @@ session_start();
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-function jhFail($code, $id, $rollback)
+$jhTransactionActive = false;
+$jhLockedItem = 0;
+
+function jhShutdown()
 {
-	global $_pm;
-	if ($rollback)
+	global $_pm, $jhTransactionActive, $jhLockedItem;
+	$error = error_get_last();
+	if (!is_array($error) || !in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR), true))
+	{
+		return;
+	}
+	if ($jhTransactionActive)
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		$jhTransactionActive = false;
 	}
-	unLockItem($id);
+	if ($jhLockedItem > 0)
+	{
+		unLockItem($jhLockedItem);
+		$jhLockedItem = 0;
+	}
+}
+register_shutdown_function('jhShutdown');
+
+function jhFail($code, $id, $rollback)
+{
+	global $_pm, $jhTransactionActive, $jhLockedItem;
+	if ($rollback && $jhTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$jhTransactionActive = false;
+	}
+	if ($jhLockedItem > 0)
+	{
+		unLockItem($jhLockedItem);
+		$jhLockedItem = 0;
+	}
 	die($code);
 }
 
-$uid = intval($_SESSION['id']);
-$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
-$style = isset($_REQUEST['n']) ? intval($_REQUEST['n']) : 0;
-$bhid = isset($_GET['bhid']) ? intval($_GET['bhid']) : 0;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$id = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0;
+$style = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
 
-if ($id < 1 || ($style != 1 && $style != 2))
+if ($uid < 1 || $id < 1 || ($style != 1 && $style != 2))
 {
 	die('0');
 }
@@ -48,8 +76,9 @@ if (lockItem($id) === false)
 {
 	die('已经在处理了！');
 }
+$jhLockedItem = $id;
 
-$bb = unserialize($_pm['mem']->get(MEM_BB_KEY));
+$bb = kdjlSafeMemValue($_pm['mem']->get(MEM_BB_KEY), array());
 if (!is_array($bb))
 {
 	jhFail('000', $id, false);
@@ -60,6 +89,11 @@ if (!$db->query('START TRANSACTION'))
 {
 	jhFail('000', $id, false);
 }
+$jhTransactionActive = true;
+if (!$db->query("INSERT INTO player_ext(uid,bbshow) VALUES({$uid},5) ON DUPLICATE KEY UPDATE uid=uid"))
+{
+	jhFail('000', $id, true);
+}
 
 $user = $db->getOneRecord("SELECT id,money FROM player WHERE id={$uid} FOR UPDATE");
 $cbb = $db->getOneRecord("SELECT * FROM userbb WHERE uid={$uid} AND id={$id} FOR UPDATE");
@@ -68,6 +102,10 @@ $cishu = $db->getOneRecord("SELECT chouqu_chongwu FROM player_ext WHERE uid={$ui
 if (!is_array($user) || !is_array($cbb))
 {
 	jhFail('000', $id, true);
+}
+if (intval($cbb['muchang']) != 0 || intval($cbb['tgflag']) != 0)
+{
+	jhFail('该宠物当前不能进化！', $id, true);
 }
 if (is_array($cishu) && strpos($cishu['chouqu_chongwu'], ','.$id.',') !== false)
 {
@@ -80,8 +118,20 @@ if (intval($user['money']) < 1000)
 
 $currentBb = false;
 $nameMatchedBb = false;
+if (isset($cbb['old_bid']) && intval($cbb['old_bid']) > 0)
+{
+	foreach ($bb as $v)
+	{
+		if (intval($v['id']) == intval($cbb['old_bid']))
+		{
+			$currentBb = $v;
+			break;
+		}
+	}
+}
 foreach ($bb as $v)
 {
+	if ($currentBb !== false) break;
 	if ($cbb['name'] == $v['name'])
 	{
 		if ($nameMatchedBb === false)
@@ -152,7 +202,8 @@ if (!is_array($sbb))
 
 $material = $db->getOneRecord(
 	"SELECT id,pid,sums FROM userbag
-	  WHERE uid={$uid} AND pid IN (".implode(',', $propsids).") AND sums>0
+	  WHERE uid={$uid} AND pid IN (".implode(',', $propsids).") AND sums>0 AND zbing=0
+	    AND (cantrade IS NULL OR cantrade<>3)
 	  ORDER BY id LIMIT 1 FOR UPDATE"
 );
 if (!is_array($material))
@@ -173,28 +224,7 @@ if (intval($cbb['remaketimes']) >= 10)
 	jhFail('6', $id, true);
 }
 
-$bhEffect = false;
-$protector = false;
-if ($bhid > 0)
-{
-	$protector = $db->getOneRecord(
-		"SELECT b.id,b.sums,p.effect
-		   FROM userbag AS b INNER JOIN props AS p ON p.id=b.pid
-		  WHERE b.id={$bhid} AND b.uid={$uid} AND b.sums>0
-		  FOR UPDATE"
-	);
-	if (is_array($protector))
-	{
-		$bhEffect = intval(str_replace('keepczl:', '', $protector['effect']));
-		if ($bhEffect < 150)
-		{
-			$bhEffect = false;
-		}
-	}
-}
-
 $actualPropsId = intval($material['pid']);
-$useProtector = false;
 if ($actualPropsId != 1221 && $actualPropsId != 1222)
 {
 	if ($style == 1)
@@ -235,22 +265,6 @@ if ($actualPropsId != 1221 && $actualPropsId != 1222)
 			$czl = $cbb['czl'] + rand(1, 3) / 10;
 		}
 	}
-
-	if ($czl >= 150.0)
-	{
-		if ($bhEffect !== false)
-		{
-			$useProtector = true;
-			if ($czl > $bhEffect)
-			{
-				$czl = $bhEffect;
-			}
-		}
-		else
-		{
-			$czl = 150.0;
-		}
-	}
 }
 else if ($actualPropsId == 1221)
 {
@@ -260,6 +274,10 @@ else
 {
 	$czl = $cbb['czl'] + rand(3, 6) / 10;
 }
+if ($czl > 999999.0)
+{
+	$czl = 999999.0;
+}
 
 $times = intval($cbb['remaketimes']) + 1;
 $petUpdated = $db->query(
@@ -268,12 +286,15 @@ $petUpdated = $db->query(
 		imgack=".$db->quote($sbb['imgack']).",
 		imgdie=".$db->quote($sbb['imgdie']).",
 		name=".$db->quote($sbb['name']).",
+		wx=".intval($sbb['wx']).",
+		kx=".$db->quote($sbb['kx']).",
 		czl=".$db->quote($czl).",
 		remakelevel=".$db->quote($sbb['remakelevel']).",
 		remakeid=".$db->quote($sbb['remakeid']).",
 		remakepid=".$db->quote($sbb['remakepid']).",
 		cardimg=".$db->quote($sbb['cardimg']).",
 		effectimg=".$db->quote($sbb['effectimg']).",
+		old_bid=".intval($sbb['id']).",
 		remaketimes={$times}
 	 WHERE uid={$uid} AND id={$id}"
 );
@@ -285,23 +306,21 @@ if (!$petUpdated || mysql_affected_rows($db->getConn()) != 1)
 $materialUpdated = $db->query(
 	"UPDATE userbag SET sums=sums-1
 	  WHERE id=".intval($material['id'])." AND uid={$uid}
-	    AND pid={$actualPropsId} AND sums>0"
+	    AND pid={$actualPropsId} AND sums>0 AND zbing=0
+	    AND (cantrade IS NULL OR cantrade<>3)"
 );
 if (!$materialUpdated || mysql_affected_rows($db->getConn()) != 1)
 {
 	jhFail('2', $id, true);
 }
-
-if ($useProtector)
+if (!$db->query(
+	"DELETE FROM userbag
+	  WHERE id=".intval($material['id'])." AND uid={$uid}
+	    AND sums<=0 AND bsum<=0 AND psum<=0 AND pyb=0 AND zbing=0
+	    AND (cantrade IS NULL OR cantrade<>3)"
+))
 {
-	$protectorUpdated = $db->query(
-		"UPDATE userbag SET sums=sums-1
-		  WHERE id=".intval($protector['id'])." AND uid={$uid} AND sums>0"
-	);
-	if (!$protectorUpdated || mysql_affected_rows($db->getConn()) != 1)
-	{
-		jhFail('000', $id, true);
-	}
+	jhFail('000', $id, true);
 }
 
 $moneyUpdated = $db->query(
@@ -316,6 +335,11 @@ if (!$db->query('COMMIT'))
 {
 	jhFail('000', $id, true);
 }
+$jhTransactionActive = false;
+
+$_pm['mem']->del(MEM_USER_KEY);
+$_pm['mem']->del(MEM_USERBB_KEY);
+$_pm['mem']->del(MEM_USERBAG_KEY);
 
 $logNote = '进化,使用的道具为:'.$actualPropsId.',被进化宝宝id:'.$id.
 	',被进化宝宝名:'.$cbb['name'].',得到:'.$sbb['name'];
@@ -325,5 +349,6 @@ $db->query(
 );
 
 unLockItem($id);
+$jhLockedItem = 0;
 die('1');
 ?>

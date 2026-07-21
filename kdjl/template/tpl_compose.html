@@ -94,7 +94,7 @@ var bball = [#bballid#];
         <td align="center">
 		<select name="comapets" id="comapets"  style="margin-top:3px;" onchange="moneysum();">
 			<option value=''>请选择主宠物</option>
-			#apetslist#
+			#comapetslist#
 		</select>
 		</td>
       </tr>
@@ -226,7 +226,10 @@ function Pcompose(n,id)
 	var p1 = $('wp1').options[$('wp1').selectedIndex].value;
 	var p2 = $('wp2').options[$('wp2').selectedIndex].value;
 
-    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+    if (!ap || !bp) {
+		window.parent.Alert('请选择主宠物和副宠物！');
+		return false;
+	}
 	if (p1 == '' || typeof p1=='undefined') p1 = 0;
 	if (p2 == '' || typeof p2=='undefined') p2 = 0;
 	$('snb').disabled=true;
@@ -265,7 +268,7 @@ function moneysum()
     var apid = $('comapets').options[$('comapets').selectedIndex].value;
 	var bpid = $('combpets').options[$('combpets').selectedIndex].value;
 
-    if(typeof apid != 'undefined' || apid!='')
+    if(typeof apid != 'undefined' && apid!='')
 	{
 		for(var i=0;i<bball.length;i++)
 		{
@@ -277,7 +280,7 @@ function moneysum()
 			}
 		}
 	}
-	if(typeof bpid != 'undefined' || bpid!='')
+	if(typeof bpid != 'undefined' && bpid!='')
 	{
 		for(var i=0;i<bball.length;i++)
 		{

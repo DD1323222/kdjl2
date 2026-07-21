@@ -2,11 +2,11 @@
 require_once(dirname(__FILE__) . '/_bootstrap.php');
 require_once(dirname(__FILE__) . '/_layout.php');
 
-$a = isset($_GET['a']) ? trim($_GET['a']) : '';
-$b = isset($_GET['b']) ? trim($_GET['b']) : '';
-$c = isset($_GET['c']) ? trim($_GET['c']) : '';
-$d = isset($_GET['d']) ? trim($_GET['d']) : '';
-$searched = isset($_GET['search']);
+$a = trim(adminGet('a'));
+$b = trim(adminGet('b'));
+$c = trim(adminGet('c'));
+$godOnly = isset($_GET['god']);
+$searched = isset($_GET['search']) || $godOnly;
 $matched = array();
 if ($searched)
 {
@@ -17,10 +17,10 @@ if ($searched)
 	{
 		$sourceName = isset($pets[$route['source_id']]) ? $pets[$route['source_id']]['name'] : '';
 		$targetName = isset($pets[$route['target_id']]) ? $pets[$route['target_id']]['name'] : '';
+		if ($godOnly && (!adminIsGodPetId($pets, $route['target_id']) || intval($route['target_id']) == intval($route['source_id']))) continue;
 		if (!adminFuzzyMatch($a, $route['source_id'], $sourceName)) continue;
 		if (!adminMaterialsMatch($b, $route['material_ids'], $props)) continue;
-		if (!adminMaterialsMatch($c, $route['material_ids'], $props)) continue;
-		if (!adminFuzzyMatch($d, $route['target_id'], $targetName)) continue;
+		if (!adminFuzzyMatch($c, $route['target_id'], $targetName)) continue;
 		$matched[] = $route;
 	}
 }
@@ -28,18 +28,18 @@ if ($searched)
 adminPageStart('进化查询', 'evolution');
 ?>
 	<section class="band">
-		<div class="section-head"><div><h2>A + B / C = D</h2><?php if ($searched) { ?><div class="subtle"><?php echo count($matched); ?> 条匹配进化分支</div><?php } ?></div></div>
-		<form class="search-form" method="get">
+		<div class="section-head"><div><h2>A + B = C</h2><?php if ($searched) { ?><div class="subtle"><?php echo count($matched); ?> 条匹配进化分支</div><?php } ?></div></div>
+		<form class="search-form three" method="get">
 			<div class="field"><label>A 原宠物</label><input class="input" name="a" value="<?php echo adminH($a); ?>" placeholder="id 或宠物名" /></div>
 			<div class="field"><label>B 进化道具</label><input class="input" name="b" value="<?php echo adminH($b); ?>" placeholder="id 或道具名" /></div>
-			<div class="field"><label>C 进化道具</label><input class="input" name="c" value="<?php echo adminH($c); ?>" placeholder="id 或道具名" /></div>
-			<div class="field"><label>D 目标宠物</label><input class="input" name="d" value="<?php echo adminH($d); ?>" placeholder="id 或宠物名" /></div>
+			<div class="field"><label>C 目标宠物</label><input class="input" name="c" value="<?php echo adminH($c); ?>" placeholder="id 或宠物名" /></div>
 			<button class="btn primary" type="submit" name="search" value="1">开始查询</button>
+			<a class="btn secondary" href="evolution.php?god=1">列出神系目标路线</a>
 		</form>
 	</section>
 	<?php if ($searched) { ?><section class="band">
 		<?php if (count($matched) === 0) { ?><div class="empty">没有满足条件的进化分支</div><?php } else { ?>
-		<div class="table-wrap"><table><thead><tr><th>分支</th><th>A 原宠物</th><th>+</th><th>B / C 可用道具</th><th>=</th><th>D 目标宠物</th><th>所需等级</th></tr></thead><tbody>
+		<div class="table-wrap"><table><thead><tr><th>分支</th><th>A 原宠物</th><th>+</th><th>B 进化道具</th><th>=</th><th>C 目标宠物</th><th>所需等级</th></tr></thead><tbody>
 		<?php foreach ($matched as $route) { ?><tr>
 			<td class="code"><?php echo intval($route['source_id']); ?>-<?php echo intval($route['branch']); ?></td>
 			<td><?php adminPetCell($route['source_id'], isset($pets[$route['source_id']]) ? $pets[$route['source_id']]['name'] : null); ?></td>

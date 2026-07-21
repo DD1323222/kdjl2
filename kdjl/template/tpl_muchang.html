@@ -66,6 +66,9 @@ ol,ul {list-style:none}
 .part_con {text-indent:2em;color:#bf7d1a;font-size:12px;line-height:20px}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
 .plus a{color:#f00}
+.pasture_actions .conbtn,.pasture_actions .encrypt_button{vertical-align:middle;}
+.pasture_actions .encrypt_button{display:inline-block;width:82px;height:17px;line-height:17px;}
+.pasture_actions .encrypt_button img{display:block;width:82px;height:17px;}
 .con{display:none;}
 .answer{width:615px;height:250px;border:#b4a449 1px solid;background:#fff;margin-left:auto;margin-right:auto; float:left; margin:10px 0 0 10px;}
 
@@ -75,7 +78,7 @@ ol,ul {list-style:none}
 .tit01{ border-collapse:collapse;width:100%; font-size:12px}
 .tit01 td{text-align:center;line-height:20px;color:#bf7d1a}
 
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 .close{width:35px;height:35px;position:absolute;right:0;top:5px;cursor:pointer}
 .tgtab{width:580px;margin-left:auto;margin-right:auto; border-collapse:collapse;color:#BF7D1A}
 .tgtab td{ text-align:center}
@@ -173,7 +176,7 @@ ol,ul {list-style:none}
     </div>
 	
 	
-    <div class="plus" style="text-align:left"><input type="button" class="conbtn" value="丢弃" onclick="#discardStep#" /><a onclick="#encryptAction#" href="#"><img src="../new_images/ui/add02.gif" border="0" /></a></div>
+    <div class="plus pasture_actions" style="text-align:left"><input type="button" class="conbtn" value="丢弃" onclick="#discardStep#" /><a class="encrypt_button" onclick="#encryptAction#" href="#"><img src="../new_images/ui/add02.gif" border="0" alt="我要加密牧场" /></a></div>
     </div>
       </div>
     
@@ -455,7 +458,7 @@ function jiami()
                 },
                 asynchronous:true
             }
-            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+pwd+'&repwd='+repwd+'&action=reg',opt);
+            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+encodeURIComponent(pwd)+'&repwd='+encodeURIComponent(repwd)+'&action=reg',opt);
 }
 
 function dos(pwd)
@@ -487,7 +490,7 @@ function dos(pwd)
                 asynchronous:true        
             }
     
-            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+pwd+'&action=do',opt);
+            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+encodeURIComponent(pwd)+'&action=do',opt);
 }
 
 function login()
@@ -522,7 +525,7 @@ function login()
                 },
                 asynchronous:true        
             }
-            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+pwd+'&action=login',opt);
+            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+encodeURIComponent(pwd)+'&action=login',opt);
 }
 
 function update()
@@ -559,7 +562,7 @@ function update()
                 },
                 asynchronous:true        
             }
-            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+pwd+'&action=login',opt);
+            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+encodeURIComponent(pwd)+'&action=login',opt);
 }
 
 function resetPwd()
@@ -619,7 +622,7 @@ function resetPwd()
                 },
                 asynchronous:true        
             }
-            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+oldPwd+'&action=reset&repwd='+repwd, opt);
+            var ajax=new Ajax.Request('../function/ext_Muchang.php?pwd='+encodeURIComponent(oldPwd)+'&action=reset&repwd='+encodeURIComponent(repwd), opt);
 }
 
 

@@ -81,14 +81,14 @@ body {
 </style></head>
 <body>
 <div id="city" style="width:790px;height:330px;z-index:1; position:absolute; top:-5px; left:0px;">
-<canvas id="city_map" width="790px" height="330px;"></canvas>
-<div class="map_link page2 map_c_left" style="display: none;left: 0px;top: 70px;" onclick="openMap(0)"><img src="/images/city/left.png" alt="????"></div>
-<div class="map_link page2" style="display: none;left: 10px;top: 150px;"><a href="/function/Sd_Mod.php"><img src="/images/city/cwsdian.png" alt="???????">  </a></div>
-<div class="map_link page2" style="display: none;left: 430px;top: 145px;"><a href="/function/Family_Mod.php"><img src="/images/city/jzsdian.png" alt="???????">  </a></div>
-<div class="map_link page1" style="display: block;left: 180px;top: 100px;"><a href="/function/zhanbuwu.php"><img src="/images/city/mfwu.png" alt="?????">  </a></div>
-<div class="map_link page2" style="display: none;left: 630px;top: 215px;"><a href="/function/card_Mod.php"><img src="/images/city/mkzhi.png" alt="????">  </a></div>
-<div class="map_link page2" style="display: none;left: 600px;top: 40px;"><a href="/function/Merge_Mod.php"><img src="/images/city/qrdao.png" alt="?????">  </a></div>
-<div class="map_link page1" style="display: block;left: 560px;top: 260px;" onclick="window.parent.create_sl_mod()"><img src="/images/city/slei.png" alt="???"> </div>
+<canvas id="city_map" width="790" height="330"></canvas>
+<div class="map_link page2 map_c_left" style="display: none;left: 0px;top: 70px;" onclick="openMap(0)"><img src="/images/city/left.png" alt="切换地图"></div>
+<div class="map_link page2" style="display: none;left: 10px;top: 150px;"><a href="/function/Sd_Mod.php"><img src="/images/city/cwsdian.png" alt="宠物神殿">  </a></div>
+<div class="map_link page2" style="display: none;left: 430px;top: 145px;"><a href="/function/Family_Mod.php"><img src="/images/city/jzsdian.png" alt="家族神殿">  </a></div>
+<div class="map_link page1" style="display: block;left: 180px;top: 100px;"><a href="/function/zhanbuwu.php"><img src="/images/city/mfwu.png" alt="占卜屋">  </a></div>
+<div class="map_link page2" style="display: none;left: 630px;top: 215px;"><a href="/function/card_Mod.php"><img src="/images/city/mkzhi.png" alt="卡片制作">  </a></div>
+<div class="map_link page2" style="display: none;left: 600px;top: 40px;"><a href="/function/Merge_Mod.php"><img src="/images/city/qrdao.png" alt="合成与涅槃">  </a></div>
+<div class="map_link page1" style="display: block;left: 560px;top: 260px;" onclick="window.parent.create_sl_mod()"><img src="/images/city/slei.png" alt="扫雷"> </div>
 
 <div class="map_link page1" style="display: block;left: 50px;top: 180px;"><a href="/function/Pai_Mod.php"> <div class="div_bg_link jiaoyisuo"></div> </a></div>
 <div class="map_link page1" style="display: block;left: 260px;top: 70px;"><a href="/function/Shopsm_Mod.php"><div class="div_bg_link smsd"></div>  </a></div>
@@ -98,37 +98,43 @@ body {
 <div class="map_link page1" style="display: block;left: 530px;top: 50px;"><a href="/function/Props_Mod.php"><div class="div_bg_link djsd"></div> </a></div>
 <div class="map_link page1" style="display: block;left: 690px;top: 60px;"><a href="/function/Zb_Mod.php"><div class="div_bg_link tjp"></div>  </a></div>
 <div class="map_link page1" style="display: block;left: 640px;top: 160px;"><a href="/function/King_Mod.php"><div class="div_bg_link hg"></div></a></div>
-<div class="map_link page1 map_c_right" style="display: block;left: 730px;top: 140px;" onclick="openMap(1)"><img style="transform: rotateY(180deg);" src="/images/city/left.png" alt="????"></div>
+<div class="map_link page1 map_c_right" style="display: block;left: 730px;top: 140px;" onclick="openMap(1)"><img style="transform: rotateY(180deg);" src="/images/city/left.png" alt="切换地图"></div>
 
 
 </div>
-<div id="tishi"><div onclick="distorydiv(this)" style="z-index:200;width:140px;height:120px;position:absolute;left:500px;top:200px;cursor:pointer;opacity:0;filter:alpha(opacity=0);background:#000000"></div></div>
+<div id="tishi">#tishi#</div>
 
 
 <script language="javascript">
-let map1=new Image(790,330);
-map1.src="/images/city/bitmap1.png"
-let map2=new Image(790,330);
-map2.src="/images/city/bitmap2_1.png"
-const canvas = document.getElementById('city_map');
-const ctx = canvas.getContext('2d');
+var map1=new Image(790,330);
+var map2=new Image(790,330);
+var currentMapPage=0;
+var canvas = document.getElementById('city_map');
+var ctx = canvas.getContext('2d');
 // ctx.lineTo(200*window.devicePixelRatio,200*window.devicePixelRatio);
 // ctx.lineWidth=ctx.lineWidth*window.devicePixelRatio;
-map1.onload=()=>{
-	ctx.drawImage(map1,0,0,790,330);
-}
+map1.onload=function(){
+	if(currentMapPage===0) ctx.drawImage(map1,0,0,790,330);
+};
+map2.onload=function(){
+	if(currentMapPage===1) ctx.drawImage(map2,0,0,790,330);
+};
+map1.src="/images/city/bitmap1.png";
+map2.src="/images/city/bitmap2_1.png";
 function openMap(p){
-	let page0=Array.from(document.getElementsByClassName("page1"));
-	let page1=Array.from(document.getElementsByClassName("page2"));
+	var page0=document.getElementsByClassName("page1");
+	var page1=document.getElementsByClassName("page2");
+	var i;
 	if(p){
-		page0.forEach(e=>e.style.display="none")
-		page1.forEach(e=>e.style.display="block")
-		ctx.drawImage(map2,0,0,790,330);
+		currentMapPage=1;
+		for(i=0;i<page0.length;i++) page0[i].style.display="none";
+		for(i=0;i<page1.length;i++) page1[i].style.display="block";
+		if(map2.complete) ctx.drawImage(map2,0,0,790,330);
 	}else{
-		page1.forEach(e=>e.style.display="none")
-		page0.forEach(e=>e.style.display="block")
-		ctx.drawImage(map1,0,0,790,330);
-
+		currentMapPage=0;
+		for(i=0;i<page1.length;i++) page1[i].style.display="none";
+		for(i=0;i<page0.length;i++) page0[i].style.display="block";
+		if(map1.complete) ctx.drawImage(map1,0,0,790,330);
 	}
 }
 
@@ -140,8 +146,8 @@ function copyWord(words)
 }
 function create_zp_div()
 {
-	div = window.parent.document.createElement("div");
-	lock_div  = window.parent.document.createElement("div");
+	var div = window.parent.document.createElement("div");
+	var lock_div  = window.parent.document.createElement("div");
 	lock_div.className = 'lock_zp_div';
 	lock_div.id = 'lock_zp_div';
 	div.style.width = "1010px";
@@ -151,9 +157,9 @@ function create_zp_div()
 	div.style.left = "0px";
 	div.style.textAlign = "center";
 	div.id = "zpdiv";
-	div.background = '#F3E4B2';
+	div.style.background = '#F3E4B2';
 	
-	embed = window.parent.document.createElement("embed");
+	var embed = window.parent.document.createElement("embed");
 	embed.width = "450";
 	embed.height = "450";
 	embed.setAttribute("wmode","transparent");

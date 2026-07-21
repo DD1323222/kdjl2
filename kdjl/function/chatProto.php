@@ -3,7 +3,7 @@
 /**
 @Usage: Get player information for map option.
 @Write date: 2008.03.22
-@Write by sugf 
+@Write by sugf
 @Copyright www.webgame.com.cn
 @##############################################
 @Notice:
@@ -14,28 +14,85 @@
 
 header('Content-Type:text/html;charset=utf-8');
 require_once('../config/config.game.php');
-if ( !isset($_SESSION['id']) || intval($_SESSION['id']) < 0 ) exit("你没登陆.");
+if ( !isset($_SESSION['id']) || intval($_SESSION['id']) < 1 ) exit("你没登陆.");
 require_once(dirname(dirname(__FILE__)).'/kernel/memory.v1.1.php');
-$rs = $_pm['user']->getUserById($_SESSION['id']);
+
+function chatProtoSafeIconv($from, $to, $value)
+{
+	$value = (string)$value;
+	$converted = @iconv($from, $to, $value);
+	return ($converted === false) ? $value : $converted;
+}
+
+function chatProtoSetPlayerLock($playerId,$lockTime)
+{
+	global $_pm;
+	$playerId = intval($playerId);
+	$lockTime = max(0,intval($lockTime));
+	if($playerId < 1 || !$_pm['mysql']->query('START TRANSACTION')) return false;
+	if(!$_pm['mysql']->query("UPDATE player SET password={$lockTime} WHERE id={$playerId}") ||
+		!$_pm['mysql']->query("UPDATE chat_login_auth SET lock_time={$lockTime} WHERE uid={$playerId}") ||
+		!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		return false;
+	}
+	$old = kdjlSafeMemValue($_pm['mem']->get($playerId), array());
+	if(is_array($old))
+	{
+		$old['password']=$lockTime;
+		$_pm['mem']->set(array('k'=>$playerId,'v'=>$old));
+	}
+	$_pm['mem']->set(array('k'=>'chat_lock_'.$playerId,'v'=>$lockTime));
+	return true;
+}
+
+$requestMsg = (isset($_REQUEST['msg']) && !is_array($_REQUEST['msg'])) ? $_REQUEST['msg'] : '';
+if(strlen($requestMsg) > 600) $requestMsg = substr($requestMsg, 0, 600);
+$requestPropsId = (isset($_GET['props_id']) && !is_array($_GET['props_id'])) ? $_GET['props_id'] : '';
+$chatUid = intval($_SESSION['id']);
+$rs = $_pm['mysql']->getOneRecord("SELECT id,name,nickname,password,secid,money FROM player WHERE id={$chatUid}");
+$welcome = memContent2Arr("db_welcome",'code');
+$gmNames = array();
+if(is_array($welcome) && isset($welcome['admin']['contents']) && $welcome['admin']['contents'] != '')
+{
+	$gmNames = preg_split("/(?:,|;|\\xEF\\xBC\\x8C|\\xEF\\xBC\\x9B)+/", $welcome['admin']['contents'], -1, PREG_SPLIT_NO_EMPTY);
+}
+$gmNames = array_filter(array_map('trim', $gmNames), 'strlen');
+$isChatGm = (is_array($rs) && isset($rs['name']) && in_array($rs['name'], $gmNames, true));
 $userIsVip = false; /* whether the user send msg is a VIP user, if he has the 口袋精灵VIP卡, he is. added by Zheng.Ping */
-if($rs===FALSE ||  !empty($rs['password'])  || $rs['secid']>0 || $_REQUEST['msg']=='{'||$_REQUEST['msg']=='}') exit("你没登陆!");
+$chatLockTime = is_array($rs) && isset($rs['password']) ? intval($rs['password']) : 0;
+if($chatLockTime > 0 && $chatLockTime <= time())
+{
+	if(!chatProtoSetPlayerLock($chatUid,0)) exit('保存禁言状态失败！');
+	$_pm['mem']->del($chatUid);
+	$chatLockTime = 0;
+	if(is_array($rs)) $rs['password'] = 0;
+}
+if(!is_array($rs) || $chatLockTime > time() || (isset($rs['secid']) && $rs['secid']>0) || $requestMsg=='{'||$requestMsg=='}') exit("你没登陆!");
+$rsDefaults = array('nickname' => '', 'name' => '', 'money' => 0);
+foreach($rsDefaults as $rsDefaultKey => $rsDefaultValue)
+{
+	if(!isset($rs[$rsDefaultKey])) $rs[$rsDefaultKey] = $rsDefaultValue;
+}
 
 /*new player not say.*/
 //if ($rs['regtime']+3600>time() || $rs['money']<1000) exit();
 
 // 封号处理：增加封号命令：@@FH玩家昵称
 $fff = false;
-if(strpos($_SERVER['HTTP_USER_AGENT'],'Firefox/3')!==false||strpos($_SERVER['HTTP_USER_AGENT'],'Firefox/2')!==false){
+$userAgent = (isset($_SERVER['HTTP_USER_AGENT']) && !is_array($_SERVER['HTTP_USER_AGENT'])) ? $_SERVER['HTTP_USER_AGENT'] : '';
+if(strpos($userAgent,'Firefox/3')!==false||strpos($userAgent,'Firefox/2')!==false){
 	$fff = true;
 }
-$msg = htmlspecialchars(($_REQUEST['msg']),ENT_QUOTES,"utf-8");
-if(strlen($_REQUEST['msg'])>1&&strlen($msg)<1||$fff){
-	$msg = htmlspecialchars(iconv('utf-8','utf-8',$_REQUEST['msg']),ENT_QUOTES,"utf-8");
+$msg = htmlspecialchars($requestMsg,ENT_QUOTES,"utf-8");
+if(strlen($requestMsg)>1&&strlen($msg)<1||$fff){
+	$msg = htmlspecialchars(chatProtoSafeIconv('utf-8','utf-8',$requestMsg),ENT_QUOTES,"utf-8");
 }
 
 $fletter = substr($msg,0,1);
-$len = strlen(trim($msg) - 1);
-$lletter = substr($msg,$len,1);
+$len = strlen(trim($msg)) - 1;
+$lletter = $len >= 0 ? substr(trim($msg),$len,1) : '';
 
 $arr = array(
 '我日',
@@ -214,12 +271,12 @@ $arr = array(
 '你日',
 '他日'
 );
-$msg =iconv('utf-8','utf-8',$msg);
+$msg = chatProtoSafeIconv('utf-8','utf-8',$msg);
 
 for($i=0;$i<count($arr);$i++){
-	$msg = str_replace(iconv('utf-8','utf-8',$arr[$i]),"*",$msg);
+	$msg = str_replace(chatProtoSafeIconv('utf-8','utf-8',$arr[$i]),"*",$msg);
 }
-$msg =iconv('utf-8','utf-8',$msg);
+$msg = chatProtoSafeIconv('utf-8','utf-8',$msg);
 $omsg=$msg ;
 $num=strlen($msg);
 ######## added by Du Hao in 20090421########
@@ -243,55 +300,57 @@ if($s!='0')
 	$msg=str_replace("{","",$msg);
 	$msg=str_replace("}","",$msg);
 }
-if($_GET['props_id'])
+$props_id = 0;
+if($requestPropsId !== '')
 {
-	$props_id = str_replace("{","",$_GET['props_id']);
+	$props_id = str_replace("{","",$requestPropsId);
 	$props_id = str_replace("{","",$props_id);
 	$props_id = htmlspecialchars(str_replace(array(' ','	',"\n","\r"),'',$props_id));
 }
 $dbn  = $GLOBALS['_pm']['mysql'];
 
-$msg =htmlspecialchars(($_REQUEST['msg']),ENT_QUOTES,"utf-8");
-$msg = iconv('utf-8','utf-8',$msg);
+$msg =htmlspecialchars($requestMsg,ENT_QUOTES,"utf-8");
+$msg = chatProtoSafeIconv('utf-8','utf-8',$msg);
 if(empty($msg))
 {
-	$msg = htmlspecialchars(str_replace(array(' ','	',"\n","\r"),'',$_REQUEST['msg']));
+	$msg = htmlspecialchars(str_replace(array(' ','	',"\n","\r"),'',$requestMsg));
 }
 $msg=substr($msg,0,30);
 
 
-$sql = sprintf("select userbag.id,propscolor from props,userbag where name='$msg' and userbag.sums > 0 and userbag.uid = {$_SESSION['id']} and userbag.pid = props.id AND userbag.id = '".$props_id."'");
+$safeMsg = $dbn->escape($msg);
+$sql = "select userbag.id,propscolor from props,userbag where name='{$safeMsg}' and userbag.sums > 0 and userbag.uid = ".intval($_SESSION['id'])." and userbag.pid = props.id AND userbag.id = ".intval($props_id);
 $res  = $dbn->getOneRecord($sql);
-if($res[id]>0)
+if(is_array($res) && intval($res['id'])>0)
 {
 	switch($res['propscolor'])
 	{
 		case 1:
-			$msg="<span style=color:#A3ABAD><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#A3ABAD;>$msg</a>】</b></span>";
+			$msg='<span style="color:#A3ABAD"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#A3ABAD;">'.$msg.'</a>】</b></span>';
 			$color="#A3ABAD";
 			break;
 		case 2:
-			$msg="<span style=color:#127EE1><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#127EE1;>$msg</a>】</b></span>";
+			$msg='<span style="color:#127EE1"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#127EE1;">'.$msg.'</a>】</b></span>';
 			$color="#127EE1";
 			break;
 		case 3:
-			$msg="<span style=color:#AD01DF><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#AD01DF;>$msg</a>】</b></span>";
+			$msg='<span style="color:#AD01DF"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#AD01DF;">'.$msg.'</a>】</b></span>';
 			$color="#AD01DF";
 			break;
 		case 4:
-			$msg="<span style=color:#279704><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#279704;>$msg</a>】</b></span>";
+			$msg='<span style="color:#279704"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#279704;">'.$msg.'</a>】</b></span>';
 			$color="#279704";
 			break;
 		case 5:
-			$msg="<span style=color:#EDC028><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#EDC028;>$msg</a>】</b></span>";
+			$msg='<span style="color:#EDC028"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#EDC028;">'.$msg.'</a>】</b></span>';
 			$color="#EDC028";
 			break;
 		case 6:
-			$msg="<span style=color:#DA6601><b>【<a href='#' onclick=showTip3(".$res[id].",0,1,2) onmouseout=UnTip3() style=cursor:pointer;color:#DA6601;>$msg</a>】</b></span>";
+			$msg='<span style="color:#DA6601"><b>【<a href="#" onclick="showTip3('.intval($res['id']).',0,1,2)" onmouseout="UnTip3()" style="cursor:pointer;color:#DA6601;">'.$msg.'</a>】</b></span>';
 			$color="#DA6601";
 			break;
 	}
-}else 
+}else
 {
 	exit($msg.' 不存在');
 }
@@ -307,27 +366,26 @@ if($res[id]>0)
 //}
 //
 $cmdstr = substr($msg,0,2);
-if (($cmdstr == 'JY' || $cmdstr == 'FH'|| $cmdstr == 'JJ' || $cmdstr == 'YZ' || $cmdstr == 'ZY' || $cmdstr == 'WF') && ($rs['nickname']=='GM'||$rs['name']=='wenfang' || $rs['name']=='mayier318' || $rs['name']=='kefu04' || $rs['name']=='tanwei2008'|| $rs['name']=='leinchu' ))
+if (($cmdstr == 'JY' || $cmdstr == 'FH'|| $cmdstr == 'JJ' || $cmdstr == 'YZ' || $cmdstr == 'ZY' || $cmdstr == 'WF') && $isChatGm)
 {
 	//$nickname = str_replace(array("JY",'FH','JJ','YZ','ZY','WF'), '',$_REQUEST['msg'],1);
-	$nickname = substr($_REQUEST['msg'],2);
-	$players = $_pm['mysql']->getOneRecord("SELECT id,password FROM player  where nickname='{$nickname}' limit 0,1");
+	$nickname = substr($requestMsg,2);
+    $safeNickname = $_pm['mysql']->escape($nickname);
+	$players = $_pm['mysql']->getOneRecord("SELECT id,password FROM player where nickname='{$safeNickname}' limit 0,1");
 	if (is_array($players))
 	{
+		$playerId = intval($players['id']);
 		if ($cmdstr == 'FH')
 		{
-			$_pm['mysql']->query("UPDATE player set secid=1 WHERE id={$players['id']}");
-			$_pm['mem']->set(array('k'=>$players['id'] . 'chat', 'v'=>0)); // 踢下线
-			$_pm['mem']->del($players['id']);
+			$_pm['mysql']->query("UPDATE player set secid=1 WHERE id=".$playerId);
+			$_pm['mem']->set(array('k'=>$playerId . 'chat', 'v'=>0));
+			$_pm['mem']->del($playerId);
 			exit("FH");
 		}
 		else if($cmdstr == 'JY') // 12小时禁言
 		{
 			$time = time() + 12 * 3600;
-			$_pm['mysql']->query("update player set password='{$time}' where id={$players['id']}");
-			$old = unserialize($_pm['mem']->get($players['id']));
-			$old['password']=1;
-			$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
+			if(!chatProtoSetPlayerLock($playerId,$time)) exit('保存禁言状态失败！');
 			$msg = '@'. $nickname . ' 因为违反江湖道义，被众英雄送入思过涯思过12小时来啦！';
 		}
 		else if($cmdstr == "JJ") // 12小时解禁
@@ -336,10 +394,7 @@ if (($cmdstr == 'JY' || $cmdstr == 'FH'|| $cmdstr == 'JJ' || $cmdstr == 'YZ' || 
 			$ctime = ($players['password'] - $nowtime) / 3600;
 			if($ctime <  12)
 			{
-				$_pm['mysql']->query("update player set password='0' where id={$players['id']}");
-				$old = unserialize($_pm['mem']->get($players['id']));
-				$old['password']=0;
-				$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
+				if(!chatProtoSetPlayerLock($playerId,0)) exit('保存禁言状态失败！');
 				$msg = '@'. $nickname . ' 在思过涯面壁思过结束，被允许重出江湖！';
 			}
 			//exit();
@@ -347,29 +402,20 @@ if (($cmdstr == 'JY' || $cmdstr == 'FH'|| $cmdstr == 'JJ' || $cmdstr == 'YZ' || 
 		else if($cmdstr == 'YZ') // 永久禁言
 		{
 			$time = time() + 10 * 365 * 12 * 3600;
-			$_pm['mysql']->query("update player set password='{$time}' where id={$players['id']}");
-			$old = unserialize($_pm['mem']->get($players['id']));
-			$old['password']=1;
-			$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
+			if(!chatProtoSetPlayerLock($playerId,$time)) exit('保存禁言状态失败！');
 			$msg = '@ 天降巨雷，把玩家&nbsp;'.$nickname.'&nbsp;嘴巴劈成了两半，&nbsp;'.$nickname.'&nbsp;永久失去了说话的权利！';
 		}
 		else if($cmdstr == 'WF') // 永久禁言不发公告
 		{
 			$time = time() + 10 * 365 * 12 * 3600;
-			$_pm['mysql']->query("update player set password='{$time}' where id={$players['id']}");
-			$old = unserialize($_pm['mem']->get($players['id']));
-			$old['password']=1;
-			$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
+			if(!chatProtoSetPlayerLock($playerId,$time)) exit('保存禁言状态失败！');
 			//$msg = '@ 天降巨雷，把玩家&nbsp;'.$nickname.'&nbsp;嘴巴劈成了两半，&nbsp;'.$nickname.'&nbsp;永久失去了说话的权利！';
 			$msg = "";
 			$rs['nickname'] = "";
 		}
 		else if($cmdstr == "ZY") //解禁
 		{
-			$_pm['mysql']->query("update player set password='0' where id={$players['id']}");
-			$old = unserialize($_pm['mem']->get($players['id']));
-			$old['password']=0;
-			$_pm['mem']->set(array('k'=> $players['id'], 'v'=> $old));
+			if(!chatProtoSetPlayerLock($playerId,0)) exit('保存禁言状态失败！');
 			$msg = '@ 天降神光，照射到&nbsp;'. $nickname . '&nbsp;的身上，他嘴上的伤口奇迹般的复原了，从此，他过上了幸福的生活.';
 			//exit();
 		}
@@ -378,17 +424,18 @@ if (($cmdstr == 'JY' || $cmdstr == 'FH'|| $cmdstr == 'JJ' || $cmdstr == 'YZ' || 
 }
 
 // 时间间隔:
-if ($_SESSION['msgtime'] && $_SESSION['msgtime']>time()-5) exit('TOOFAST');
-if (strlen($_REQUEST['msg'])>100 && substr($msg, 0,2) != '//' && ($rs['nickname']!='GM' && $rs['name']!='mayier318' && $rs['name']!='wenfang' && $rs['name']!='kefu04')) exit("DATATOOLONG");
-if (strlen($_REQUEST['msg'])>100 && ($rs['nickname']!='GM' && $rs['name']!='mayier318' && $rs['name']!='wenfang' && $rs['name']!='kefu04')) exit("DATATOOLONG:".strlen($_REQUEST['msg']));
+if (isset($_SESSION['msgtime']) && $_SESSION['msgtime'] && $_SESSION['msgtime']>time()-5) exit('TOOFAST');
+if (strlen($requestMsg)>100 && substr($msg, 0,2) != '//' && !$isChatGm) exit("DATATOOLONG");
+if (strlen($requestMsg)>100 && $isChatGm) exit("DATATOOLONG:".strlen($requestMsg));
 $truename= $rs['nickname'];
 
 //$_olddata = @unserialize($_pm['mem']->get('ttmt_data_notice'));
-//$swfData = iconv('utf-8','utf-8',"\$".$truename."`说：")."<a href=\"event:showTip3_".str_replace('"',"'",$res[id])."\"><b><font color=\"$color\">".iconv('utf-8','utf-8','【'.$omsg.'】')."</font></b></a>";
+//$swfData = iconv('utf-8','utf-8',"\$".$truename."`说：")."<a href=\"event:showTip3_".str_replace('"',"'",$res['id'])."\"><b><font color=\"$color\">".iconv('utf-8','utf-8','【'.$omsg.'】')."</font></b></a>";
 
 require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 $s=new socketmsg();
-$s->sendMsg(iconv('utf-8','utf-8','CT|'."\$".$truename."`说：".$msg));
+$s->sendMsg(chatProtoSafeIconv('utf-8','utf-8','CT|'."\$".$truename."`说：".$msg));
+
 
 //$_olddata['es'] = isset($_olddata['es'])?$_olddata['es']."<br/>[系统公告]：".$swfData:$swfData;
 //$_pm['mem']->set(array('k'=>'ttmt_data_notice','v'=>$_olddata));
@@ -421,7 +468,7 @@ else if (substr($msg, 0,1) == '#' && ($rs['money']>10))
 	$msg='<font color=green>'.substr($msg,1).'</font>';
 }
 //filter:shadow(color=blue);height:1
-else if ( ($rs['nickname'] == 'GM'||$rs['name']=='kefu04' || $rs['name']=='wenfang' || $rs['name']=='mayier318' || $rs['name']=='tanwei2008'|| $rs['name']=='leinchu') && substr($msg, 0,1) == '@')
+else if ( $isChatGm && substr($msg, 0,1) == '@')
 {
 	// sub command
 	if(strtolower(trim($msg)) == "@@clear")
@@ -446,7 +493,7 @@ $msg = mb_substr($msg,0,35,'utf-8');
 }else{
 //$msg = substr($msg,0,35);
 }
-$server_list = array(//顺序不能改变
+$server_list = array(
 "pm1.webgame.com.cn",
 "pm2.webgame.com.cn",
 "pm3.webgame.com.cn",
@@ -460,89 +507,98 @@ $server_list = array(//顺序不能改变
 "pmtest.webgame.com.cn"
 );
 $smallspeaker = false;
-$host = strtoupper(substr($_SERVER['HTTP_HOST'],0,strpos($_SERVER['HTTP_HOST'],'.')));
+$httpHost = (isset($_SERVER['HTTP_HOST']) && !is_array($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : '';
+if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $httpHost)) $httpHost = '';
+$hostDotPos = strpos($httpHost,'.');
+$hostEnglish = strtoupper($hostDotPos === false ? $httpHost : substr($httpHost,0,$hostDotPos));
+if(!preg_match('/^[A-Z0-9_-]{1,32}$/', $hostEnglish)) $hostEnglish = 'LOCAL';
 $hostname = array(
-'PM1'=>"一区",
-'PM2'=>"二区",
-'PM3'=>"三区",
-'PM4'=>"四区",
-'PM5'=>"五区",
-'PM6'=>"六区",
-'PM7'=>"七区",
-'PM8'=>"八区",
-'PM9'=>"寒江雪区",
-'PM10'=>"青龙",
-'PMTEST'=>"测试区"
+'PM1'=>"&#19968;&#21306;",
+'PM2'=>"&#20108;&#21306;",
+'PM3'=>"&#19977;&#21306;",
+'PM4'=>"&#22235;&#21306;",
+'PM5'=>"&#20116;&#21306;",
+'PM6'=>"&#20845;&#21306;",
+'PM7'=>"&#19971;&#21306;",
+'PM8'=>"&#20843;&#21306;",
+'PM9'=>"&#23506;&#27743;&#38634;&#21306;",
+'PM10'=>"&#38738;&#40857;",
+'PMTEST'=>"&#27979;&#35797;&#21306;"
 );
-$host = $hostname[$host];
-if(strpos($msg,' ')!==false||strpos($msg,'　')!==false){
-if(strpos($msg,' ')===false||strpos($msg,'　')!==false){
-$msg = str_replace('　',' ',$msg);
+$host = isset($hostname[$hostEnglish]) ? $hostname[$hostEnglish] : $hostEnglish;
+$wideSpace = chr(227).chr(128).chr(128);
+if(strpos($msg,' ')!==false||strpos($msg,$wideSpace)!==false){
+if(strpos($msg,' ')===false||strpos($msg,$wideSpace)!==false){
+$msg = str_replace($wideSpace,' ',$msg);
 }
 $serverstr = substr($msg,0,strpos($msg,' '));
-$serverstr = preg_split("/(,|，)/",$serverstr,-1,PREG_SPLIT_NO_EMPTY);
+$serverstr = preg_split("/(,|\xEF\xBC\x8C)/",$serverstr,-1,PREG_SPLIT_NO_EMPTY);
 if(count($serverstr)>0){
 $smallspeaker = true;
 $tmp_server_list=array();
 foreach($serverstr as $sid){
+$sid = intval($sid);
 if($sid<1||$sid>count($server_list)){
 $smallspeaker = false;
 break;
 }
-if(count($tmp_server_list)==2) break;//允许三个区，除自己区外，还允许两个
+if(count($tmp_server_list)==2) break;
 $tmp_server_list[$sid-1]=$server_list[$sid-1];
 }
 if($smallspeaker){
-//自己区
-if($host==$hostname['PMTEST']){
+if($hostEnglish=='PMTEST'){
 $tmp_server_list[8]=$server_list[8];
 }else{
-$hostEnglish = strtoupper(substr($_SERVER['HTTP_HOST'],0,strpos($_SERVER['HTTP_HOST'],'.')));
 $sid = intval(str_replace('PM','',$hostEnglish));
+if($sid>0 && isset($server_list[$sid-1])){
 $tmp_server_list[$sid-1]=$server_list[$sid-1];
+}
 }
 $server_list = $tmp_server_list;
 $msg=substr($msg,strpos($msg,' '));
 }
 }
 }
-//$_pm['mysql']->query("SET autocommit=0");
-//$_pm['mysql']->query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
-$_pm['mysql']->query("START TRANSACTION");
-if($smallspeaker){
-$bags=getUserBagById(intval($_SESSION['id']),1295,&$_pm['mysql']);
-}else{
-$bags=getUserBagById(intval($_SESSION['id']),1319,&$_pm['mysql']);
+if(!$_pm['mysql']->query("START TRANSACTION")){
+exit("NOBROADCAST");
 }
-//喇叭卷轴
+$speakerPid = $smallspeaker ? 1295 : 1319;
+$bags = $_pm['mysql']->getOneRecord("SELECT id,sums FROM userbag WHERE uid=".intval($_SESSION['id'])." AND pid={$speakerPid} AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) ORDER BY id DESC LIMIT 1 FOR UPDATE");
 if($bags&&$bags['sums']>0)
 {
-$sql="update userbag set sums=sums-1 where id=".intval($bags['id']).' and uid='.intval($_SESSION['id']).' limit 1';
-$_pm['mysql']->query($sql);
+$sql="update userbag set sums=sums-1 where id=".intval($bags['id']).' and uid='.intval($_SESSION['id']).' and sums>0 and zbing=0 and (cantrade IS NULL OR cantrade<>3) limit 1';
+if(!$_pm['mysql']->query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
+$_pm['mysql']->query("ROLLBACK");
+exit("NOBROADCAST");
+}
 if($bags['sums']==1){
-$sql="detele from userbag where sums=0 and id=".intval($bags['id']).' and uid='.intval($_SESSION['id']).' limit 1';
-$_pm['mysql']->query($sql);
+$sql="delete from userbag where sums=0 and bsum=0 and psum=0 and pyb=0 and zbing=0 and (cantrade IS NULL OR cantrade<>3) and id=".intval($bags['id']).' and uid='.intval($_SESSION['id']).' limit 1';
+if(!$_pm['mysql']->query($sql)){
+$_pm['mysql']->query("ROLLBACK");
+exit("NOBROADCAST");
+}
 }
 if (!$_pm['mysql']->query("COMMIT")){
 $_pm['mysql']->query("ROLLBACK");
+exit("NOBROADCAST");
 }
 if($smallspeaker){
 $memKey = 'UserSpeakInAllServersSmall';
 }else{
 $memKey = 'UserSpeakInAllServers';
 }
-$dataMem=unserialize($_pm['mem']->get($memKey));//取出原来没有发送出去的
+$dataMem=kdjlSafeMemValue($_pm['mem']->get($memKey), array());
 if(!is_array($dataMem)){
 $dataMem=array();
 }
 $connector = '#`#';
 if($smallspeaker){
-$msg='[<font color="#B48D03">'.$host.'</font>] '.$truename.'(<font color="#B48D03">小喇叭</font>)：<font color="#33AA33"><b>'.str_replace('#`#','#.#',substr($msg,1)).'</b></font>';
+$msg='[<font color="#B48D03">'.$host.'</font>] '.$truename.'(<font color="#B48D03">&#23567;&#21895;&#21485;</font>)&#65306;<font color="#33AA33"><b>'.str_replace('#`#','#.#',substr($msg,1)).'</b></font>';
 }else{
-if($rs['name']=='wenfang' || $rs['name']=='mayier318' || $rs['name']=='kefu04' || $rs['name']=='leinchu'){
-$msg='<font color="#B48D03">公告</font>：<font color="#ff0000"><b>'.str_replace('#`#','#.#',$msg).'</b></font>';
+if($isChatGm){
+$msg='<font color="#B48D03">&#20844;&#21578;</font>&#65306;<font color="#ff0000"><b>'.str_replace('#`#','#.#',$msg).'</b></font>';
 }else{
-$msg='[<font color="#B48D03">'.$host.'</font>] '.$truename.'(<font color="#B48D03">大喇叭</font>)：<font color="#ff0000"><b>'.str_replace('#`#','#.#',$msg).'</b></font>';
+$msg='[<font color="#B48D03">'.$host.'</font>] '.$truename.'(<font color="#B48D03">&#22823;&#21895;&#21485;</font>)&#65306;<font color="#ff0000"><b>'.str_replace('#`#','#.#',$msg).'</b></font>';
 }
 }
 foreach($server_list as $k=>$v){
@@ -552,29 +608,21 @@ $dataMem[$k].=$connector.$msg;
 $dataMem[$k]=$msg;
 }
 }
-//$recv_file = "/function/anounce.php";
-$_pm['mem']->set(array("k"=>$memKey,"v"=>$dataMem));//放入内存
-$data=unserialize($_pm['mem']->get($memKey));
+$_pm['mem']->set(array("k"=>$memKey,"v"=>$dataMem));
+$data=kdjlSafeMemValue($_pm['mem']->get($memKey), array());
 $newData =array();
 if(is_array($data)){
-foreach($data as $k=>$v){//逐个发送
-if(!($rslt=postAnounce($server_list[$k],$smallspeaker,$v))){//发送失败的保存
+foreach($data as $k=>$v){
+if(!($rslt=postAnounce($server_list[$k],$smallspeaker,$v))){
 if(isset($newData[$k])){
 $newData[$k].=$v;
 }else{
 $newData[$k]=$v;
 }
-if($_SESSION['username']=="leinchu"){
-echo '<b>'.__FILE__.'-->'.__LINE__.'</b><br/><pre>$rslt=';
-var_dump($rslt	);
-echo '</pre>';
 }
 }
 }
-}
-//if(!empty($newData)){//保存
-$_pm['mem']->set(array("k"=>$memKey,"v"=>$newData));//放入内存
-//}
+$_pm['mem']->set(array("k"=>$memKey,"v"=>$newData));
 require_once(dirname(__FILE__).'/chatMessage.php');
 exit("BROADCASTDONE");
 }else{
@@ -587,7 +635,20 @@ else if(substr($msg, 0,1) == '/' && strpos($msg,' ')!==false)
 	$posChk = explode(' ', $msg,2);
 	if (is_array($posChk) && count($posChk)==2)
 	{
-		$truename = 'm'.$truename.'m'.str_replace('/','',$posChk[0]); // m+from+'m'+to:
+		$fromuser = ",".$truename.",";
+		$getuser = str_replace('/','',$posChk[0]);
+		$blacklist = kdjlSafeMemValue($_pm['mem']->get('db_blacklist'), array());
+		$getuserSql = $_pm['mysql']->escape($getuser);
+		$arr = $_pm['mysql']->getOneRecord("SELECT id FROM player WHERE nickname = '{$getuserSql}'");
+		if(is_array($arr) && !empty($arr['id']) && !empty($blacklist[$arr['id']]))
+		{
+			$toBlacklist = ','.$blacklist[$arr['id']].',';
+			if(strpos($toBlacklist, $fromuser) !== false)
+			{
+				die("");
+			}
+		}
+		$truename = 'm'.$truename.'m'.$getuser; // m+from+'m'+to:
 		$msg = $posChk[1];
 	}
 	$sc = 1;
@@ -595,19 +656,18 @@ else if(substr($msg, 0,1) == '/' && strpos($msg,' ')!==false)
 
 function postAnounce($server,$isSmallSpeaker,$data){
 	/**/
-	global $_SESSION;
+	global $_SESSION,$isChatGm;
 	if(strtolower($server)=="pmtest.webgame.com.cn"){
 		$memAnother = new memoryC(array('host'=>$server,'port'=>11212));
 	}else{
 		$memAnother = new memoryC(array('host'=>$server,'port'=>11211));
 	}
 	if(!$memAnother->getHandle()){
-		if($_SESSION['username']=="leinchu"){
+		if($isChatGm){
 			echo 'Mem connect fail!<hr>';
 		}
 		return false;
 	}
-	$time = date("mdHis");
 	$time = time();
 	if(!$isSmallSpeaker){
 		$msg_key = 'chatMsgListLoundSpeaker';
@@ -623,8 +683,9 @@ function postAnounce($server,$isSmallSpeaker,$data){
 	$msg_key = 'chatMsgList';
 	if ($memAnother->add( array('k'=>$msg_key, 'v'=>implode('linend',$nmsg)) ) != true)
 	{
-		$nowMsgList = unserialize($memAnother->get($msg_key));
-		$arr = split('linend', $nowMsgList);
+		$nowMsgList = kdjlSafeMemValue($memAnother->get($msg_key), '');
+		if(!is_string($nowMsgList)) $nowMsgList = '';
+		$arr = explode('linend', $nowMsgList);
 		if( count($arr)>20 ) // clear old
 		{
 			$arrt = array_shift($arr);
@@ -649,14 +710,15 @@ $msg_key = 'chatMsgList';
 //$msg = preg_replace("/[<>]/","|",$msg);
 if ($_pm['mem']->add( array('k'=>$msg_key, 'v'=>$truename.': '.$msg) ) != true)
 {
-	$nowMsgList = unserialize($_pm['mem']->get($msg_key));
-	$arr = split('linend', $nowMsgList);
+	$nowMsgList = kdjlSafeMemValue($_pm['mem']->get($msg_key), '');
+	if(!is_string($nowMsgList)) $nowMsgList = '';
+	$arr = explode('linend', $nowMsgList);
 	if( count($arr)>20 ) // cear old
 	{
 		//$arrt = array_shift($arr);
 		$arr = array_slice($arr, -20, 20);
 	}
-	if(($truename == 'GM' || $truename == 'wenfang') && $sc==0) $newstr = $msg;
+	if($isChatGm && $sc==0) $newstr = $msg;
 	else
 	{
 		if ($userIsVip) $truename = $truename . '<font color=\"#FF0000\">(VIP)</font>'; // added by Zheng.Ping
@@ -669,7 +731,7 @@ if ($_pm['mem']->add( array('k'=>$msg_key, 'v'=>$truename.': '.$msg) ) != true)
 	//{
 	//	$retstr .= $v.'linend';
 	//}
-	$retstr .= implode('linend',$arr).'linend';
+	$retstr = implode('linend',$arr).'linend';
 	$retstr = $retstr.$newstr;
 
 	$_pm['mem']->set( array('k'=>$msg_key, 'v'=>$retstr) ); // default ten min.
@@ -721,7 +783,7 @@ function getUserBagById($id,$pid,&$mysql)
 									  p.propslock as propslock,
 									  p.prestige as prestige
 								 FROM userbag as b,props as p
-								WHERE 
+								WHERE
 								b.pid={$pid} and
 								p.id = b.pid and b.uid={$id} and b.sums>0
 								ORDER BY b.id DESC limit 1");

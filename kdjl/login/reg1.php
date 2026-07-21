@@ -78,15 +78,15 @@ function C(obj,id)
 	if(id=='cuser') op='u='+obj.value;
     else op='n='+obj.value;
 	var opt = {
-    		 method: 'get',
-    		 onSuccess: function(t) {
+		 method: 'get',
+		 onSuccess: function(t) {
 				$(id).innerHTML=t.responseText;
-    		 },
-    		 on404: function(t) {
-    		 },
-    		 onFailure: function(t) {
-    		 },
-    		 asynchronous:true
+		 },
+		 on404: function(t) {
+		 },
+		 onFailure: function(t) {
+		 },
+		 asynchronous:true
 		}
 		var ajax=new Ajax.Request('loginCheck.php?'+op, opt);
 }
@@ -124,27 +124,27 @@ function nexta(){
 	}
 	var op = 'n='+encodeURIComponent(user);
 	var opt = {
-    		 method: 'get',
-    		 onSuccess: function(t) {
+		 method: 'get',
+		 onSuccess: function(t) {
 				var result = t.responseText;
 				if(result == 'ok' || result == 'OK'){
 					if(sex == '' || head == ''){
 						sex = 1;
 						head = 5;
 					}
-					opbak='bname='+user+'&sex='+sex+'&head='+head;
+					opbak=user;
 					OpenLogin();
 					//document.getElementById('reg2').style.display='';
 				}else{
 					alert('请检查用户名或者验证码!');
 					return;
 				}
-    		 },
-    		 on404: function(t) {
-    		 },
-    		 onFailure: function(t) {
-    		 },
-    		 asynchronous:true
+		 },
+		 on404: function(t) {
+		 },
+		 onFailure: function(t) {
+		 },
+		 asynchronous:true
 		}
 		var ajax=new Ajax.Request('loginCheck.php?'+op, opt);
 }
@@ -155,16 +155,22 @@ function reg2(id){
 	}else{
 		var username = document.getElementById('username').value;
 		var pass = document.getElementById('pass').value;
-		var rop = opbak+'&bc='+id+'&username='+username+'&pass='+pass;;
-
 		if(!isNaN(username)){
 			alert('用户名不能全为数字！');
 			return;
 		}
 
 		var opt = {
-    		 method: 'get',
-    		 onSuccess: function(t) {
+		 method: 'post',
+		 parameters: {
+			 bname: opbak,
+			 sex: sex,
+			 head: head,
+			 bc: id,
+			 username: username,
+			 pass: pass
+		 },
+		 onSuccess: function(t) {
 				var r = t.responseText;
 				if (r=='OK1')
 				{
@@ -176,15 +182,15 @@ function reg2(id){
 					alert(r);
 					CloseLogin();
 				}
-    		 },
-    		 on404: function(t) {
-    		 },
-    		 onFailure: function(t) {
-    		 },
-    		 asynchronous:true
+		 },
+		 on404: function(t) {
+		 },
+		 onFailure: function(t) {
+		 },
+		 asynchronous:true
 		}
 
-		var ajax=new Ajax.Request('register.php?'+rop, opt);
+		var ajax=new Ajax.Request('register.php', opt);
 	}
 }
 
@@ -196,7 +202,7 @@ function returnreg()
 
 
 function ghfun(){
-var ghflag = "<?=$ghflag?>";
+var ghflag = "<?php echo $ghflag; ?>";
 if(ghflag == '0'){
 	return false;
 }
@@ -270,32 +276,32 @@ function unghfun(){
 </div>
 
 <!--注册码-->
-<script>  
-function validateRegCode() {  
-    var regCodeInput = document.getElementById('reg_code');  
-    var regCode = regCodeInput.value.trim(); // 去除首尾空格  
-    var errorCodeElement = document.getElementById('reg_code_error');  
-  
-    // 清空之前的错误信息  
-    errorCodeElement.textContent = '';  
-  
-    // 检查注册码是否为空  
-    if (regCode === '') {  
-        errorCodeElement.textContent = '注册码不能为空！';  
-        regCodeInput.focus(); // 设置焦点到输入框  
-        return false;  
-    }  
-  
-    // 检查注册码长度是否满足要求（例如，至少10个字符）  
-    if (regCode.length < 10) {  
-        errorCodeElement.textContent = '注册码长度至少为10个字符！';  
-        regCodeInput.focus();  
-        return false;  
-    }  
+<script>
+function validateRegCode() {
+    var regCodeInput = document.getElementById('reg_code');
+    var regCode = regCodeInput.value.trim(); // 去除首尾空格
+    var errorCodeElement = document.getElementById('reg_code_error');
 
-    errorCodeElement.style.display = 'none';  
-    return true;  
-}  
+    // 清空之前的错误信息
+    errorCodeElement.textContent = '';
+
+    // 检查注册码是否为空
+    if (regCode === '') {
+        errorCodeElement.textContent = '注册码不能为空！';
+        regCodeInput.focus(); // 设置焦点到输入框
+        return false;
+    }
+
+    // 检查注册码长度是否满足要求（例如，至少10个字符）
+    if (regCode.length < 10) {
+        errorCodeElement.textContent = '注册码长度至少为10个字符！';
+        regCodeInput.focus();
+        return false;
+    }
+
+    errorCodeElement.style.display = 'none';
+    return true;
+}
 </script>
 
 <div class="taskinfo" id="tasktip" style="display:none">
@@ -404,4 +410,3 @@ function OpenLogin(){
 </script>
 </body>
 </html>
-

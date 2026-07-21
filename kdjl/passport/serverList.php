@@ -1,3 +1,6 @@
+<?php
+$from = (isset($_GET['from']) && !is_array($_GET['from'])) ? trim($_GET['from']) : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <script>
@@ -12,13 +15,13 @@
 </script>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"  />
-	
+
 	<title>游戏选区</title>
-	
+
 <style type="text/css" >
 
 .selServer{
-	widht:100%;
+	width:100%;
 	height:130px;
 	font-size:40px;
 	text-align:center;
@@ -52,13 +55,12 @@
 
 <div class="selServer">
 	<div class="serverList">
-		
-		<a href="http://127.0.0.1:8001/passport/login.php?from=<?php echo $_GET['from']; ?>">口袋1服</a>
-		
+
+		<a href="login.php<?php echo $from === '' ? '' : '?from='.rawurlencode($from); ?>">口袋1服</a>
+
 	</div>
-		
+
 </div>
 
 </body>
 </html>
-

@@ -39,16 +39,16 @@ class club{
 	public function create($name)
 	{
 		$currentUid = intval($_SESSION['id']);
-		$name = $this->m_db->escape($name);
-		// 当前玩家是否拥有帮会。
-		$hadclub = $this->m_db->getOneRecord("SELECT id 
-		                                        FROM club_user 
-											   WHERE uid={$_SESSION['id']} 
-											   LIMIT 0,1");
-		if (is_array($hadclub)) return false;
-
+		if($currentUid < 1 || !is_string($name)) return false;
 		$length = strlen($name);
 		if ($length<6 || $length>20) return false;
+		$name = $this->m_db->escape($name);
+		// 当前玩家是否拥有帮会。
+		$hadclub = $this->m_db->getOneRecord("SELECT id
+		                                        FROM club_user
+											   WHERE uid={$currentUid}
+											   LIMIT 0,1");
+		if (is_array($hadclub)) return false;
 
 		// 验证用户的基本信息。
 
@@ -61,7 +61,7 @@ class club{
 		{
 			// 开始创建帮会信息。
 			$this->m_db->query("INSERT INTO club(name,masters,ctime,levels)
-							    VALUES('{$name}','{$_SESSION['id']}',".time().",'帮主,帮会成员')
+							    VALUES('{$name}','{$currentUid}',".time().",'帮主,帮会成员')
 							   ");
 
 			$self = $this->m_db->getOneRecord("SELECT id
@@ -71,7 +71,7 @@ class club{
 
 			// 加入用户资料。
 			$this->m_db->query("INSERT INTO club_user(cid,uid,levelname,ctime)
-							    VALUES({$self['id']},{$_SESSION['id']},'帮主',".time().")
+							    VALUES({$self['id']},{$currentUid},'帮主',".time().")
 							  ");
 			// 扣除玩家需要的条件内容。
 
@@ -138,15 +138,15 @@ class club{
 		if (is_array($master))
 		{
 			// 检查玩家是否数据当前玩家的所在帮会。
-			$inline = $this->m_db->getOneRecord("SELECT id 
-												   FROM club_user 
-												  WHERE cid={$master['id']} 
-												  LIMIT 0,1");
+			$inline = $this->m_db->getOneRecord("SELECT id
+													   FROM club_user
+													  WHERE cid={$master['id']} AND uid={$uid}
+													  LIMIT 0,1");
 			if (is_array($inline))
 			{
 				$this->m_db->query("UPDATE club_user
-				                       SET levelname='{$levelName}'
-									 WHERE uid={$uid}
+					                       SET levelname='{$levelName}'
+									 WHERE uid={$uid} AND cid={$master['id']}
 								   ");
 				return true;
 			}
@@ -161,7 +161,8 @@ class club{
 	*/
 	public function getClubInfo($cid)
 	{
-		if (intval($cid)<1) return false;
+		$cid = intval($cid);
+		if ($cid<1) return false;
 		$word = $this->m_db->getOneRecord("SELECT name,aword,king,maxmember,masters,levels,ctime
 		                                     FROM club
 											WHERE id={$cid}
@@ -184,11 +185,20 @@ class club{
 			$updatestr = '';
 			foreach ($info as $k => $rs)
 			{
-				if ($k == 'aword') $updatestr = $updatestr==''?"aword='{$info['aword']}'":",aword='{$info['aword']}'";
-				else if ($k == 'masters') 
-					$updatestr = $updatestr==''?"masters='{$info['masters']}'":",masters='{$info['masters']}'";
+				if ($k == 'aword') {
+					$value = $this->m_db->escape($rs);
+					$updatestr = $updatestr==''?"aword='{$value}'":",aword='{$value}'";
+				}
+				else if ($k == 'masters')
+				{
+					$value = $this->m_db->escape($rs);
+					$updatestr = $updatestr==''?"masters='{$value}'":",masters='{$value}'";
+				}
 				else if ($k == 'levels')
-					$updatestr = $updatestr==''?"levels='{$info['levels']}'":",levels='{$info['levels']}'";
+				{
+					$value = $this->m_db->escape($rs);
+					$updatestr = $updatestr==''?"levels='{$value}'":",levels='{$value}'";
+				}
 			}
 			if ($updatestr == '') return false;
 			$this->m_db->query("UPDATE club

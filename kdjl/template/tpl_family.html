@@ -22,7 +22,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(..//../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:90px;display:block;}
@@ -82,7 +82,8 @@ ol,ul {list-style:none}
 	border-left-style: none;
 	border-top-color: #D9BD7A;}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
+.create_guild_button{position:absolute;left:241px;top:33px;width:72px;height:19px;line-height:19px;text-align:center;cursor:pointer;color:#600;background:url(../images/qzlihun.jpg) no-repeat;}
 .STYLE1 {color: #6C4200}
 .nav{
 	width:459px;
@@ -126,6 +127,7 @@ var selid=0;
 var types=-1;
 var guild_id = 0;
 var qxuid = 0;
+var familyBuyPending = false;
 </script>
 <body>
 <div id="Layer1"  style="cursor:pointer" onclick="window.parent.$('gw').src='./function/City_Mod.php?op=2'">
@@ -171,8 +173,7 @@ var qxuid = 0;
 							</table>
 							</div>
 						</div> 
-						<div id='jhjs' align="center" style="position:absolute; width:72px; left:241px; cursor:pointer; padding-top:5px; background-image:url(../images/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="parent.$('create_guild').style.display='block'"> 创建家族
-						</div>
+						<div class="create_guild_button" onclick="parent.$('create_guild').style.display='block'">创建家族</div>
 					</div>
 					
 					
@@ -297,8 +298,8 @@ var qxuid = 0;
 					<td style="text-align:left">数量</td>
 					</tr>
 					</table>
-					<div class="dt_list01 clearfix">
-					<table class="tit01" id="mybag1">#mybag#</table>
+					<div class="dt_list01 clearfix" id="mybag1">
+					<table class="tit01">#mybag#</table>
 					</div>
 				</div>
 				<div class="plus">背包空间：#baglimit# </div>
@@ -350,7 +351,9 @@ function create_ajax(){
 		window.parent.Alert('请填写完整！');
 		return;
 	}
-	if(name.length > 50 || info.length > 200){
+	var nameLength = 0;
+	for(var i=0;i<name.length;i++) nameLength += name.charCodeAt(i) < 128 ? 1 : 2;
+	if(nameLength < 4 || nameLength > 16 || info.length > 200){
 		window.parent.Alert('填写格式不正确！');
 		return;
 	}
@@ -372,6 +375,8 @@ function create_ajax(){
 					}else if(str == 6){
 						window.parent.Alert('恭喜您，创建成功！');
 						window.location.reload();
+					}else if(str == 9){
+						window.parent.Alert('该家族名称已被使用！');
 					}else if(str == 10){
 						window.parent.Alert('离上次您解散或者退出家族没有24小时的冷却时间，请稍候再试！');
 						window.location.reload();
@@ -385,7 +390,7 @@ function create_ajax(){
     		 	},
     		 	asynchronous:true        
 			}
-		var ajax=new Ajax.Request('../function/guild.php?op=create&name='+name+'&info='+info, opt);
+		var ajax=new Ajax.Request('../function/guild.php?op=create&name='+encodeURIComponent(name)+'&info='+encodeURIComponent(info), opt);
 }
 
 //查询家族详细信息
@@ -444,7 +449,7 @@ function friendlist(name)
     		 	asynchronous:true        
 			}
 			
-			var ajax=new Ajax.Request('../function/friendGate.php?op=add&name='+name, opt);
+			var ajax=new Ajax.Request('../function/friendGate.php?op=add&name='+encodeURIComponent(name), opt);
 }
 
 
@@ -621,9 +626,11 @@ function donation(){
 	var psum = $('psum').value;
 	if(pname == '' || psum == ''){
 		window.parent.Alert('请填写完整！');
+		return;
 	}
-	if(isNaN(psum)){
-		window.parent.Alert('数量必须是数字！');
+	if(!/^\d+$/.test(psum) || parseInt(psum,10) < 1){
+		window.parent.Alert('数量必须是正整数！');
+		return;
 	}
 	var opt = {
     		 	method: 'get',
@@ -651,7 +658,7 @@ function donation(){
     		 	},
     		 	asynchronous:true        
 			}
-		var ajax=new Ajax.Request('../function/guild.php?op=giveProps&gid='+guild_id+'&pname='+pname+'&psum='+psum, opt);
+		var ajax=new Ajax.Request('../function/guild.php?op=giveProps&gid='+parseInt(guild_id,10)+'&pname='+encodeURIComponent(pname)+'&psum='+parseInt(psum,10), opt);
 }
 
 //家族福利
@@ -696,6 +703,8 @@ function next_level(){
 					}else if(str == 5){
 						show_guild_info(guild_id);
 						window.parent.Alert('恭喜您升级成功!');
+					}else if(str == 6){
+						window.parent.Alert('家族已经达到最高等级!');
 						
 					}else{
 						window.parent.Alert(str);
@@ -750,11 +759,16 @@ function permissions(num){
 			}
 		var ajax=new Ajax.Request('../function/guild.php?op=permissions&gid='+guild_id+'&qxuid='+qxuid+'&num='+num, opt);
 }
-function sel(obj)
+function sel(obj, shopItem)
 {
 	if(selid!=0) selid.style.backgroundColor='#fff';
 	selid=obj;
 	obj.style.backgroundColor='#DFD496';
+	if(shopItem)
+	{
+		$('FamilyNum').value = 1;
+		return;
+	}
 	try
 	{
 		var pro = $(obj.id.replace("t","s")).innerHTML;
@@ -762,35 +776,41 @@ function sel(obj)
 	}
 	catch(e)
 	{		
-		$('FamilyNum').value = "";
+		$('FamilyNum').value = 1;
 	}
 }
 function FamilyBuy(){
-	var nums = parseInt($('FamilyNum').value);
+	var nums = parseInt($('FamilyNum').value,10);
 	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
 	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
-	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else if(nums<1 || nums>10){window.parent.Alert('购买数量范围是1-10之间的整数！');return;}
+	else if(familyBuyPending){return;}
 	else{
-		var sump1 = price1*parseInt($('FamilyNum').value)
-		var sump2 = price2*parseInt($('FamilyNum').value)
+		var sump1 = price1*nums;
+		var sump2 = price2*nums;
 		
-		if (sump1==0 && sump2==0) window.parent.Alert('数据错误！');
+		if (sump1==0 && sump2==0){window.parent.Alert('数据错误！');return;}
 		
 		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump1+' 荣誉点,'+sump2+' 贡献度！'))
 		{
+			familyBuyPending = true;
 			var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
+					familyBuyPending = false;
 			 		var n=parseInt(t.responseText);
 					if(n==11) window.parent.Alert('您的荣誉点不够！');
 					else if(n==10) window.parent.Alert('您的贡献度不够！');
-					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
+					else if(n==0) {window.parent.Alert('买入物品成功!');window.location.reload();}
 					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
+					else {window.parent.Alert('购买失败!');}
     		 	},
     		 	on404: function(t) {
+					familyBuyPending = false;
     		 	},
     		 	onFailure: function(t) {
+					familyBuyPending = false;
     		 	},
     		 	asynchronous:true        
 			}
@@ -798,17 +818,6 @@ function FamilyBuy(){
 		}
 		else return;
 	}
-}
-function ajaxfun()
-{
-	var opt = {
-     	method: 'get',
-		onSuccess: function(t) {
-			 		$('mybag1').innerHTML=t.responseText;
-    		 	},
-     	asynchronous:true        
-	}
-	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
 }
 var equipInfos = {};
 var LastKey = "";
@@ -860,7 +869,7 @@ function FamilyUpgrade()
 					else if(n==2) window.parent.Alert('您所在的家族商店等级不能超过家族等级！');
 					else if(n==3) {window.parent.Alert('您升级商店所需物品不够!');}//refresh bag.
 					else if(n==4) {window.parent.Alert('升级失败!');}
-					else if(n==5) {window.parent.Alert('恭喜您，升级成功!!');}
+					else if(n==5) {window.parent.Alert('恭喜您，升级成功!!');window.location.reload();}
 					else if(n==6) {window.parent.Alert('操作过快,请稍后升级!!');}
 					else{window.parent.Alert('升级失败')};
     		 	},
@@ -896,51 +905,6 @@ function setTab(name,cursel,n){
 		}
 		var ajax=new Ajax.Request('../function/guild.php?op=select_guild', opt);
 	}
-}
-function FamilyBuy(){
-	var nums = parseInt($('FamilyNum').value);
-	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
-	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
-	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
-	else{
-		var sump1 = price1*parseInt($('FamilyNum').value)
-		var sump2 = price2*parseInt($('FamilyNum').value)
-		
-		if (sump1==0 && sump2==0) window.parent.Alert('数据错误！');
-		
-		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump1+' 荣誉点,'+sump2+' 贡献度！'))
-		{
-			var opt = {
-    		 	method: 'get',
-				 onSuccess: function(t) {
-			 		var n=parseInt(t.responseText);
-					if(n==11) window.parent.Alert('您的荣誉点不够！');
-					else if(n==10) window.parent.Alert('您的贡献度不够！');
-					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');$('mny').innerHTML=parseInt($('mny').innerHTML)-sump;}//refresh bag.
-					else if(n==3) {window.parent.Alert('请选择要购买的物品!');}
-					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
-    		 	},
-    		 	on404: function(t) {
-    		 	},
-    		 	onFailure: function(t) {
-    		 	},
-    		 	asynchronous:true        
-			}
-			var ajax=new Ajax.Request('../function/FamilyGate.php?bid='+bid+'&n='+nums, opt);
-		}
-		else return;
-	}
-}
-function ajaxfun()
-{
-	var opt = {
-     	method: 'get',
-		onSuccess: function(t) {
-			 		$('mybag1').innerHTML=t.responseText;
-    		 	},
-     	asynchronous:true        
-	}
-	var ajax=new Ajax.Request('../function/getBag.php?style=3', opt);
 }
 function guild_level_info(){
 	if($('guild_level_info').style.display=='none'){

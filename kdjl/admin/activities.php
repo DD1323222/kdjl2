@@ -64,7 +64,11 @@ function adminSaveTimeConfigRow($db, $title, $days, $starttime, $endtime)
 		if (count($removeIds) > 0 && !$db->query('DELETE FROM timeconfig WHERE Id IN (' . implode(',', $removeIds) . ')')) return false;
 		return true;
 	}
-	return $db->query("INSERT INTO timeconfig(titles,days,starttime,endtime) VALUES('{$titleSql}','{$daysSql}','{$startSql}','{$endSql}')") ? true : false;
+	$allRows = $db->getRecords("SELECT Id FROM timeconfig ORDER BY Id FOR UPDATE");
+	if (!is_array($allRows)) return false;
+	$newId = adminNextFreeNumericId($allRows, 'Id');
+	if ($newId === false) return false;
+	return $db->query("INSERT INTO timeconfig(Id,titles,days,starttime,endtime) VALUES({$newId},'{$titleSql}','{$daysSql}','{$startSql}','{$endSql}')") ? true : false;
 }
 
 function adminActivityClockFromMinutes($minutes)
@@ -128,7 +132,7 @@ function adminSaveActivityIcons($db, $definition, $iconRows)
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 {
-	$key = isset($_POST['activity_key']) ? $_POST['activity_key'] : '';
+	$key = adminPost('activity_key');
 	if (!isset($activities[$key]))
 	{
 		adminSetFlash('error', '活动类型无效。');
@@ -139,8 +143,8 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 	if ($definition['mode'] === 'days')
 	{
 		$actualDays = adminPostedDays(isset($_POST['actual_days']) ? $_POST['actual_days'] : array());
-		$actualStart = adminNormalizeClockInput(isset($_POST['actual_start']) ? $_POST['actual_start'] : '');
-		$actualEnd = adminNormalizeClockInput(isset($_POST['actual_end']) ? $_POST['actual_end'] : '');
+		$actualStart = adminNormalizeClockInput(adminPost('actual_start'));
+		$actualEnd = adminNormalizeClockInput(adminPost('actual_end'));
 		if (count($actualDays) === 0 || $actualStart === false || $actualEnd === false ||
 			clockTimeToMinutes($actualStart) >= clockTimeToMinutes($actualEnd))
 		{
@@ -154,10 +158,10 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 	}
 	else
 	{
-		$actualStartDay = isset($_POST['actual_start_day']) ? intval($_POST['actual_start_day']) : 0;
-		$actualEndDay = isset($_POST['actual_end_day']) ? intval($_POST['actual_end_day']) : 0;
-		$actualStart = adminNormalizeClockInput(isset($_POST['actual_start']) ? $_POST['actual_start'] : '');
-		$actualEnd = adminNormalizeClockInput(isset($_POST['actual_end']) ? $_POST['actual_end'] : '');
+		$actualStartDay = intval(adminPost('actual_start_day', 0));
+		$actualEndDay = intval(adminPost('actual_end_day', 0));
+		$actualStart = adminNormalizeClockInput(adminPost('actual_start'));
+		$actualEnd = adminNormalizeClockInput(adminPost('actual_end'));
 		$startPoint = weeklyTimeToMinutes($actualStartDay, $actualStart);
 		$endPoint = weeklyTimeToMinutes($actualEndDay, $actualEnd);
 		if ($startPoint === false || $endPoint === false || $startPoint === $endPoint)
@@ -176,7 +180,11 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		}
 	}
 
-	$adminDb->query('START TRANSACTION');
+	if (!adminStartTransaction($adminDb))
+	{
+		adminSetFlash('error', $definition['name'] . '保存失败：无法开始数据库事务。');
+		adminRedirect('activities.php');
+	}
 	$ok = adminSaveTimeConfigRow($adminDb, $key, $timeDays, $timeStart, $timeEnd);
 	if ($ok) $ok = adminSaveActivityIcons($adminDb, $definition, $iconRows);
 	if (!$ok || !$adminDb->query('COMMIT'))

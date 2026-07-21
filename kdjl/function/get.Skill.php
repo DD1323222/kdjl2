@@ -7,9 +7,9 @@ require_once('../sec/dblock_fun.php');
 require_once(dirname(__FILE__).'/skill_common.php');
 secStart($_pm['mem']);
 
-$uid = intval($_SESSION['id']);
-$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
-$bid = isset($_REQUEST['pid']) ? intval($_REQUEST['pid']) : 0;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$id = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0;
+$bid = (isset($_REQUEST['pid']) && !is_array($_REQUEST['pid'])) ? intval($_REQUEST['pid']) : 0;
 if ($uid < 1 || $id < 1 || $bid < 1) die('0');
 
 if (!is_array(getLock($uid))) skillFlowFail('0');
@@ -19,7 +19,7 @@ $pet = $db->getOneRecord(
 );
 $skillConfig = $db->getOneRecord(
 	'SELECT s.*,p.requires AS book_requires FROM skillsys AS s '.
-	'INNER JOIN props AS p ON p.id=s.pid WHERE s.id='.$id
+	'INNER JOIN props AS p ON p.id=s.pid AND p.varyname=5 WHERE s.id='.$id
 );
 if (!is_array($pet) || !is_array($skillConfig) ||
 	(intval($pet['muchang']) != 0 && intval($pet['muchang']) != 1) || intval($pet['tgflag']) != 0)
@@ -45,7 +45,7 @@ if ((is_array($skillRows) && count($skillRows) > 0) || $listed) skillFlowFail('1
 
 $book = $db->getOneRecord(
 	'SELECT id,pid,sums FROM userbag WHERE uid='.$uid.' AND pid='.intval($skillConfig['pid']).
-	' AND sums>0 AND zbing=0 AND bsum=0 AND psum=0 AND pyb=0 ORDER BY id LIMIT 1 FOR UPDATE'
+	' AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) ORDER BY id LIMIT 1 FOR UPDATE'
 );
 if (!is_array($book)) skillFlowFail('2');
 
@@ -70,7 +70,7 @@ if ($exclusivePetId > 0)
 		' AND wx='.intval($pet['wx']).' ORDER BY id'
 	);
 	if ($templates === false) skillFlowFail('0');
-	if (!is_array($templates)) skillFlowFail('11');
+	if (!is_array($templates) || count($templates) < 1) skillFlowFail('11');
 	$matchedTemplateId = intval($templates[0]['id']);
 	foreach ($templates as $template)
 	{
@@ -118,10 +118,16 @@ if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 {
 	skillFlowFail('0');
 }
-$sql = 'UPDATE userbag SET sums=sums-1 WHERE uid='.$uid.' AND id='.intval($book['id']).' AND sums>=1';
+$sql = 'UPDATE userbag SET sums=sums-1 WHERE uid='.$uid.' AND id='.intval($book['id']).
+	' AND sums>=1 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)';
 if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 {
 	skillFlowFail('2');
+}
+if (!$db->query('DELETE FROM userbag WHERE uid='.$uid.' AND id='.intval($book['id']).
+	' AND sums<=0 AND psum<=0 AND bsum<=0 AND pyb=0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)'))
+{
+	skillFlowFail('0');
 }
 
 skillFlowCommit();

@@ -11,12 +11,29 @@
 */
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$props		= unserialize($_pm['mem']->get(MEM_PROPS_KEY));
-$userBag	= $_pm['user']->getUserBagById($_SESSION['id']);
-$bagtype = $_REQUEST['bagtype'];
-$basetype = $_REQUEST['basetype'];
+function zbPrestigeHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+$user		= $_pm['user']->getUserById($uid);
+$props		= $_pm['mem']->get(MEM_PROPS_KEY);
+if(!is_array($props)) $props = kdjlSafeMemValue($props, array());
+$userBag	= $_pm['user']->getUserBagById($uid);
+if(!is_array($user)) die('');
+$userDefaults = array('money' => 0, 'yb' => 0, 'maxbag' => 0, 'prestige' => 0, 'task' => 0);
+foreach($userDefaults as $defaultKey => $defaultValue)
+{
+	if(!isset($user[$defaultKey])) $user[$defaultKey] = $defaultValue;
+}
+$bagtype = (isset($_REQUEST['bagtype']) && !is_array($_REQUEST['bagtype'])) ? preg_replace('/[^0-9,|]/', '', $_REQUEST['bagtype']) : '';
+$basetype = (isset($_REQUEST['basetype']) && !is_array($_REQUEST['basetype'])) ? preg_replace('/[^0-9,|]/', '', $_REQUEST['basetype']) : '';
+$bagoption = '';
+$baseoption = '';
+$bag = '';
 
 #########################背包的物品 9.19 谭炜###########################3
 $strings = ",1,2,3,4,5,6,7,8,9,10|11,12,13,14,15,16";
@@ -58,10 +75,16 @@ else
 {
 	foreach ($props as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id' => 0, 'name' => '', 'postion' => '', 'varyname' => 0, 'prestige' => 0, 'requires' => '', 'effect' => '', 'pluseffect' => '', 'buy' => 0, 'yb' => 0);
+		foreach($rsDefaults as $defaultKey => $defaultValue)
+		{
+			if(!isset($rs[$defaultKey])) $rs[$defaultKey] = $defaultValue;
+		}
 		#########################商店的物品 9.18 谭炜###########################
 		if(!empty($basetype))
 		{
-			$postion = explode("|",$basetype); 
+			$postion = explode("|",$basetype);
 			if(!in_array($rs['postion'],$postion))
 			{
 				continue;
@@ -69,26 +92,29 @@ else
 		}
 		##########################在这里结束###############################
 		if ($rs['varyname'] != 9) continue;
-		if ($rs['prestige']==0 || $rs['id']==0) continue;
-		if ($rs['requires']!='') 
+		if (intval($rs['prestige'])<=0 || $rs['id']==0 || intval($rs['yb'])>0 || intval($rs['buy'])>0) continue;
+		if ($rs['requires']!='')
 		{
-			$t = split(',', 
+			$t = explode(',',
 						str_replace(array('lv','wx'), array('等级','五行'),$rs['requires'])
 					  );
-			$wx = str_replace($_props['wxs'], $_props['wxd'], $t[1]);
+			$wx = isset($t[1]) ? str_replace($_props['wxs'], $_props['wxd'], $t[1]) : '';
 		}
 		else $t[0]= $wx= '无';
-		
+
 		// 装备属性显示。
 		$zbeffect = zbAttrib($rs['effect']);
 		$plus     = ($pzb=zbAttrib($rs['pluseffect']))=='无'?'':'<font color=green>'.$pzb.'</font><br/>';
-		
-		
+
+
+		$itemId = intval($rs['id']);
+		$price = intval($rs['buy']);
+		$prestige = intval($rs['prestige']);
 		$preshop .= '<tr>
-              		<td width="40%" id="t'.$rs['id'].'" style="cursor:pointer;" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="sel(this);bid='.$rs['id'].';price='.$rs['buy'].';prestige='.$rs['prestige'].';">'.$rs['name'].'</td>
-              		<td width="25%" >' . $rs['prestige'] . '</td>
-              		<td width="35%" >' . $t[0].','.$wx .'</td>
-            	 </tr>';
+		<td width="40%" id="t'.$itemId.'" style="cursor:pointer;" onmouseover="window.parent.showTipEquip('.$itemId.',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="sel(this);setShopBuyNumDefault();bid='.$itemId.';price='.$price.';prestige='.$prestige.';">'.zbPrestigeHtml($rs['name']).'</td>
+		<td width="25%" >' . $prestige . '</td>
+		<td width="35%" >' . zbPrestigeHtml($t[0]).','.zbPrestigeHtml($wx) .'</td>
+	 </tr>';
 	}
 }
 
@@ -101,37 +127,46 @@ else
 {
 	foreach ($userBag as $k => $rs)
 	{
-		
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id' => 0, 'name' => '', 'sums' => 0, 'zbing' => 0, 'varyname' => 0, 'requires' => '', 'effect' => '', 'sell' => 0);
+		foreach($rsDefaults as $defaultKey => $defaultValue)
+		{
+			if(!isset($rs[$defaultKey])) $rs[$defaultKey] = $defaultValue;
+		}
+
 		if ($rs['sums'] < 1 || $rs['id']==0 || $rs['zbing'] == 1) continue;
 		$curBagNum++;
 		#########################背包的物品 9.18 谭炜###########################
 		if(!empty($bagtype))
 		{
-			$varyname = explode("|",$bagtype); 
+			$varyname = explode("|",$bagtype);
 			if(!in_array($rs['varyname'],$varyname))
 			{
 				continue;
 			}
 		}
 		##########################在这里结束###############################
-		if (strlen($rs['requires']) > 2) 
+		if (strlen($rs['requires']) > 2)
 		{
-			$t = split(',', 
+			$t = explode(',',
 					   str_replace(array('lv','wx'), array('等级','五行'), $rs['requires'])
 					  );
-			$wx = str_replace($_props['wxs'], $_props['wxd'], $t[1]);
+			$wx = isset($t[1]) ? str_replace($_props['wxs'], $_props['wxd'], $t[1]) : '';
 		}
 		else $t[0]= $wx= '无';
-		
+
 		if ($rs['varyname'] == 9) $zbeffect = zbAttrib($rs['effect']) . '<br/>';
-		
+
+		$itemId = intval($rs['id']);
+		$price = intval($rs['sell']);
+		$sums = intval($rs['sums']);
 		$bag .= '<tr>
-              		<td width="40%" id="t'.$rs['id'].'" style="cursor:pointer;" onmouseover="showTip('.$rs['id'].',0,1,2);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="sel(this);bid='.$rs['id'].';price='.$rs['sell'].';">'.$rs['name'].'</td>
-              		<td width="25%" >' . $rs['sell'] . '</td>
-              		<td width="35%" id="s'.$rs['id'].'" >' . $rs['sums'] .'</td>
-            	 </tr>';
+		<td width="40%" id="t'.$itemId.'" style="cursor:pointer;" onmouseover="showTip('.$itemId.',0,1,2);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="sel(this);bid='.$itemId.';price='.$price.';">'.zbPrestigeHtml($rs['name']).'</td>
+		<td width="25%" >' . $price . '</td>
+		<td width="35%" id="s'.$itemId.'" >' . $sums .'</td>
+	 </tr>';
 	}
-	
+
 }
 
 $taskword= taskcheck($user['task'], 9);
@@ -151,12 +186,12 @@ $tn = $_game['template'] . 'tpl_zbPrestige.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#money#',
 				 '#yb#',
 				 '#baglimit#',
 				 //right attrib.
-				 '#preshoplist#',
+				 '#shoplist#',
 				 '#mybag#',
 				 '#word#',
 				 '#bagoption#',

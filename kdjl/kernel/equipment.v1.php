@@ -4,7 +4,7 @@
 @Copyright:www.webgame.com.cn
 @Version:1.1
 @Write: 2008.08.12
-@Modify Date: 2008.09.16 
+@Modify Date: 2008.09.16
        Note: 调整CLASS中的一些方法，进行分离，并改善数据库性能。
 @Memo:
 */
@@ -21,13 +21,13 @@ class equipment
 
 	// 装备显示特殊属性颜色
 	public $ep_special = '#14FD10';
-	
+
 	//金色
 	public $ep_glod = '#FED625';
 	//灰色
 	public $ep_green = '#A8A7A4';
 	// 在这里添加其它颜色变量定义。
-	
+
 	// 数据库对象
 	public $m_db;
 
@@ -42,7 +42,7 @@ class equipment
 
     // equipment html content part two
     public $tooltip_html_two; // added by Zheng.Ping
-	
+
 	/**
 	*@Usage:类默认的构造函数。初始化内存及数据库对象。
 	*@Param:无
@@ -51,8 +51,8 @@ class equipment
 	public function __construct()
 	{
 		global $_pm;
-		if (!is_array($_pm) || 
-			!is_object($_pm['mysql']) || 
+		if (!is_array($_pm) ||
+			!is_object($_pm['mysql']) ||
 			!is_object($_pm['mem'])
 			)
 		return false;
@@ -64,7 +64,12 @@ class equipment
         $this->tooltip_html_two = null;
         /* added by Zheng.Ping */
 	}
-	
+
+	private function html($value)
+	{
+		return htmlspecialchars(strval($value), ENT_QUOTES);
+	}
+
 	/**
 	*@Usage:
 	*@Param:
@@ -73,7 +78,9 @@ class equipment
 	public function getProps($id,$type)
 	{
 		global $_pm;
-		if($id == "" || $id < 0)
+		$id = intval($id);
+		$type = intval($type);
+		if($id < 0)
 		{
 			return false;
 		}
@@ -81,12 +88,12 @@ class equipment
 		{
 			if ($type == 1)
 			{
-				$arr = unserialize($_pm['mem']->get('db_propsid'));
+				$arr = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
+				if(!is_array($arr) || !isset($arr[$id])) return false;
 				$rs = $arr[$id];
-				//查询用户包裹表
-				$sql = "SELECT cantrade FROM userbag WHERE id = $id";
-				$rsb = $this -> m_db -> getOneRecord($sql);
-				$rs['cantrade'] = $rsb['cantrade'];
+				// Base props have no userbag instance row; keep instance-only fields deterministic.
+				if(!isset($rs['cantrade'])) $rs['cantrade'] = 0;
+				if(!isset($rs['F_item_hole_info'])) $rs['F_item_hole_info'] = '';
 			}
 			else
 			{
@@ -97,7 +104,7 @@ class equipment
 			return $rs;
 		}
 	}
-	
+
 	/**
 	*@Usage:
 	*@Param:
@@ -130,10 +137,10 @@ class equipment
 			$this -> ep_green = '#A8A7A4';
 		}
 	}
-	
+
 	/**
 	*@Usage:判断调用哪个方法
-	*@Param: 
+	*@Param:
 	      $id    道具ID
 		  $bid   宠物ID
 		  $type  类型：
@@ -143,6 +150,9 @@ class equipment
 	{
 		$result = "";
 		global $_props;
+		$bid = intval($bid);
+		$this->tooltip_html_one = null;
+		$this->tooltip_html_two = null;
 		$rs = $this->getProps($id,$type);
 		if (!is_array($rs)) return false;
 
@@ -216,10 +226,13 @@ class equipment
 	public function zhuangbei($id,$bid = "",$sign = 0,$type = 1)
 	{
 		global $_props;
+		$div = '';
+		$bid = intval($bid);
 		$rs = $this->getProps($id,$type);
 		if (!is_array($rs)) return false;
-		
+
 		$er[0]= "";
+		$str = "";
 		if($sign != 0)
 		{
 			$arr = $this -> tms($id);
@@ -230,29 +243,33 @@ class equipment
 				$str = "+".$er[0];
 			}
 		}
+		$propNameHtml = $this->html(isset($rs['name']) ? $rs['name'] : '');
 		switch($rs['propscolor'])
 		{
 			case 1:
-				$div .= '<font color="#FEFDFA"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
+				$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
 				break;
 			case 2:
-				$div .= '<font color="#0067CB"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
+				$div .= '<font color="#0067CB"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
 				break;
 			case 3:
-				$div .= '<font color="#9833DC"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
+				$div .= '<font color="#9833DC"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
 				break;
 			case 4:
-				$div .= '<font color="#14FD10"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
+				$div .= '<font color="#14FD10"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
 				break;
 			case 5:
-				$div .= '<font color="#FED625"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
-				break;	
+				$div .= '<font color="#FED625"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
+				break;
 			case 6:
-				$div .= '<font color="#ED9037"><b>'.$rs['name'].'&nbsp;'.$str.'</b></font><br/>';
+				$div .= '<font color="#ED9037"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
+				break;
+			default:
+				$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'&nbsp;'.$str.'</b></font><br/>';
 				break;
 		}
 		//以后做强化等级
-					
+
 		//是否可交易
 		if($rs['cantrade'] == 0){
 			if($rs['propslock'] == 0){
@@ -272,14 +289,15 @@ class equipment
 		/*$div .= '<tr>
 				 <td height="20" align="left"><img src="images/props/'.$rs['img'].'"></td>
 			</tr>';*/
-			
+
 		//得到装备位置
 		/*$postion = str_replace(array(1,2,3,4,5,6,7,8,9),
 		                       $_props['postion'],
 							   $rs['postion']);*/
-							   
-		$postion = $_props['postion'][$rs['postion']];
-		
+
+		$postionKey = intval($rs['postion']);
+		$postion = isset($_props['postion'][$postionKey]) ? $_props['postion'][$postionKey] : '特殊';
+
 		//是否可强化
 		$plusflag = str_replace(array(1,0),
 		                        array("可强化","不可强化"),
@@ -296,30 +314,33 @@ class equipment
 		if (!empty($rs['requires']))
 		{
 			$requires = explode(",", $rs['requires']);
-			$lv = explode(":", $requires[0]); 
+			if(count($requires) < 2) $requires[] = 'wx:0';
+			$lv = explode(":", $requires[0]);
 			$a = explode(":", $requires[1]);
+			if(count($lv) < 2) $lv[1] = 0;
+			if(count($a) < 2) $a[1] = 0;
 			$wx = str_replace(array(0,1,2,3,4,5,6,7),array('所有','金','木','水','火','土','神','神圣'),$a[1]);
 			$div .= '<font color='.$this -> ep_base.'>五行需求：'.$wx.'系</font><br/>';
 			$div .= '<font color='.$this -> ep_base.'>需求等级：'.$lv[1].'级</font><br/>';
 			$this->tooltip_html_two .= '<font color='.$this -> ep_base.'>五行需求：'.$wx.'系</font><br/>'; // added by Zheng.Ping
 			$this->tooltip_html_two .= '<font color='.$this -> ep_base.'>需求等级：'.$lv[1].'级</font><br/>'; // added by Zheng.Ping
 		}
-		
-		// 获取装备极品属性		
+
+		// 获取装备极品属性
 		$div .=  $this->getZbPlusAttrib($rs);
         $this->tooltip_html_two .= $this->getZbPlusAttrib($rs); // added by Zheng.Ping
-		
+
 		//获取装备孔数属性
 		$div .= $this->getZbCardAttrib($rs);
         $this->tooltip_html_two .= $this->getZbCardAttrib($rs); // added by Zheng.Ping
-		
+
 		// 获取装备套装激活属性。
 		$mid_para = $this->getZbSeriesAttrib($rs, $bid);
 		$div .= $mid_para;
         $this->tooltip_html_two .= $mid_para; // added by Losttempler
 
 
-		
+
 	   //说明
 		$div .= '<font color='.$this -> ep_base.'>'.$rs['usages'].'</font><br/>
 					';
@@ -329,7 +350,7 @@ class equipment
 
 		return $div;
 	}
-	
+
 	/**
 	*@Usage:道具显示
 	*@Param:
@@ -338,31 +359,37 @@ class equipment
 	function daoju($id,$type = 1)
 	{
 		global $_props;
+		$div = '';
 		$rs = $this->getProps($id,$type);
+		if (!is_array($rs)) return $div;
 		if (is_array($rs))
 		{
+			$propNameHtml = $this->html(isset($rs['name']) ? $rs['name'] : '');
 			switch($rs['propscolor'])
 			{
 				case 1:
-					$div .= '<font color="#FEFDFA"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 				case 2:
-					$div .= '<font color="#0067CB"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#0067CB"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 				case 3:
-					$div .= '<font color="#9833DC"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#9833DC"><b>'.$propNameHtml.'</b></font><br/>';
 						break;
 				case 4:
-					$div .= '<font color="#14FD10"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#14FD10"><b>'.$propNameHtml.'</b></font><br/>';
 						break;
 				case 5:
-					$div .= '<font color="#FED625"><b>'.$rs['name'].'</b></font><br/>';
-					break;	
+					$div .= '<font color="#FED625"><b>'.$propNameHtml.'</b></font><br/>';
+					break;
 				case 6:
-					$div .= '<font color="#ED9037"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#ED9037"><b>'.$propNameHtml.'</b></font><br/>';
+					break;
+				default:
+					$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 			}//以后做强化等级
-				
+
 			//是否可交易
 			if($rs['cantrade'] == 0){
 				if($rs['propslock'] == 0){
@@ -381,7 +408,7 @@ class equipment
 			</tr>';*/
             $this->tooltip_html_one = $div; /* this line is added by Zheng.Ping, for showing the expiration time */
 		}
-		
+
 		//说明
 		$div .= '<font color='.$this -> ep_base.'>'.$rs['usages'].'</font><br/>';
         $this->tooltip_html_two = '<font color='.$this -> ep_base.'>' . $rs['usages'] . '</font><br/>'; // added by Zheng.Ping
@@ -392,35 +419,42 @@ class equipment
 	*@Usage:宝石显示
 	*@Param:
 	*@Return:
-	*/	
+	*/
 	function gam($id,$type = 1)
 		{
 		global $_props;
+		$div = '';
+		$color = '';
 		$rs = $this->getProps($id,$type);
+		if (!is_array($rs)) return $div;
 		if (is_array($rs))
 		{
+			$propNameHtml = $this->html(isset($rs['name']) ? $rs['name'] : '');
 			switch($rs['propscolor'])
 			{
 				case 1:
-					$div .= '<font color="#FEFDFA"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 				case 2:
-					$div .= '<font color="#0067CB"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#0067CB"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 				case 3:
-					$div .= '<font color="#9833DC"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#9833DC"><b>'.$propNameHtml.'</b></font><br/>';
 						break;
 				case 4:
-					$div .= '<font color="#14FD10"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#14FD10"><b>'.$propNameHtml.'</b></font><br/>';
 						break;
 				case 5:
-					$div .= '<font color="#FED625"><b>'.$rs['name'].'</b></font><br/>';
-					break;	
+					$div .= '<font color="#FED625"><b>'.$propNameHtml.'</b></font><br/>';
+					break;
 				case 6:
-					$div .= '<font color="#ED9037"><b>'.$rs['name'].'</b></font><br/>';
+					$div .= '<font color="#ED9037"><b>'.$propNameHtml.'</b></font><br/>';
+					break;
+				default:
+					$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 					break;
 			}//以后做强化等级
-				
+
 			//是否可交易
 			if($rs['cantrade'] == 0){
 				if($rs['propslock'] == 0){
@@ -442,6 +476,7 @@ class equipment
 				foreach( $mid_arr as $requires_info )
 				{
 					$mid_arr_info = explode(':',$requires_info);
+					if(count($mid_arr_info) < 2) continue;
 					if($mid_arr_info[0] == "postion" )
 					{
 						$div .= "";
@@ -502,7 +537,7 @@ class equipment
 								}
 							}
 						}
-						
+
 					}
 					if( $mid_arr_info[0] == "color" )
 					{
@@ -543,16 +578,16 @@ class equipment
 				$div .= "无需求";
 			}
 			$div .= "</font><br>";
-            $this->tooltip_html_one = $div; 
+            $this->tooltip_html_one = $div;
 		}
-		
+
 		//说明
 		$div .= '<font color='.$this -> ep_base.'>'.$rs['usages'].'</font><br/>';
         $this->tooltip_html_two = '<font color='.$this -> ep_base.'>' . $rs['usages'] . '</font><br/>'; // added by Zheng.Ping
 
 		return $div;
 	}
-	
+
 		/**
 	*@Usage:技能书显示
 	*@Param:
@@ -561,28 +596,33 @@ class equipment
 	function jineng($id,$type = 1)
 	{
 		global $_props;
+		$div = '';
 		$rs = $this->getProps($id,$type);
 		if (!is_array($rs)) return '';
 
+		$propNameHtml = $this->html(isset($rs['name']) ? $rs['name'] : '');
 		switch($rs['propscolor'])
 		{
 			case 1:
-				$div .= '<font color="#FEFDFA"><b>'.$rs['name'].'</b></font><br/>';
+				$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 				break;
 			case 2:
-				$div .= '<font color="#0067CB"><b>'.$rs['name'].'</b></font><br/>';
+				$div .= '<font color="#0067CB"><b>'.$propNameHtml.'</b></font><br/>';
 				break;
 			case 3:
-				$div .= '<font color="#9833DC"><b>'.$rs['name'].'</b></font><br/>';
+				$div .= '<font color="#9833DC"><b>'.$propNameHtml.'</b></font><br/>';
 				break;
 			case 4:
-				$div .= '<font color="#14FD10"><b>'.$rs['name'].'</b></font><br/>';
+				$div .= '<font color="#14FD10"><b>'.$propNameHtml.'</b></font><br/>';
 				break;
 			case 5:
-				$div .= '<font color="#FED625"><b>'.$rs['name'].'</b></font><br/>';
-				break;	
+				$div .= '<font color="#FED625"><b>'.$propNameHtml.'</b></font><br/>';
+				break;
 			case 6:
-				$div .= '<font color="#ED9037"><b>'.$rs['name'].'</b></font><br/>';
+				$div .= '<font color="#ED9037"><b>'.$propNameHtml.'</b></font><br/>';
+				break;
+			default:
+				$div .= '<font color="#FEFDFA"><b>'.$propNameHtml.'</b></font><br/>';
 				break;
 		}
 			//以后做强化等级
@@ -602,17 +642,18 @@ class equipment
 		}
 		$div .= '<font color='.$this -> ep_green.'>'.$cantradestr. '</font><br/>';
 		$this->tooltip_html_one = $div; /* this line is added by Zheng.Ping, for showing the expiration time */
-		
+
 		//得到五行和需要的等级
 		if (!empty($rs['effect']))
 		{
 			$str = explode(":", $rs['effect']);
+			if(count($str) < 2) return $div;
 			if ($str[0] == "kx")
 			{
 				$num = explode(",", $str[1]);
 				foreach($num as $n => $ar)
 				{
-					if(!empty($num[1]) && $num[1] == $num[2] && $num[2] ==$num[3] && $num[3] == $num[4] && $num[4] == $num[5])
+					if(count($num) >= 6 && !empty($num[1]) && $num[1] == $num[2] && $num[2] ==$num[3] && $num[3] == $num[4] && $num[4] == $num[5])
 					{
 						$div .= '<font color='.$this -> ep_base.'>+'.$num[1].'&nbsp;全抗</font><br/>';
 						$this->tooltip_html_two .= '<font color='.$this -> ep_base.'>+'.$num[1].'&nbsp;全抗</font><br/>'; /* this line is added by Zheng.Ping, for showing the expiration time */
@@ -634,13 +675,13 @@ class equipment
 				/*$effect = str_replace(array("openpet","mc","ac","openmap","hp","mp","hits","miss","kx","speed"),
 				                      $_props['zb'],
 									  $str[0]);*/
-				 $effect = $_props['zb'][''.$str[0].''];
+				 $effect = isset($_props['zb'][$str[0]]) ? $_props['zb'][$str[0]] : $str[0];
 				$div .= '<font color='.$this -> ep_base.' class="line">+'.$str[1].'&nbsp;'.$effect.'</font><br/>';
 				$this->tooltip_html_two .= '<font color='.$this -> ep_base.' class="line">+'.$str[1].' '.$effect.'</font><br/>'; /* this line is added by Zheng.Ping, for showing the expiration time */
 			}
 		}
-	
-				
+
+
 		//极品属性
 		if(!empty($rs['pluseffect']))
 		{
@@ -648,12 +689,14 @@ class equipment
 			for($i = 0;$i < count($str);$i++)
 			{
 				$sx = explode(":",$str[$i]);
+				if(count($sx) < 2) continue;
 				if($sx[0] != "kx")
 				{
 					/*$effect = $sx[1]." ".str_replace(array("openpet","mc","ac","openmap","hp","mp","hits","miss","kx","speed"),
 														$_props['zb'],
 														$sx[0]);*/
-					$effect = $sx[1]." ".$_props['zb'][''.$sx[0].''];
+					$effectName = isset($_props['zb'][$sx[0]]) ? $_props['zb'][$sx[0]] : $sx[0];
+					$effect = $sx[1]." ".$effectName;
 					$div .= '<font color='.$this -> ep_plus.'>+'.$effect.'</font><br/>';
 					$this->tooltip_html_two .=  '<font color='.$this -> ep_plus.'>+'.$effect.'</font><br/>'; /* this line is added by Zheng.Ping, for showing the expiration time */
 				}
@@ -662,7 +705,7 @@ class equipment
 					$nums = explode(":", $str[$i]);
 					foreach($nums as $ns => $ars)
 					{
-						if(!empty($nums[1]) && $nums[1] == $nums[2] && $nums[2] ==$nums[3] && $nums[3] == $nums[4] && $nums[4] == $nums[5])
+						if(count($nums) >= 6 && !empty($nums[1]) && $nums[1] == $nums[2] && $nums[2] ==$nums[3] && $nums[3] == $nums[4] && $nums[4] == $nums[5])
 						{
 							$div .= '<font color='.$this -> ep_plus.'>+'.$nums[1].'&nbsp;全抗</font><br/>';
 							$this->tooltip_html_two .= '<font color='.$this -> ep_plus.'>+'.$nums[1].'&nbsp;全抗</font><br/>'; /* this line is added by Zheng.Ping, for showing the expiration time */
@@ -680,16 +723,16 @@ class equipment
 						}
 					}
 				}
-			} 
+			}
 		} // end if 极品属性
-		
-	
+
+
 		//说明
 		$div .= '<font color='.$this -> ep_base.'>'.$rs['usages'].'</font><br/>';
 		$this->tooltip_html_two .= '<font color='.$this -> ep_base.'>'.$rs['usages'].'</font><br/>'; /* this line is added by Zheng.Ping, for showing the expiration time */
 		return $div;
 	}
-	
+
 	/**
 	*@Usage: 获取装备极品属性。
 	*@Param: $rs => 装备属性数组
@@ -700,20 +743,21 @@ class equipment
 		if (!is_array($rs) || empty($rs['pluseffect'])) return '';
 		$div = '';
 		global $_props;
-		
+
 		$str = explode(",", $rs['pluseffect']);
-		
+
 		for($i = 0; $i < count($str); $i++)
 		{
 			$sx = explode(":", $str[$i]);
-			
+			if(count($sx) < 2) continue;
+
 			if (array_key_exists($sx[0], $_props['zb']) && $sx[0] != "kx")
 			{
 				/*$effect = $sx[1]." ".str_replace(array("openpet","mc","ac","openmap","hp","mp","hits","miss","kx","speed"),
 				                                     $_props['zb'],
 													 $sx[0]
 													 );*/
-													 
+
 				$effect = $sx[1]." ".$_props['zb'][''.$sx[0].''];
 				$div .= '<font color='.$this -> ep_plus. '>+' . $effect. '</font><br/>';
 			}
@@ -722,7 +766,7 @@ class equipment
 				$nums = explode(":", $str[$i]);
 				foreach($nums as $ns => $ars)
 				{
-					if(!empty($nums[1]) && $nums[1] == $nums[2] && $nums[2] ==$nums[3] && $nums[3] == $nums[4] && $nums[4] == $nums[5])
+					if(count($nums) >= 6 && !empty($nums[1]) && $nums[1] == $nums[2] && $nums[2] ==$nums[3] && $nums[3] == $nums[4] && $nums[4] == $nums[5])
 					{
 						$div .= '<font color='.$this -> ep_plus.'>+'.$nums[1].'&nbsp;全抗</font><br/>';
 						break;
@@ -744,7 +788,7 @@ class equipment
 				                                     $_props['fjzb1'],
 													 $sx[0]
 													 );*/
-													 
+
 				$effect = $sx[1]." ". $_props['fjzb1'][''.$sx[0].''];
 				$div .= '<font color='.$this -> ep_plus.'>+' . $effect . '</font><br/>';
 			}
@@ -780,27 +824,31 @@ class equipment
 			else if ($sx[0] == "skill")
 			{
 				$eff = explode(":", $str[$i]);
+				if(count($eff) < 3) continue;
 				$div .= '<font color='.$this -> ep_plus.'>学会技能'.$eff[1].'LV'.$eff[2].'</font><br/>';
 			}
 			else if ($sx[0] == "killitem")
 			{
 				$eff = explode(":",$str[$i]);
+				if(count($eff) < 3) continue;
 				$div .= '<font color='.$this -> ep_plus.'>杀死怪物有'.$eff[2].'的几率获得物品:'.$eff[1].'</font><br/>';
 			}
 		} // end foreach
 		return $div;
 	} // end function
-	
+
 	/**
 	*@Usage: 获取装备套装属性效果。
 	*@Param: $rs => 装备的信息数组.
-	         $bid => 
+	         $bid =>
 	*@Return: String
 	*/
 	public function getZbSeriesAttrib($rs, $bid)
 	{
 		if (!is_array($rs) || empty($rs['series'])) return '';
 	    $div = '';
+		$bid = intval($bid);
+		$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 		global $_props;
 		$_props['zb'] = array('openpet'	=> 	'获得一个宠物',
 											  'mc'		=>	'防御',
@@ -814,15 +862,22 @@ class equipment
 											  'ac'		=>	'攻击'
 											 );
 		$series = explode(":", $rs['series']);
-		$tz = explode("|", $series[1]);
+		if(count($series) < 2 || $series[1] === '') return $div;
+		$tz = array();
+		foreach(explode("|", $series[1]) as $seriesPid)
+		{
+			$seriesPid = intval($seriesPid);
+			if($seriesPid > 0) $tz[] = $seriesPid;
+		}
+		if(empty($tz)) return $div;
 		$num = count($tz);//宠物所穿套装共有件数
-		
-		$list =str_replace('|', ',', $series[1]);
-		if (is_array($tz) && $bid>0)
+
+		$list = implode(',', $tz);
+		if (is_array($tz) && $bid>0 && $uid>0)
 		{
 			$names = $this -> m_db -> getRecords("SELECT pid
 												    FROM userbag
-												   WHERE pid in(". $list .") and uid = {$_SESSION['id']} and zbpets = {$bid}");
+												   WHERE pid in(". $list .") and uid = {$uid} and zbpets = {$bid}");
 		}
 		else $names = array();
 
@@ -845,12 +900,13 @@ class equipment
 		{
 			$div .= '<font color='.$this -> ep_glod.'>'.$series[0].'(0/'.$num.')</font><br/>';
 		}
-		$memarr = unserialize($this->m_m->get('db_propsid'));
+		$memarr = kdjlSafeMemValue($this->m_m->get('db_propsid'), array());
+		if(!is_array($memarr)) $memarr = array();
 		foreach($tz as $k => $v)
 		{
-			$name = $memarr[$id];
+			$name = isset($memarr[$v]) ? $memarr[$v] : false;
 			if (!is_array($name)) continue;
-			
+
 			if (in_array($v, $petslist))
 			{
 				$div .= '<font color='.$this -> ep_special.'>'.$name['name'].'</font><br/>';
@@ -861,7 +917,7 @@ class equipment
 			}
 			unset($name);
 		}
-		
+
 		if (!empty($rs['serieseffect']))
 		{
 			$serieseffect = explode(",",$rs['serieseffect']);
@@ -871,6 +927,7 @@ class equipment
 				if(!empty($serieseffect[$i]))
 				{
 					$effect = explode(":",$serieseffect[$i]);
+					if(count($effect) < 2) continue;
 					if(array_key_exists($effect[0],$_props['zb']))
 					{
 						$str = $_props['zb'][$effect[0]];
@@ -896,7 +953,7 @@ class equipment
 							$div .='<font color='.$this -> ep_green.'>('.$j.')套装：+'.$effect[1]." ".$str.'</font><br/>';
 						}
 					}
-					
+
 					if(array_key_exists($effect[0],$_props['fjzb2']))
 					{
 						$str = str_replace(array("dxsh","shjs","shft"),$_props['fjzb2'],$effect[0]);
@@ -990,8 +1047,9 @@ class equipment
 
 					}
 					else if($effect[0] == "skill")
-					{	
+					{
 						$eff = explode(":",$serieseffect[$i]);
+						if(count($eff) < 3) continue;
 
 						if($j <= $num1)
 						{
@@ -1006,6 +1064,7 @@ class equipment
 					else if($effect[0] == "killitem")
 					{
 						$eff = explode(":",$serieseffect[$i]);
+						if(count($eff) < 3) continue;
 
 						if($j <= $num1)
 						{
@@ -1022,7 +1081,7 @@ class equipment
 		}
 		return $div;
 	} // end function
-	
+
 	/**
 	*@Usage: 获取装备卡槽属性
 	*@Param: $rs => 道具属性数组
@@ -1045,6 +1104,7 @@ class equipment
 				foreach( $hole_info as $info )
 				{
 					$mid_arr = explode(':',$info);
+					if(count($mid_arr) < 2) continue;
 					switch ($mid_arr[0])
 					{
 						case 'ac' :
@@ -1069,32 +1129,32 @@ class equipment
 						}
 						case 'hp' :
 						{
-							$div .= '<font color="red">宝石效果：增加HP上限'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：增加HP上限'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 						case 'mp' :
 						{
-							$div .= '<font color="red">宝石效果：增加MP上限'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：增加MP上限'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 						case 'speed' :
 						{
-							$div .= '<font color="red">宝石效果：增加速度'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：增加速度'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 						case 'sdmp' :
 						{
-							$div .= '<font color="red">宝石效果：将受到伤害的'.$mid_arr[1].'以MP抵消</font><br/>';	
+							$div .= '<font color="red">宝石效果：将受到伤害的'.$mid_arr[1].'以MP抵消</font><br/>';
 							break;
 						}
 						case 'szmp' :
 						{
-							$div .= '<font color="red">宝石效果：将受到伤害的'.$mid_arr[1].'转化为MP</font><br/>';	
+							$div .= '<font color="red">宝石效果：将受到伤害的'.$mid_arr[1].'转化为MP</font><br/>';
 							break;
 						}
 						case 'hitshp' :
 						{
-							$div .= '<font color="red">宝石效果：命中吸取伤害的'.$mid_arr[1].'转化为自身HP</font><br/>';	
+							$div .= '<font color="red">宝石效果：命中吸取伤害的'.$mid_arr[1].'转化为自身HP</font><br/>';
 							break;
 						}
 						case 'hitsmp' :
@@ -1104,17 +1164,22 @@ class equipment
 						}
 						case 'dxsh' :
 						{
-							$div .= '<font color="red">宝石效果：伤害抵销'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：伤害抵销'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 						case 'shjs':
 						{
-							$div .= '<font color="red">宝石效果：对敌人造成的伤害增加'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：对敌人造成的伤害增加'.$mid_arr[1].'</font><br/>';
+							break;
+						}
+						case 'shft':
+						{
+							$div .= '<font color="red">宝石效果：反弹受到伤害的'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 						case 'crit':
 						{
-							$div .= '<font color="red">宝石效果：会心一击率增加'.$mid_arr[1].'</font><br/>';	
+							$div .= '<font color="red">宝石效果：会心一击率增加'.$mid_arr[1].'</font><br/>';
 							break;
 						}
 					}
@@ -1126,8 +1191,8 @@ class equipment
 			}
 		}
 		return $div;
-	}	
-	
+	}
+
 	/**
 	*@Usage: 获取装备基础属性
 	*@Param: $rs => 道具数据数组
@@ -1140,12 +1205,13 @@ class equipment
 		if (!empty($rs['effect']))
 		{
 			$str = explode(":", $rs['effect']);
+			if(count($str) < 2) return $div;
 			if ($str[0] == "kx")
 			{
 				$num = explode(",", $str[1]);
 				foreach($num as $n => $ar)
 				{
-					if(!empty($num[1]) && $num[1] == $num[2] && $num[2] ==$num[3] && $num[3] == $num[4] && $num[4] == $num[5])
+					if(count($num) >= 6 && !empty($num[1]) && $num[1] == $num[2] && $num[2] ==$num[3] && $num[3] == $num[4] && $num[4] == $num[5])
 					{
 						$div .= '<font color='.$this -> ep_base.'>+&nbsp'.$num[1].'&nbsp;全抗</font><br/>';
 						break;
@@ -1161,7 +1227,7 @@ class equipment
 				/*$effect = str_replace(array("openpet","mc","ac","openmap","hp","mp","hits","miss","kx","speed"),
 				                      $_props['zb'],
 									  $str[0]);*/
-				$effect = $_props['zb'][$str[0]];
+				$effect = isset($_props['zb'][$str[0]]) ? $_props['zb'][$str[0]] : $str[0];
 				$ef = "";
 				if($sign != 0)
 				{
@@ -1169,7 +1235,7 @@ class equipment
 					if($arr['tms'] == 1)
 					{
 						$b = explode(",",$arr['plus_tms_eft']);
-						$ef = '<font color= red>+'.$b[1].'</font>';
+						$ef = '<font color= red>+'.(isset($b[1]) ? $b[1] : 0).'</font>';
 					}
 				}
 				$div .= '<font color='.$this -> ep_base.' class="line">+'.$str[1].' '.$effect." ".$ef.'</font><br/>';
@@ -1187,6 +1253,8 @@ class equipment
 	*/
 	public function tms($id)
 	{
+		$id = intval($id);
+		if($id < 1) return array('plus_tms_eft' => '', 'tms' => 0);
 		$sql = "SELECT plus_tms_eft FROM userbag WHERE id=$id";
 		$rs = $this-> m_db -> getOneRecord($sql);
 		if(is_array($rs))
@@ -1202,7 +1270,7 @@ class equipment
 		}
 		else
 		{
-			$rs['tms'] = 0;
+			$rs = array('plus_tms_eft' => '', 'tms' => 0);
 		}
 		return $rs;
 	}//end tms
@@ -1219,6 +1287,6 @@ class equipment
         $this->expiration = intval($expiration);
     }
 
-	
+
 }// end class
 ?>

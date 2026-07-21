@@ -1,11 +1,11 @@
 //document.write("<script language=javascript src='/config/client.js'></script>");
 // JavaScript Document
 	function setTab(name,cursel,n){
-	for(i=1;i<=n;i++){
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
-	  menu.className=i==cursel?"on":"";
-	  con.style.display=i==cursel?"block":"none";
+	  if(menu) menu.className=i==cursel?"on":"";
+	  if(con) con.style.display=i==cursel?"block":"none";
 	}
 	}
 	
@@ -25,24 +25,20 @@
 		var sWidth=document.body.scrollWidth;
 		var sHeight=document.body.scrollHeight;
 		var xHeight=document.documentElement.clientHeight;
-			if (sHeight > xHeight)
-			{
-				var SSS = sHeight
-			}
-		else
-			{
-				var SSS = xHeight
-			}
-		var sHH = document.documentElement.clientHeight;
-		document.getElementById('light').style.display='block'; 
-		document.getElementById('light').style.width=sWidth+"px";
-		document.getElementById('light').style.height=SSS+"px";
-		document.getElementById('tasktip').style.display='block';
-		document.getElementById('tasktip').style.display='block';	
-		document.getElementById('tasktip').style.top=y+"px";
-		document.getElementById('tasktip').style.left=x+"px";
+		var SSS = sHeight > xHeight ? sHeight : xHeight;
+		var light=document.getElementById('light');
+		var tasktip=document.getElementById('tasktip');
+		if(!light || !tasktip) return false;
+		light.style.display='block';
+		light.style.width=sWidth+"px";
+		light.style.height=SSS+"px";
+		tasktip.style.display='block';
+		tasktip.style.top=y+"px";
+		tasktip.style.left=x+"px";
 		}
 	function CloseLogin(){
-		document.getElementById('light').style.display='none'; 	
-		document.getElementById('tasktip').style.display='none'; 
+		var light=document.getElementById('light');
+		var tasktip=document.getElementById('tasktip');
+		if(light) light.style.display='none';
+		if(tasktip) tasktip.style.display='none';
 		}

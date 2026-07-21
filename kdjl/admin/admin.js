@@ -57,13 +57,14 @@
 		var seq = parseInt(sequence.value, 10) || 0;
 		var current = parseInt(next.value, 10) || 0;
 		var initial = parseInt(next.getAttribute('data-task-initial-next'), 10) || 0;
+		var initialSequence = parseInt(next.getAttribute('data-task-initial-sequence'), 10) || 0;
 		if (current < 1 && initial > 0) current = initial;
 		var selectedOk = false;
 		for (var i = 0; i < next.options.length; i++) {
 			var option = next.options[i];
 			var value = parseInt(option.value, 10) || 0;
 			var xulie = parseInt(option.getAttribute('data-task-xulie'), 10) || 0;
-			var visible = value < 1 || seq < 1 || xulie === seq;
+			var visible = value < 1 || (seq > 0 && xulie === seq) || (value === initial && seq === initialSequence);
 			option.disabled = !visible;
 			option.style.display = visible ? '' : 'none';
 			if (value === current && visible) {

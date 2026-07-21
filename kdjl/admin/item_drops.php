@@ -3,12 +3,12 @@ require_once(dirname(__FILE__) . '/_bootstrap.php');
 require_once(dirname(__FILE__) . '/_layout.php');
 require_once(dirname(__FILE__) . '/_drop_helpers.php');
 
-$search = isset($_REQUEST['q']) ? trim($_REQUEST['q']) : '';
-$propId = isset($_REQUEST['prop_id']) ? intval($_REQUEST['prop_id']) : 0;
+$search = trim(adminRequest('q'));
+$propId = intval(adminRequest('prop_id', 0));
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 {
-	$action = isset($_POST['action']) ? $_POST['action'] : '';
+	$action = adminPost('action');
 	$gpcIds = adminDropSelectedMonsterIds(
 		isset($_POST['selected_gpc_ids']) ? $_POST['selected_gpc_ids'] : array(),
 		isset($_POST['selected_gpc_csv']) ? $_POST['selected_gpc_csv'] : ''

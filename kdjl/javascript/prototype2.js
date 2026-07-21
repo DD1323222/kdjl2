@@ -3281,39 +3281,44 @@ Object.extend(Selector, {
 	//################################# Self Define function ###############################
 	function validInt(sDouble)
 	{
-	  var re = /^[0-9]+.?[0-9]*$/;
-	  var check = (sDouble+"").indexOf('0');
-	  if(check == "0")
-	  {
-		  return false;
-		}
-	  return re.test(sDouble)
+	  return /^[1-9][0-9]*$/.test(String(sDouble));
 	}
 
-	function   KeyDown(event){
-		/*if(arguments.length>0){
-		event = arguments[0];
-		}*/
-		if(event.keyCode==13) {chatH.sendMsg();return;}
-		if(event.keyCode==9){$('help').style.display='';return;}
+	function KeyDown(event){
+		if(!event) return true;
+		var target = event.target || event.srcElement;
+		if(event.keyCode==13) {
+			if(!target || target.id!='cmsg') return true;
+			try{chatH.sendMsg();}catch(e){}
+			if(event.preventDefault) event.preventDefault();
+			event.returnValue=false;
+			return false;
+		}
+		if(event.keyCode==9){
+			var help = $('help');
+			if(help) help.style.display='';
+			return true;
+		}
 		//屏蔽鼠标右键、Ctrl+n、shift+F10、F5刷新、退格键
 		//alert("ASCII代码是："+event.keyCode);
-		if   ((window.event.altKey)   &&
-		((window.event.keyCode==37)||         //屏蔽   Alt+   方向键   ←
-		(window.event.keyCode==39)))           //屏蔽   Alt+   方向键   →
+		if   ((event.altKey)   &&
+		((event.keyCode==37)||         //屏蔽   Alt+   方向键   ←
+		(event.keyCode==39)))           //屏蔽   Alt+   方向键   →
 		{
-			event.keyCode=0;
+			if(event.preventDefault) event.preventDefault();
 			event.returnValue=false;
+			return false;
 		}
 		if   (
 		(event.keyCode==116)||                                   //屏蔽   F5   刷新键
 		(event.keyCode==122)                                   //屏蔽   F11   全屏显示会有后退
 		)
 		{
-			event.keyCode=0;
+			if(event.preventDefault) event.preventDefault();
 			event.returnValue=false;
+			return false;
 		}
-		return   true;
+		return true;
 	}
 
 	function task(str)
@@ -3326,98 +3331,6 @@ Object.extend(Selector, {
 			asynchronous:true
 		}
 		var ajax=new Ajax.Request('../function/getTask.php?'+str, opt);
-	}
-
-	//接受任务
-	function gettask(str)
-	{
-		var opt = {
-			method: 'get',
-			onSuccess: function(t) {
-				var n = t.responseText;
-				if(n == 10)
-				{
-					if(!confirm('您已经接受其它任务，是否要要接此任务，如果要，将覆盖以前的任务！'))
-					{
-						return false;
-					}
-					else
-					{
-						var opt = {
-							method: 'get',
-							onSuccess: function(e) {
-								var nt = e.responseText;
-								if(nt != "")
-								{
-									//window.parent.Alert(nt);
-									$('do_task').innerHTML = nt;
-								}
-							},
-							asynchronous:true
-						}
-						
-						var ajax=new Ajax.Request('../function/getTask.php?'+str+'&type=getDo&rd='+Math.random(), opt);
-					}
-				}
-				else{
-					if(n!='') $('do_task').innerHTML = t.responseText;//window.parent.Alert(n);
-				}
-			},
-			asynchronous:true
-		}
-		//window.status = '../function/getTask.php?'+str+'&type=get';return false;
-		var ajax=new Ajax.Request('../function/getTask.php?'+str+'&type=get', opt);
-	}
-
-	//取消任务
-	function offtask(str)
-	{
-		var opt = {
-			method: 'get',
-			onSuccess: function(t) {
-				if(t.responseText!='') $('do_task').innerHTML = t.responseText;//window.parent.Alert(t.responseText);
-			},
-			asynchronous:true
-		}
-		var ajax=new Ajax.Request('../function/getTask.php?'+str+'&type=off', opt);
-	}
-	
-	// open map
-	function openMap(n)
-	{
-		var opt = {
-			method: 'get',
-			onSuccess: function(t) {
-				if(t.responseText!='') {window.parent.Alert(t.responseText);window.location.reload();}
-			},
-			asynchronous:true
-		}
-		var ajax=new Ajax.Request('../function/openMap.php?open='+n, opt);
-	}
-
-	try{
-		var oPopup = window.createPopup();
-	}catch(e){
-
-	}
-
-	// CENTER tips.
-	function gameTips(msg)
-	{
-		//var oPopup = window.createPopup();
-		with (oPopup.document.body)
-		{
-			style.border='#9BC650 1px solid';
-			style.fontSize='12px';
-			style.fontColor='#304A03';
-			style.padding='5px';
-			style.backgroundColor='#CFE292';
-			//style.background ="url('../images/ui/jg/jg04.jpg')";
-			//style.background=src:'../images/ui/jg/jg04.jpg';
-			//style.background-image:='../images/ui/jg/jg04.jpg';
-			innerHTML=msg;
-		}
-		oPopup.show(370, 270, 400, 300);
 	}
 
 	//接受任务
@@ -3552,8 +3465,8 @@ if (!window.createPopup) {
 				} ; 
 				eDiv.innerHTML = this.htmlTxt ; 
 				var coordinates = getCoordinates ( oElement ) ;				
-				eDiv.style.top = ( iX + coordinates.x ) + 'px' ; 
-				eDiv.style.left = ( iY + coordinates.y ) + 'px' ; 
+				eDiv.style.left = ( iX + coordinates.x ) + 'px' ;
+				eDiv.style.top = ( iY + coordinates.y ) + 'px' ;
 				eDiv.style.width = iWidth + 'px' ; 
 				eDiv.style.height = iHeight + 'px' ; 
 				eDiv.style.display = 'block' ; this.isShow = true ; 
@@ -3573,11 +3486,12 @@ try{
 function gameTips(msg)
 {
 	//var oPopup = window.createPopup();
+	if(!oPopup) return;
 	with (oPopup.document.body) 
 	{
 		style.border='#9BC650 1px solid';
 		style.fontSize='12px';
-		style.fontColor='#304A03';
+		style.color='#304A03';
 		style.padding='5px';
 		style.backgroundColor='#CFE292';
 		//style.background ="url('../images/images/ui/jg/jg04.jpg')";
@@ -3667,7 +3581,7 @@ function taskCatchss(tid, n, t)
 					},
 					asynchronous:true
 				}
-				var ajax=new Ajax.Request('./function/chatProto.php?msg='+encodeURI(robj.innerHTML), opt);
+				var ajax=new Ajax.Request('./function/chatProto.php?msg='+encodeURIComponent(robj.innerHTML), opt);
 			}
 		}catch(e){};
 		return false;

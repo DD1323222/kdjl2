@@ -76,8 +76,8 @@ ol,ul {list-style:none}
 	top: 5px;
 }
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
-.conbtn1{background:url(../images/bnt.gif) no-repeat;background-size:cover;width:60px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
+.conbtn1{background:url(../images/bnt.gif) no-repeat;background-size:cover;width:60px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 #apDiv2 {
 	position:absolute;
 	width:44px;
@@ -255,7 +255,7 @@ window.objPos = function(elem){
     } else {
         var rect = elem.getBoundingClientRect();
         left = right = doc.documentElement.scrollLeft || doc.body.scrollLeft;
-        top = bottom = doc.documentElement.scrollLeft || doc.body.scrollLeft;
+        top = bottom = doc.documentElement.scrollTop || doc.body.scrollTop;
         left += rect.left; right += rect.right;
         top += rect.top; bottom += rect.bottom;
     }
@@ -295,7 +295,7 @@ var Drag = {
     },
     move  : function(e){
         window.getSelection ? window.getSelection().removeAllRanges() : document.selection.empty();
-        var iLeft = e.clientX - this.x,iTop = e.clientY - this.y;obj = this.elem;
+        var iLeft = e.clientX - this.x,iTop = e.clientY - this.y,obj = this.elem;
         obj.style.left = iLeft - this.marginLeft + "px";
         obj.style.top  = iTop - this.marginTop + "px";
         this.options.callbackmove&&this.options.callbackmove(this.elem);
@@ -610,7 +610,7 @@ var prestige=0;
                 <div id="apDiv1">
     	<div class="task_dh02">
 			<div class="cion"><img src="../new_images/ui/icon02.jpg" width="20" height="18" /></div>
-		  <div class="cion01">金币:#money#</div>
+		  <div class="cion01">金币:<span id="mny">#money#</span></div>
 		</div>
     </div>
     </div>
@@ -624,7 +624,7 @@ var prestige=0;
 			<div class="box06">
 				<div id="item_box_div" class="div item_box_div" onDblClick="clear_box_item('item_box_div')"></div>
 				<div id="item_look_div" class="div gam" style="display:none">装备</div>
-				<div id="fb_button" style="display:none"><img style="cursor:pointer;"  onclick="request_zbfj()" src="../new_images/ui/zbfj.png " />			</div>
+				<div id="fb_button" style="display:none"><img style="cursor:pointer;"  onclick="request_zbfj()" src="../new_images/ui/zbfj.png" />			</div>
 				<div id="synum" style="position:relative; top:130px; left:15px;">今天剩余分解次数:#syfjnum#</div>
 				<div id="info">说明:单击右侧列表选中物品,拖动小图标至分解框中,双击取出</div>
 			</div>
@@ -785,7 +785,7 @@ var prestige=0;
     	<div class="task_dh02">
 			
             <div class="cion"><img src="../new_images/ui/icon05.jpg" width="20" height="18" /></div>
-          <div class="cion01">威望:#prestige#</div>
+          <div class="cion01">威望:<span id="prestigeNum">#prestige#</span></div>
 		</div>
     </div>
     </div>
@@ -816,6 +816,23 @@ function copyWord(words)
 {
 	window.parent.document.getElementById('baike_input').value=words;
 }
+function setShopBuyNumDefault()
+{
+	var ids = ['num','prenum'];
+	for(var i=0;i<ids.length;i++)
+	{
+		var obj = document.getElementById(ids[i]);
+		if(obj) obj.value = 1;
+	}
+}
+function updateNumberText(id, delta)
+{
+	var obj = document.getElementById(id);
+	if(!obj) return;
+	var val = parseInt(obj.innerHTML, 10);
+	if(isNaN(val)) val = 0;
+	obj.innerHTML = val + delta;
+}
 function sel(obj)
 {
 	if(typeof(selid)=="object") 
@@ -831,13 +848,14 @@ function sel(obj)
 	}
 	catch(e)
 	{
+		setShopBuyNumDefault();
 	}
 }
 function buy(){
 	var nums = parseInt(document.getElementById('num').value);
 	if(bid == 0 ){window.parent.Alert('请先选择要购买的物品。');return;}
 	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
-	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+	else if(nums != 1){window.parent.Alert('装备一次只能买一个！');return;}
 	else{
 		var sump = price*parseInt(document.getElementById('num').value)
 		if (sump==0) window.parent.Alert('数据错误！');
@@ -848,7 +866,7 @@ function buy(){
 				 onSuccess: function(t) {
 			 		var n=t.responseText;
 					if(n==10) window.parent.Alert('您的金币不够！');
-					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)-sump;}
+					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');updateNumberText('mny',-sump);}
 					else if(n==3) {window.parent.Alert('请选择要购买的装备!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
     		 	},
@@ -895,7 +913,7 @@ function sell(){
     		 	method: 'get',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
-					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)+sump;}
+					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');updateNumberText('mny',sump);}
 					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
 					else window.parent.Alert('卖出失败!');
     		 	},
@@ -918,7 +936,7 @@ function allSell(){
     		 	method: 'get',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
-					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');document.getElementById('mny').innerHTML=parseInt(document.getElementById('mny').innerHTML)+sump;}
+					if(n==0) {window.parent.Alert('卖出物品成功!');window.location.reload();}
 					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
 					else window.parent.Alert('卖出失败!'+n);
     		 	},
@@ -988,7 +1006,7 @@ function prebuy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('您的威望不够！');
-					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');window.location.reload();}
+					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');updateNumberText('prestigeNum',-sump);}
 					else if(n==3) {window.parent.Alert('请选择要购买的装备!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
     		 	},
@@ -1040,7 +1058,7 @@ function strsell(){
 function harden()
 {
 	var hid;//要强化的装备的ID
-	var hids;//辅助道具的ID
+	var hids=0;//辅助道具的ID
 	var bids;//要强化的装备在背包中的ID
 	if(document.getElementById("apid") == null || document.getElementById("bid") == null)
 	{
@@ -1051,7 +1069,6 @@ function harden()
 	}
 	if(document.getElementById("pids") == null)
 	{
-		hid = "";
 		if(!confirm("确认要开始强化吗？还没有加入辅助道具噢！"))
 		{
 			return false;
@@ -1072,10 +1089,6 @@ function harden()
 	{
 		return false;
 	}
-	if(!confirm("确认要开始强化吗？失败后装备将会消失噢！"))
-	{
-		return false;
-	}
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t){
@@ -1084,7 +1097,7 @@ function harden()
 				 {
 				 	window.parent.Alert("您没有加入要强化的装备！");
 				 }
-				 if(n == 11)
+				 else if(n == 11)
 				 {
 				 	window.parent.Alert("没有到冷却时间，请稍候再试……");
 				 }
@@ -1197,15 +1210,23 @@ function request_zbfj()
 						var props_div = "tr"+para;
 						if(n == 'illegal')
 						{
-							 window.parent.Alert('Illegal operation');
+							 window.parent.Alert('非法操作');
 						}
 						else if(n == 'memcacheerror')
 						{
-							window.parent.Alert('memory load error');
+							window.parent.Alert('装备配置加载失败');
 						}
 						else if(n == 'nofjnum')
 						{
 							window.parent.Alert('你今天的分解次数已用完,请明天再来');
+						}
+						else if(n == 'busy')
+						{
+							window.parent.Alert('操作繁忙，请稍候重试');
+						}
+						else if(n == 'bagfull')
+						{
+							window.parent.Alert('背包空间不足，请先清理背包');
 						}
 						else if(n == 'fail')
 						{
@@ -1218,10 +1239,15 @@ function request_zbfj()
 						}
 						else
 						{
+							var gem_info = n.split(',');
+							if(gem_info.length != 6 || parseInt(gem_info[3],10) < 1 || parseInt(gem_info[4],10) < 1)
+							{
+								window.parent.Alert('分解结果异常，请刷新后重试');
+								return;
+							}
 							var sycs = document.getElementById('synum').innerHTML.split(':');
 							sycs[1] = sycs[1] - 1;
 							document.getElementById('synum').innerHTML = sycs[0]+":"+sycs[1];
-							var gem_info = n.split(',');
 							window.parent.Alert('分解成功,得到'+gem_info[0]+gem_info[1]+'个');
 							document.getElementById('item_box_div').innerHTML = '<img src="../images/props/'+gem_info[2]+'">';
 							document.getElementById(props_div).style.display = "none";
@@ -1233,7 +1259,7 @@ function request_zbfj()
 							{
 								if(new_gam_arr[i].id == new_gam_id)
 								{
-									if(gem_info[4] == 25 || gem_info[4] == 26 || gem_info[4] == 27)
+									if(gem_info[5] == 25 || gem_info[5] == 26 || gem_info[5] == 27)
 									{
 										document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML = parseInt(document.getElementById(new_gam_id).getElementsByTagName('td')[2].innerHTML) + gem_info[1];
 										baghas = 1;
@@ -1243,10 +1269,11 @@ function request_zbfj()
 							}
 							if(baghas != 1)
 							{
-								if(gem_info[4] == 25 || gem_info[4] == 26 || gem_info[4] == 27)
+								if(gem_info[5] == 25 || gem_info[5] == 26 || gem_info[5] == 27)
 								{
-									var object = new_gam_arr[1].parentNode;
-									create_new_props(gem_info[3],gem_info[1],gem_info[0],gem_info[2],gem_info[4],object);
+									var object = getGemBagContainer();
+									if(!object) { window.location.reload(); return; }
+									create_new_props(gem_info[3],gem_info[1],gem_info[0],gem_info[2],gem_info[4],gem_info[5],object);
 								}
 								var key = gem_info[3]+"_0_1_2";	
 								equipInfos[key] = "no";	
@@ -1310,6 +1337,11 @@ function request_xqhc()
 							window.parent.Alert("操作太快");
 							return;
 						}
+						else if(n == "bagfull")
+						{
+							window.parent.Alert("背包空间不足，请先清理背包");
+							return;
+						}
 						else if(n == "full")
 						{
 							window.parent.Alert("该宝石已达满级,不能继续合成");
@@ -1362,7 +1394,7 @@ function request_xqhc()
 							var re = n.split(',');
 							if(re[1] == "ok")
 							{
-								key = re[2].value+"_0_1_2";	
+								key = re[2]+"_0_1_2";
 								equipInfos[key] = "no";	
 								if(bds != 0)
 								{
@@ -1404,8 +1436,9 @@ function request_xqhc()
 								}
 								if(baghas != 1)
 								{
-									var object = new_gam_arr[1].parentNode;
-									create_new_props(re[2],1,re[4],re[0],re[3],object);
+									var object = getGemBagContainer();
+									if(!object) { window.location.reload(); return; }
+									create_new_props(re[2],1,re[4],re[0],re[3],25,object);
 								}
 								return;
 							}
@@ -1559,20 +1592,28 @@ function div_ecovery()
 	document.getElementById('xqhc_look_div').style.top = "80px";
 	document.getElementById('xqhc_look_div').style.left = "400px";
 }
-function create_new_props(id,num,name,pic,pid,object)
+function getGemBagContainer()
+{
+	var panel = document.getElementById('con_tab_5');
+	if(!panel) return null;
+	var tables = panel.getElementsByTagName('table');
+	if(tables.length < 2) return null;
+	var bodies = tables[1].getElementsByTagName('tbody');
+	return bodies.length > 0 ? bodies[0] : tables[1];
+}
+function create_new_props(bagId,num,name,pic,propsId,varyname,object)
 {
 	mytr = document.createElement("tr");
 	for(var i=0;i<3;i++)
 	{
 		mytd = document.createElement("td");
 
-		onclick_info = "bid="+id+";price=1;sel(this);pid="+pid+";"
 		switch(i)
 		{
 			case 0 :
 			{
 				tdcontent = document.createElement("img");
-				tdcontent.src = "../images/ui/bag/25.gif";
+				tdcontent.src = "../images/ui/bag/"+varyname+".gif";
 				tdcontent.style.width = "25px";
 				tdcontent.style.height = "25px";
 				mytd.setAttribute("width","35px");
@@ -1582,15 +1623,15 @@ function create_new_props(id,num,name,pic,pid,object)
 			{
 				//onclick_info = "bid="+id+";price=1;sel(this);pid="+pid+";"
 				tdcontent = document.createTextNode(name);
-				set_td_id = "t"+pid;
+				set_td_id = "t"+bagId;
 				mytd.setAttribute("id",set_td_id);
 				mytd.setAttribute("width","110px");
 				mytd.onclick = function ()
 				{
 					sel(this);
-					bid=id;
+					bid=bagId;
 					price=1;
-					pid=pid;
+					pid=propsId;
 				}
 				mytd.onmouseout = function ()
 				{
@@ -1599,21 +1640,21 @@ function create_new_props(id,num,name,pic,pid,object)
 				}
 				mytd.onmouseover = function ()
 				{
-					showTip(id,0,1,2);
+					showTip(bagId,0,1,2);
 					this.style.border='solid 1px #DFD496';
 				}
 				mytd.setAttribute("style","text-align:left; border:0pt none;");
 				mytd.style.cursor = 'pointer';
 				mytd.onmousedown = function ()
 				{
-					xqhc_apear(pic,id,25);
+					xqhc_apear(pic,bagId,varyname);
 				}
 				break;
 			}
 			case 2 :
 			{
 				tdcontent = document.createTextNode(num);
-				set_td_id = "s"+pid;
+				set_td_id = "s"+bagId;
 				mytd.setAttribute("id",set_td_id);
 				mytd.setAttribute("style","text-align: left;");
 				break;
@@ -1621,7 +1662,7 @@ function create_new_props(id,num,name,pic,pid,object)
 		}
 		mytd.appendChild(tdcontent);
 		mytr.appendChild(mytd);
-		mytr.setAttribute("id","tr_hecheng"+id);
+		mytr.setAttribute("id","tr_hecheng"+bagId);
 		mytr.setAttribute("style","display: block;");
 	}
 	object.appendChild(mytr);

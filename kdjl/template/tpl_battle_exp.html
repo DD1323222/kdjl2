@@ -36,10 +36,10 @@ li { display: inline; list-style-type: none; }
     <div class="box_right">
     	<div class="zcdh_zi1">
             <div class="zcdh_zi1a">
-                 当前军工：
+                 当前军功：
             #userjg#</div>
             <div class="zcdh_zi1a">
-                 当前军工：
+                 当前名次：
             #usertop#</div>
         </div>
       <div class="zcdh_zi2">
@@ -82,6 +82,10 @@ li { display: inline; list-style-type: none; }
 function getExp(n)
 {
 	var jg= parseInt($('junum').value);
+	if (isNaN(jg) || jg < 1) {
+		window.parent.Alert('错误的兑换数量！');
+		return false;
+	}
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
@@ -95,6 +99,7 @@ function getExp(n)
     		 	asynchronous:true 
 			}
 	var ajax=new Ajax.Request('../function/ext_Battle.php?t=5&j='+jg, opt);
+	return false;
 }
 </script>
 

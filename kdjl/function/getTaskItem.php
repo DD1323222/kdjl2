@@ -13,16 +13,55 @@ require_once('../config/config.game.php');
 
 secStart($_pm['mem']);
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$task = unserialize($_pm['mem']->get(MEM_TASK_KEY));
-$taskitem = $task[$user['task']];
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$user		= $_pm['user']->getUserById($uid);
+$task = $_pm['mem']->get(MEM_TASK_KEY);
+if(!is_array($task)) $task = kdjlSafeMemValue($task, array());
+if(!is_array($user)) $user = array();
+if(!is_array($task)) $task = array();
+$taskid = isset($user['task']) ? intval($user['task']) : 0;
+$taskitem = isset($task[$taskid]) ? $task[$taskid] : false;
 /*$taskitem	= $_pm['mem']->dataGet(array('k'	=>	MEM_TASK_KEY,
 										 'v'	=>	"if(\$rs['id']== '{$user['task']}') \$ret=\$rs;"
 									));*/
-									
-$props = unserialize($_pm['mem']->get('db_propsid'));
 
-$_gpc = unserialize($_pm['mem']->get(MEM_GPC_KEY));
+$props = $_pm['mem']->get('db_propsid');
+if(!is_array($props)) $props = kdjlSafeMemValue($props, array());
+if(!is_array($props)) $props = array();
+
+$_gpc = $_pm['mem']->get(MEM_GPC_KEY);
+if(!is_array($_gpc)) $_gpc = kdjlSafeMemValue($_gpc, array());
+if(!is_array($_gpc)) $_gpc = array();
+$gpcNames = array();
+foreach($_gpc as $gpcRow)
+{
+	if(!is_array($gpcRow) || !isset($gpcRow['id']) || !isset($gpcRow['name'])) continue;
+	$gpcId = intval($gpcRow['id']);
+	if($gpcId > 0 && !isset($gpcNames[$gpcId])) $gpcNames[$gpcId] = $gpcRow['name'];
+}
+$str = '';
+$strs = '';
+$log = '';
+
+function taskItemNameFromMap($rows, $id)
+{
+	return (isset($rows[$id]) && is_array($rows[$id]) && isset($rows[$id]['name']) && $rows[$id]['name'] !== '') ? $rows[$id]['name'] : $id;
+}
+
+function taskItemMonsterNames($ids, $names)
+{
+	if(!is_array($ids)) $ids = array($ids);
+	$ret = array();
+	foreach($ids as $id)
+	{
+		$id = intval($id);
+		if($id < 1) continue;
+		$name = isset($names[$id]) && $names[$id] !== '' ? $names[$id] : strval($id);
+		if(!in_array($name, $ret, true)) $ret[] = $name;
+	}
+	return implode('、', $ret);
+}
 
 if(!is_array($taskitem))
 {
@@ -30,10 +69,13 @@ if(!is_array($taskitem))
 }
 else
 {
-	$needarr = neednpc($taskitem['okneed']);
-	$fromnpc = explode("|",$taskitem['fromnpc']);
-	$str .= '任务接受NPC：<u>'. $_task['oknpc'][$fromnpc[0]].'</u><br/>';
-	$str .= '完成接受NPC：<u>'. $_task['oknpc'][$taskitem['oknpc']].'</u><br/>';
+	$needarr = neednpc(isset($taskitem['okneed']) ? $taskitem['okneed'] : '');
+	$fromnpc = explode("|", isset($taskitem['fromnpc']) ? $taskitem['fromnpc'] : '0');
+	$fromNpcName = isset($_task['oknpc'][$fromnpc[0]]) ? $_task['oknpc'][$fromnpc[0]] : '';
+	$oknpc = isset($taskitem['oknpc']) ? $taskitem['oknpc'] : 0;
+	$okNpcName = isset($_task['oknpc'][$oknpc]) ? $_task['oknpc'][$oknpc] : '';
+	$str .= '任务接受NPC：<u>'. $fromNpcName.'</u><br/>';
+	$str .= '任务完成NPC：<u>'. $okNpcName.'</u><br/>';
 	if(is_array($needarr))
 	{
 		foreach($needarr as $k => $v)
@@ -45,7 +87,8 @@ else
 					{
 						foreach($item as $ik => $iv)
 						{
-							$par = $props[$iv[0]];
+							$propId = isset($iv[0]) ? intval($iv[0]) : 0;
+							$par = array('name' => taskItemNameFromMap($props, $propId));
 							$strs .= "收集".$par['name']."&nbsp;".$ik."个<br />";
 						}
 					}
@@ -60,8 +103,10 @@ else
 					$strs .= "需要威望：".$v[0]."点<br />";
 					break;
 				case "lv":
-					$lvarr = explode("|",$v[0]);
-					if($v[1] == 0)
+					$lvarr = explode("|", isset($v[0]) ? $v[0] : '0|0');
+					if(!isset($lvarr[0])) $lvarr[0] = 0;
+					$maxLv = isset($lvarr[1]) ? intval($lvarr[1]) : 0;
+					if($maxLv == 0)
 					{
 						$strs .= "需要等级：".$lvarr[0]."级以上<br />";
 					}
@@ -73,29 +118,9 @@ else
 				case "killmon":
 					foreach($v as $kss => $kill)
 					{
-						$str1 = "";
-						foreach($kill as $vss)
-						{
-							foreach($_gpc as $g)
-							{
-								if($vss == $g['id'])
-								{
-									if(strpos($str1,$g['name']) === false)
-									{
-										if(!empty($str1))
-										{
-											$str1 .= "、".$g['name'];
-										}
-										else
-										{
-											$str1 = $g['name'];
-										}
-									}
-								}
-							}
-						}
+						$str1 = taskItemMonsterNames($kill, $gpcNames);
 						$gpcnum = explode(",",$kss);
-						$strs .= "杀死怪物:".$str1."&nbsp;".$gpcnum[0]."个<br />";
+						$strs .= "杀死怪物:".$str1."&nbsp;".(isset($gpcnum[0]) ? $gpcnum[0] : 0)."个<br />";
 					}
 					break;
 			}
@@ -105,6 +130,7 @@ else
 	if(!empty($user['tasklog']))
 	{
 		$arr = neednpc($user['tasklog']);
+		if(!is_array($arr)) $arr = array();
 		foreach($arr as $k => $v)
 		{
 			switch($k)
@@ -114,7 +140,8 @@ else
 					{
 						foreach($item as $ik => $iv)
 						{
-							$pa = $props[$iv[0]];
+							$propId = isset($iv[0]) ? intval($iv[0]) : 0;
+							$pa = array('name' => taskItemNameFromMap($props, $propId));
 							$log .= "收集".$pa['name']."&nbsp;".$ik."个<br />";
 							/*foreach($props as $p)
 							{
@@ -133,8 +160,10 @@ else
 					$log .= "需要威望：".$v[0]."点<br />";
 					break;
 				case "lv":
-					$lvarr = explode("|",$v[0]);
-					if($v[1] == 0)
+					$lvarr = explode("|", isset($v[0]) ? $v[0] : '0|0');
+					if(!isset($lvarr[0])) $lvarr[0] = 0;
+					$maxLv = isset($lvarr[1]) ? intval($lvarr[1]) : 0;
+					if($maxLv == 0)
 					{
 						$log .= "需要等级：".$lvarr[0]."级以上<br />";
 					}
@@ -146,29 +175,9 @@ else
 				case "killmon":
 					foreach($v as $kss => $kill)
 					{
-						$str1 = "";
-						foreach($kill as $vss)
-						{
-							foreach($_gpc as $g)
-							{
-								if($vss == $g['id'])
-								{
-									if(strpos($str1,$g['name']) === false)
-									{
-										if(!empty($str1))
-										{
-											$str1 .= "、".$g['name'];
-										}
-										else
-										{
-											$str1 = $g['name'];
-										}
-									}
-								}
-							}
-						}
+						$str1 = taskItemMonsterNames($kill, $gpcNames);
 						$gpcnum = explode(",",$kss);
-						$log .= "杀死怪物:".$str1."&nbsp;".$gpcnum[0]."个<br />";
+						$log .= "杀死怪物:".$str1."&nbsp;".(isset($gpcnum[0]) ? $gpcnum[0] : 0)."个<br />";
 					}
 					break;
 			}
@@ -177,7 +186,7 @@ else
 	}
 	else{
 		$str .= "当前杀怪进度为0";
-	}	
+	}
 }
 if (!empty($str)) {
 	echo $str;
@@ -208,10 +217,11 @@ if (is_array($taskitem) && $taskitem['okneed'] != '')
 	    else if($tarr[0] == "giveitem")	// 1=>id, 2=>num
 		{
 			$idlist = str_replace('|',',',$tarr[1]);
-			$all = $_pm['mysql']->getRecords("SELECT name 
+			$all = $_pm['mysql']->getRecords("SELECT name
 												FROM props
 											   WHERE id in({$idlist})
 											");
+			if(!is_array($all)) $all = array();
 			$wplist = '';
 			foreach($all as $key => $value)
 			{
@@ -235,7 +245,7 @@ if (is_array($taskitem) && $taskitem['okneed'] != '')
 			else
 			{
 				$arr = explode(':', $v);
-				if ($arr[0] == "see") 
+				if ($arr[0] == "see")
 					$taskresult .= "拜访 <u>" . $_task['npc'][$arr[1]] . '</u> 完成';
 				else if ($arr[0] == "killmon")
 				{
@@ -251,7 +261,7 @@ if (is_array($taskitem) && $taskitem['okneed'] != '')
 				}
 			}
 		}
-		
+
 	}
 	unset($grs);
 

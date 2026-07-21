@@ -2,7 +2,7 @@
 
 require_once('../config/config.game.php');
 $mapData = $_pm['mysql']->getOneRecord("select contents from welcome where code='public' ");
-$str=$mapData['contents'];
+$str=is_array($mapData) && isset($mapData['contents']) ? $mapData['contents'] : '';
 $str2='口袋精灵2 手机挂机辅助：<br>
 <li>超卡哇伊的宠物形象和游戏画风，女神的最爱，你懂得。</li>
 <li>独有的手机战斗放置系统，在线挂机，战斗无止境。</li>

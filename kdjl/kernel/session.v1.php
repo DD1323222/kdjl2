@@ -5,7 +5,7 @@
 @Version:1.0
 */
 class session{
-	
+
 	//session data
 	private $data;
 	//engine,mysql or memcache
@@ -16,6 +16,10 @@ class session{
 	private $sessionID;
 	//session coolie name
 	private $sessionCookieName;
+	public function __construct($engineBase=NULL,$engineName='mysql',$storage_name='php_session'){
+		$this->session($engineBase,$engineName,$storage_name);
+	}
+
 	public function session($engineBase=NULL,$engineName='mysql',$storage_name='php_session'){
 		try{
 			$this->sessionexpiredTime = intval(ini_get("session.cache_expire"))*60;
@@ -27,8 +31,8 @@ class session{
 		}catch(Exception $Exception){
 			$this->sessionCookieName = 'PHPSESSID';
 		}
-		
-		if(!isset($_COOKIE[$this->sessionCookieName])){
+
+		if(!isset($_COOKIE[$this->sessionCookieName]) || is_array($_COOKIE[$this->sessionCookieName]) || !preg_match('/^[A-Za-z0-9,-]{1,128}$/', $_COOKIE[$this->sessionCookieName])){
 			@session_start();
 			$this->sessionID=session_id();
 		}else{
@@ -42,12 +46,12 @@ class session{
 										  'data_too_long_instead_value' => '{__DATA IS *$* TO LONG__}'
 										  ),
 									$this->sessionID,
-									&$engineBase
+									$engineBase
 									);
 		$this->init();
 		$this->loadFromSession();
 		$this->engine->refresh();
-		$this->engine->cleanup();		
+		$this->engine->cleanup();
 	}
 	private function init()
 	{
@@ -81,34 +85,34 @@ class session{
 			$this->engine->set(false, $this->data);
 		}
 	}
-	private function __get($nm)
+	public function __get($nm)
     {
 		if (isset($this->data[$nm])) {
-            $r = $this->data[$nm];           
+            $r = $this->data[$nm];
             return $r;
-        } 
-		else 
+        }
+		else
 		{
             return NULL;
         }
     }
-    private function __set($nm, $val)
+    public function __set($nm, $val)
     {
 	   $this->data[$nm] =  $val;
 	   $this->engine->set(false, $this->data);
     }
-	
-	private function __isset($nm)
+
+	public function __isset($nm)
     {
         return isset($this->data[$nm]);
     }
 
-    private function __unset($nm)
+    public function __unset($nm)
     {
         unset($this->data[$nm]);
 		$this->engine->set(false, $this->data);
     }
-	
+
 	function __destruct(){
 		$this->data = NULL;
 		$this->engine->close();
@@ -164,6 +168,10 @@ final class mysqlSessionEngine implements SessionEngine{
 	private $max_session_data_length = 2048;
 	private $conn;
 	private $mysql_version;
+	public function __construct($arr=array(),$key="", &$_conn){
+		$this->mysqlSessionEngine($arr, $key, $_conn);
+	}
+
 	public function mysqlSessionEngine($arr=array(),$key="",&$_conn){
 		$this->setVariable($arr);
 		$this->id = $key;
@@ -178,11 +186,11 @@ final class mysqlSessionEngine implements SessionEngine{
 		if($this->mysql_version<5){
 			$this->max_session_data_length = 255;
 		}
-	}	
+	}
 	public function setVariable($arr){
 		if(!empty($arr)&&is_array($arr)){
 			foreach($arr as $k=>$v){
-				$this->$k = $v;				
+				$this->$k = $v;
 				if($k=='storage_name'){
 					$this->storage_name_slow = $v.'_slow';
 				}
@@ -191,6 +199,7 @@ final class mysqlSessionEngine implements SessionEngine{
 	}
 	public function get($key=""){
 		if($key=="") $key = $this->id;
+		$key = mysql_real_escape_string($key,$this->conn);
 		$return = $this->getOne('select value from '.$this->storage_name.' where id="'.$key.'"');
 		if($return==$this->data_too_long_instead_value)
 		{
@@ -207,7 +216,8 @@ final class mysqlSessionEngine implements SessionEngine{
 		}
 		else
 		{
-			$return = unserialize($return);
+			$parsed = @unserialize($return);
+			$return = ($parsed === false && $return !== serialize(false)) ? array() : $parsed;
 		}
 		return $return;
 	}
@@ -225,6 +235,8 @@ final class mysqlSessionEngine implements SessionEngine{
 		$this->execute($sql);
 	}
 	public function refresh($key=""){
+		if($key=="") $key = $this->id;
+		$key = mysql_real_escape_string($key,$this->conn);
 		if($this->mysql_version>4){
 			$sql = 'update '.$this->storage_name.' set `time`=CURRENT_TIMESTAMP() where id="'.$key.'"';
 		}else{
@@ -239,6 +251,7 @@ final class mysqlSessionEngine implements SessionEngine{
 	}
 	public function create($key="",$value=""){
 		if($key=="") $key = $this->id;
+		$key = mysql_real_escape_string($key,$this->conn);
 		if($value != "") $value = mysql_real_escape_string(serialize($value),$this->conn);
 		if(strlen($value)>$this->max_session_data_length)
 		{
@@ -258,8 +271,9 @@ final class mysqlSessionEngine implements SessionEngine{
 		}
 		return $return;
 	}
-	public function set($key="",$value=""){		
+	public function set($key="",$value=""){
 		if($key=="") $key = $this->id;
+		$key = mysql_real_escape_string($key,$this->conn);
 		if($value != "") $value = mysql_real_escape_string(serialize($value),$this->conn);
 		$sql = 'update '.$this->storage_name.' set value=\''.$value.'\' where id="'.$key.'"';
 		if(strlen($value)>$this->max_session_data_length)
@@ -269,7 +283,7 @@ final class mysqlSessionEngine implements SessionEngine{
 			}
 			$sql = 'replace into '.$this->storage_name_slow.' set value=\''.$value.'\',id="'.$key.'",`time`=unix_timestamp()';
 			$this->execute($sql,true);
-			$sql = 'update '.$this->storage_name.' set value=\''.$this->data_too_long_instead_value.'\' where id="'.$key.'"';	
+			$sql = 'update '.$this->storage_name.' set value=\''.$this->data_too_long_instead_value.'\' where id="'.$key.'"';
 		}
 		$return = $this->execute($sql);
 		if(!$return){
@@ -278,7 +292,7 @@ final class mysqlSessionEngine implements SessionEngine{
 		}
 		return $return;
 	}
-	private function initTable(){		
+	private function initTable(){
 		if($this->mysql_version>4){
 			$sql = "
 				CREATE TABLE if not exists `".$this->storage_name."` (
@@ -289,7 +303,7 @@ final class mysqlSessionEngine implements SessionEngine{
 				  KEY `time` (`time`)
 				) ENGINE=MEMORY;
 				";
-		}else{			
+		}else{
 			$sqlSlow = "
 				CREATE TABLE if not exists `".$this->storage_name."_slow` (
 				  `id` char(32) NOT NULL default 'ERR',
@@ -300,7 +314,7 @@ final class mysqlSessionEngine implements SessionEngine{
 				) ENGINE=MyISAM;
 				";
 			$this->execute($sqlSlow,true);
-			
+
 			$sql = "
 				CREATE TABLE if not exists `".$this->storage_name."` (
 				  `id` char(32) NOT NULL default 'ERR',
@@ -317,12 +331,12 @@ final class mysqlSessionEngine implements SessionEngine{
 	{
 		if($die)
 		{
-			mysql_query($sql,$this->conn) or die("exe Sql error:<br>".mysql_error()."<br>".$sql."<hr>");			
+			if(!mysql_query($sql,$this->conn)) die('会话数据存储失败！');
 		}
 		else
 		{
 			mysql_query($sql,$this->conn);
-			if(mysql_error()){
+			if(mysql_error($this->conn)){
 				return false;
 			}else{
 				return true;
@@ -339,9 +353,14 @@ final class mysqlSessionEngine implements SessionEngine{
 	}
 	private function query($sql,$die=false){
 		if($die)
-			$rs = mysql_query($sql,$this->conn) or die("query Sql error:<br>".mysql_error()."<br>".$sql."<hr>");
-		else
+		{
 			$rs = mysql_query($sql,$this->conn);
+			if(!$rs) die('会话数据读取失败！');
+		}
+		else
+		{
+			$rs = mysql_query($sql,$this->conn);
+		}
 		return $rs;
 	}
 }

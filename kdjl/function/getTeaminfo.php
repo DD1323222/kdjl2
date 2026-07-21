@@ -14,35 +14,28 @@ secStart($_pm['mem']);
 
 
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) die('');
+$trow = $_pm['mysql']->getOneRecord("SELECT team_id,state FROM team_members WHERE uid={$uid} AND state>-1 ORDER BY state DESC,team_id LIMIT 1");
+$tid = (is_array($trow) && isset($trow['team_id'])) ? intval($trow['team_id']) : 0;
+if($tid < 1) die('');
+$_SESSION['team_id']=$tid;
 
-$team = new team();
+$teamRow = $_pm['mysql']->getOneRecord("SELECT creator FROM team WHERE id={$tid}");
+if(!is_array($teamRow) || !isset($teamRow['creator'])) die('');
+$leaderId = intval($teamRow['creator']);
 
+// Get user information.
 
+$rs = $_pm['mysql']->getRecords("SELECT player.nickname,player.headimg,player.id,team_members.state
 
-if ($user['openteam']=='999999999') $tid = $user['id'];
+								   FROM player,team_members
 
-else $tid = $user['openteam'];
+								  WHERE player.id=team_members.uid AND team_members.team_id={$tid} AND team_members.state>-1
 
-
-
-// get team member information.
-
-$member = $team->getMember($tid);
-
-
-
-if ($member === FALSE) die('');
-
-
-
-// Get user inforamtion.
-
-$rs = $_pm['mysql']->getRecords("SELECT nickname,headimg,id,openteam 
-
-								   FROM player
-
-								  WHERE id in({$member})
+								  ORDER BY team_members.apply_time
 
 								");
 
@@ -53,6 +46,11 @@ if (is_array($rs))
 	foreach ($rs as $k => $v)
 
 	{
+		if(!is_array($v)) continue;
+		$headimg = isset($v['headimg']) ? intval($v['headimg']) : 0;
+		if(!isset($v['nickname'])) $v['nickname'] = '';
+		$nickname = htmlspecialchars($v['nickname'], ENT_QUOTES, 'UTF-8');
+		$role = (isset($v['id']) && intval($v['id']) == $leaderId) ? '队长' : '队友';
 
 		echo '<table width="100%" border="0" cellspacing="0" cellpadding="0">
 
@@ -60,15 +58,15 @@ if (is_array($rs))
 
             <td width="8">&nbsp;</td>
 
-            <td width="21"><img src='.IMAGE_SRC_URL.'/ui/team/tt01.gif" width="21" height="37"></td>
+            <td width="21"><img src="'.IMAGE_SRC_URL.'/ui/team/tt01.gif" width="21" height="37"></td>
 
             <td width="11">&nbsp;</td>
 
-            <td width="60"><img src="'.IMAGE_SRC_URL.'/head/'.$v['headimg'].'.gif" width="60" height="49"></td>
+            <td width="60"><img src="'.IMAGE_SRC_URL.'/head/'.$headimg.'.gif" width="60" height="49"></td>
 
             <td width="14">&nbsp;</td>
 
-            <td>'.($v['openteam']=='999999999'?'队长':'队友').'：'.$v['nickname'].'</td>
+            <td>'.$role.'：'.$nickname.'</td>
 
           </tr>
 
@@ -78,7 +76,7 @@ if (is_array($rs))
 
             <tr>
 
-              <td background="../images/ui/team/tt03.gif">&nbsp;</td>
+              <td style="border-top:1px solid #d9c98b;">&nbsp;</td>
 
             </tr>
 

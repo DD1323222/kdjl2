@@ -17,26 +17,38 @@ function common_process($db_name, $is_need_iterative = false, $assign = false, $
 
     if (!$db_name)
         return false;
-    $m->del('db_' . $db_name);
-    if (!$assign) {
+    $res = array();
+    $arr = array();
+    $baseCacheTypes = array('task', 'gpc', 'map', 'skillsys', 'bb', 'welcome', 'props');
+    $refreshesBaseRows = !is_array($assign) && in_array($db_name, $baseCacheTypes, true);
+    $oldRows = $refreshesBaseRows ? kdjlMemArrayValue($m, 'db_' . $db_name) : array();
+    if (is_array($assign)) {
+        $res = $assign;
+    } else {
         if ($db_name == 'props') {
             $res = $db->getRecords("select * from " . $db_name ." ORDER BY stime");
         } else {
             $res = $db->getRecords("select * from " . $db_name);
         }
+        if (!is_array($res))
+            return false;
     }
     if ($return_db_values)
         return $res;
+
+    if ($refreshesBaseRows)
+        kdjlInvalidateChangedBaseConfigRows($m, $db_name, $oldRows, $res);
 
     if ($is_need_iterative) {
         foreach ($res as $v)
             $arr[$v['id']] = $v;
         if (is_bool($is_need_iterative))
             $res = $arr;
-    } else if ($assign && is_array($assign))
-        $res = $assign;
+    }
 
-    $m->set(array('k' => 'db_' . $db_name, 'v' => $res));
+    $m->del('db_' . $db_name);
+    if ($m->set(array('k' => 'db_' . $db_name, 'v' => $res)) === false)
+        return false;
 
     if (!is_bool($is_need_iterative))
         return $arr;
@@ -53,97 +65,100 @@ function loadmem($key)
     global $m, $db;
     switch ($key) {
         case 'task':
-            common_process('task', true);
-            break;
+            return common_process('task', true) !== false;
         case 'skillsys':
 
             //case 'skillsysid':
             $arr = common_process('skillsys', 1);
-            common_process('skillsysid', false, $arr);
-            break;
+            if (!is_array($arr)) return false;
+            return common_process('skillsysid', false, $arr) !== false;
         case 'bb':
             //case 'bbname':
             //case 'bbid':
             $ret2 = common_process('bb');
+            if (!is_array($ret2)) return false;
+            $arr = array();
+            $arrnew = array();
             foreach ($ret2 as $k => $v) {
                 $arr[$v['name']] = $v;
                 $arrnew[$v['id']] = $v;
             }
-            common_process('bbname', false, $arr);
-            common_process('bbid', false, $arrnew);
-            break;
+            return common_process('bbname', false, $arr) !== false &&
+                common_process('bbid', false, $arrnew) !== false;
         case 'gpc':
             //case 'gpcid':
             $ret2 = common_process('gpc', 1);
-            common_process('gpcid', false, $ret2);
-            break;
+            if (!is_array($ret2)) return false;
+            return common_process('gpcid', false, $ret2) !== false;
         case 'merge':
-            common_process('merge');
-            break;
+            return common_process('merge') !== false;
         case 'zs':
-            common_process('zs');
-            break;
+            return common_process('zs') !== false;
         case 'map':
             //case 'mapid':
             $ret2 = common_process('map', 1);
-            common_process('mapid', false, $ret2);
-            break;
+            if (!is_array($ret2)) return false;
+            return common_process('mapid', false, $ret2) !== false;
         case 'wx':
 
-            common_process('wx');
-            break;
+            return common_process('wx') !== false;
         case 'welcome':
             //case 'welcome1':
             $ret2 = common_process('welcome');
+            if (!is_array($ret2)) return false;
+            $arrnew = array();
             foreach ($ret2 as $k => $v)
                 $arrnew[$v['code']] = $v['contents'];
-            common_process('welcome1', false, $arrnew);
-            break;
+            return common_process('welcome1', false, $arrnew) !== false;
         case 'timeconfig':
             //case 'timeconfignew':
             $ret2 = common_process('timeconfig');
+            if (!is_array($ret2)) return false;
             $arrnew = array();
             foreach ($ret2 as $v)
                 $arrnew[$v['titles']][] = $v;
-            common_process('timeconfignew', false, $arrnew);
-            break;
+            return common_process('timeconfignew', false, $arrnew) !== false;
         case 'exptolv':
-            common_process('exptolv');
-            break;
+            return common_process('exptolv') !== false;
         case 'aoyun':
             $ret2 = common_process('aoyun', false, false, true);
+            if (!is_array($ret2)) return false;
+            $arr = array();
             foreach ($ret2 as $k => $v)
                 if (is_array($v))
                     $arr[$v['id']] = $v;
-            $m->set(array('k' => 'db_aoyun', 'v' => $arr));
-            break;
+            return $m->set(array('k' => 'db_aoyun', 'v' => $arr)) !== false;
         case 'blacklist':
             $ret2 = common_process('blacklist', false, false, true);
+            if (!is_array($ret2)) return false;
+            $newarr = array();
             foreach ($ret2 as $k => $v)
                 $newarr[$v['uid']] = ',' . $v['list'] . ",";
-            $m->set(array('k' => 'db_blacklist', 'v' => $newarr));
-            break;
+            return $m->set(array('k' => 'db_blacklist', 'v' => $newarr)) !== false;
         case 'gonggao':
-            common_process('gonggao');
-            break;
+            return common_process('gonggao') !== false;
         case 'props':
             //case 'propsid':
             //case 'propsname':
             //case 'equip':
             $ret2 = common_process('props');
+            if (!is_array($ret2)) return false;
+            $arr = array();
+            $arrnew = array();
             foreach ($ret2 as $pv) {
                 $arr[$pv['id']] = $pv;
                 $arrnew[$pv['name']] = $pv;
             }
-            common_process('propsid', false, $arr);
-            common_process('propsname', false, $arrnew);
-            break;
+            return common_process('propsid', false, $arr) !== false &&
+                common_process('propsname', false, $arrnew) !== false;
         case 't_ly_url_config':
         {
-            common_process('t_ly_url_config');
-            break;
+            // Linux keeps this legacy table name case-sensitive. Using the
+            // real name also preserves the cache key read by index.php.
+            return common_process('T_ly_URL_config') !== false;
         }
     }
+    return false;
 }
 
 //把memcache中的某个一自增数字做键的数字二维数组转换成字符串保存起来
@@ -185,154 +200,42 @@ function guild_update_mem()
     memArr2Str1($arr, 'MEM_GUILD_LIST');
 }
 
-if (count($_GET) == 1 && $_GET['db'] == "" || $argv[1]=='done') {
-    ///*
-    foreach (array('task', 'skillsys', 'bb', 'gpc', 'merge', 'zs', 'map', 'wx', 'welcome', 'timeconfig', 'exptolv', 'aoyun', 'blacklist', 'gonggao', 'props', 't_ly_url_config') as $v)
-        loadmem($v);
+$cliDone = (isset($argv) && isset($argv[1]) && $argv[1] == 'done');
+$formRefreshAll = isset($_GET['refresh_all']) && !is_array($_GET['refresh_all']);
+$dbRefreshAll = $formRefreshAll || (count($_GET) == 1 && isset($_GET['db']) && !is_array($_GET['db']) && $_GET['db'] == "");
+if ($dbRefreshAll || $cliDone) {
+    $refreshFailures = array();
+    foreach (array('task', 'skillsys', 'bb', 'gpc', 'merge', 'zs', 'map', 'wx', 'welcome', 'timeconfig', 'exptolv', 'aoyun', 'blacklist', 'gonggao', 'props', 't_ly_url_config') as $v) {
+        if (!loadmem($v)) $refreshFailures[] = $v;
+    }
     guild_update_mem();
 
-
-    echo 'done';
+    echo empty($refreshFailures) ? 'done' : 'failed: '.implode(',', $refreshFailures);
 } else {
+    $refreshMap = array(
+        'db_task' => 'task',
+        'skillsys' => 'skillsys',
+        'db_skillsys' => 'skillsys',
+        'db_bb' => 'bb',
+        'db_gpc' => 'gpc',
+        'db_merge' => 'merge',
+        'db_zs' => 'zs',
+        'db_map' => 'map',
+        'db_wx' => 'wx',
+        'db_welcome' => 'welcome',
+        'db_timeconfig' => 'timeconfig',
+        'db_exptolv' => 'exptolv',
+        'db_aoyun' => 'aoyun',
+        'db_blacklist' => 'blacklist',
+        'db_gonggao' => 'gonggao',
+        'db_props' => 'props',
+        'db_t_ly_url_config' => 't_ly_url_config'
+    );
     foreach ($_GET as $k => $v) {
-        $ret = $ret1 = $ret2 = $arr = $newarr = NULL;
-        $m->del($v);
-
-        if ($v == "db_task") {
-            /*			$ret = $db->getRecords("select * from task");
-                        foreach($ret as $va)
-                        {
-                            $arr[$va['id']] = $va;
-                        }
-                        $m->set(array('k' => 'db_task', 'v' => $arr));*/
-            loadmem('task');
-            echo $v . "<br />";
-        } else if ($v == "db_bb") {
-            /*			$ret = $db -> getRecords('SELECT * FROM bb');
-                        $m -> set(array('k'=>'db_bb','v'=>$ret));
-                        foreach($ret as $bk => $bv)
-                        {
-                            $arr[$bv['name']] = $bv;
-                            $arrnew[$bv['id']] = $bv;
-                        }
-                        $m->del('db_bbname');
-                        $m -> set(array('k'=>'db_bbname','v'=>$arr));
-                        $m->del('db_bbid');
-                        $m -> set(array('k'=>'db_bbid','v'=>$arrnew));
-                        unset($bk,$bv,$arr,$arrnew);*/
-            loadmem('bb');
-            echo $v . "<br />";
-        } else if ($v == "skillsys") {
-            /*			$ret = $db -> getRecords('SELECT * FROM skillsys');
-                        $m -> set(array('k'=>'db_skillsys','v'=>$ret));
-                        foreach($ret as $bk => $bv)
-                        {
-                            $arr[$bv['id']] = $bv;
-                        }
-                        $m->del('db_skillsysid');
-                        $m -> set(array('k'=>'db_skillsysid','v'=>$arr));
-                        unset($bk,$bv,$arr);*/
-            loadmem('skillsys');
-
-            echo $v . "<br />";
-        } else if ($v == "db_gpc") {
-            /*			$ret = $db -> getRecords('SELECT * FROM gpc');
-                        $m -> set(array('k'=>'db_gpc','v'=>$ret));
-                        foreach($ret as $bk => $bv)
-                        {
-                            $arr[$bv['id']] = $bv;
-                        }
-                        $m->del('db_gpcid');
-                        $m -> set(array('k'=>'db_gpcid','v'=>$arr));
-                        unset($bk,$bv,$arr);*/
-            loadmem('gpc');
-            echo $v . "<br />";
-        } else if ($v == "db_map") {
-            /*			$ret = $db -> getRecords('SELECT * FROM map');
-                        $m -> set(array('k'=>'db_map','v'=>$ret));
-                        foreach($ret as $bk => $bv)
-                        {
-                            $arr[$bv['id']] = $bv;
-                        }
-                        $m->del('db_mapid');
-                        $m -> set(array('k'=>'db_mapid','v'=>$arr));
-                        echo $v;
-                        unset($bk,$bv,$arr);*/
-            loadmem('map');
-            echo $v . "<br />";
-        } else if ($v == "db_props") {
-            /*			$ret = $db->getRecords("select * from props");
-                        $m->set(array('k'=>'db_props','v'=>$ret));
-                        foreach($ret as $pv)
-                        {
-                            $arr[$pv['id']] = $pv;
-                            $arrnew[$pv['name']] = $pv;
-                        }
-                        $m->del('db_propsid');
-                        $m->set(array('k'=>'db_propsid','v'=>$arr));
-                        $m->del('db_propsname');
-                        $m->set(array('k'=>'db_propsname','v'=>$arrnew));
-                        unset($pv,$arr);
-                        $equip = new equipment();
-                        $m->del('db_equip');
-                        foreach($ret as $vs)
-                        {
-                            if($vs['buy'] > 0 || $vs['yb'] > 0 || $vs['prestige'] > 0)
-                            {
-                                $arr[$vs['id']] = $equip -> div($vs['id'],0,0,1);
-                            }
-                        }
-                        $m->set(array('k'=>'db_equip','v'=>$arr));*/
-            loadmem('props');
-            echo $v . "<br />";
-        } else if ($v == "db_timeconfig") {
-            /*			$ret = $db->getRecords("select * from timeconfig");
-                        $m->set(array('k'=>'db_timeconfig','v'=>$ret));
-                        $m->del('db_timeconfignew');
-                        foreach($ret as $vs)
-                        {
-                            $arr[$vs['titles']][] = $vs;
-                        }
-                        $m->set(array('k'=>'db_timeconfignew','v'=>$arr));*/
-            loadmem('timeconfig');
-            echo $v . "<br />";
-        } else if ($v == "db_t_ly_url_config") {
-            loadmem('t_ly_url_config');
-            echo $v . "<br />";
-        } else if ($v == "db_aoyun") {
-            /*			$ret = $db->getRecords("select * from aoyun");
-                        foreach($ret as $vs)
-                        {
-                            $arr[$vs['id']] = $vs;
-                        }
-                        $m->set(array('k'=>'db_aoyun','v'=>$arr));*/
-            loadmem('aoyun');
-            echo $v . "<br />";
-        } else if ($v == "db_welcome") {
-            /*			$ret = $db->getRecords("select * from welcome");
-                        $m->set(array('k'=>'db_welcome','v'=>$ret));
-                        foreach($ret as $kw => $vw)
-                        {
-                            $newarr[$vw['code']] = $vw['contents'];
-                        }
-                        $m->del('db_welcome1');
-                        $m->set(array('k'=>'db_welcome1','v'=>$newarr));*/
-            loadmem('welcome');
-            echo $v . "<br />";
-        }  else if ($v == "db_gonggao") {
-            loadmem('gonggao');
-            echo $v . "<br />";
-        }else if ($k != "Submit" && $v != "checkbox") {
-            $table = explode("_", $v);
-            if ($table[1] != 'props' && $table[1] !='wx' && $table[1] !='exptolv' &&  $table[1] != 'zs') {
-                $ret2 = $db->getRecords("select id,name,requires,usages,effect,sell,prestige,buy,yb,sj,stime,endtime,img,vary,varyname,postion,pluseffect,plusflag,pluspid,plusget,plusnum,propscolor,propslock,series,serieseffect,expire,timelimit,merge,vip,honor,contribution,guild_level,zhekouyb from " . $table[1]);
-            } else {
-                $ret2 = $db->getRecords("select * from ".$table[1]."");
-            }
-
-            $m->set(array('k' => $v, 'v' => $ret2));
-            echo $v . "<br />";
-        }
+        if (is_array($v)) continue;
+        $v = trim($v);
+        if (!isset($refreshMap[$v])) continue;
+        echo $v . (loadmem($refreshMap[$v]) ? "<br />" : " 刷新失败<br />");
     }
 }
 //foreach(array('task', 'skillsys', 'bb', 'gpc', 'merge', 'zs', 'map', 'wx', 'welcome', 'timeconfig', 'exptolv', 'aoyun', 'blacklist', 'gonggao', 'props', 'skillsysid', 'bbname', 'bbid', 'gpcid', 'mapid', 'welcome1', 'timeconfignew', 'propsid', 'propsname', 'equip') as $v) if(!$m->get('db_'.$v)) $a[]=$v;
@@ -342,15 +245,18 @@ $tm = $_pm["mysql"]->getOneRecord($sql);
 if (is_array($tm)) {
     $time = date('Y-m-d H:i:s');
     $tarr = explode('|', $tm['value2']);
-    if ($time > $tarr[0] && $time < $tarr[1]) {
+    if (count($tarr) >= 2 && $time > $tarr[0] && $time < $tarr[1]) {
         $p = explode(',', $tm['contents']);//20100915120000
         $v = '';
         foreach ($p as $v) {
             $va = explode(':', $v);
+            if (count($va) < 1 || intval($va[0]) < 1) continue;
             $s = 0;
-            $sql = 'SELECT id FROM props WHERE zhekouyb > 0 AND id = ' . $va[0];
+            $pid = intval($va[0]);
+            $sql = 'SELECT id FROM props WHERE zhekouyb > 0 AND id = ' . $pid;
             $res = $_pm['mysql']->getOneRecord($sql);
-            $sql = 'SELECT sum(nums) as nums FROM yblog WHERE title ="' . $va[0] . '" AND DATE_FORMAT(from_unixtime(buytime),"%Y-%m-%d %H:%i:%s") > "' . $tarr[0] . '" AND DATE_FORMAT(from_unixtime(buytime),"%Y-%m-%d %H:%i:%s") < "' . $tarr[1] . '"';
+            if (!is_array($res) || !isset($res['id'])) continue;
+            $sql = 'SELECT sum(nums) as nums FROM yblog WHERE title ="' . $pid . '" AND DATE_FORMAT(from_unixtime(buytime),"%Y-%m-%d %H:%i:%s") > "' . $tarr[0] . '" AND DATE_FORMAT(from_unixtime(buytime),"%Y-%m-%d %H:%i:%s") < "' . $tarr[1] . '"';
             //echo $sql;
             $ybarr = $_pm['mysql']->getOneRecord($sql);
 
@@ -434,8 +340,9 @@ if (stripos($_SERVER['PHP_SELF'], 'vm') !== false) {
                             道具
                             <input name="db_t_ly_url_config" type="checkbox" id="db_t_ly_url_config"
                                    value="db_t_ly_url_config"/>
-                            联运商URL配置<span class="STYLE1">(默认是更新所有)</span>
+                            联运商URL配置<span class="STYLE1">(可勾选部分项目更新)</span>
                             <input type="submit" name="Submit" value="提交"/>
+                            <input type="submit" name="refresh_all" value="自动更新所有"/>
                         </p>
                     </td>
                 </tr>

@@ -3,9 +3,10 @@ session_start();
 if(!isset($_SESSION['username'])||strlen($_SESSION['username'])<3){
 	echo '<script language="javascript">alert("请先登陆!");window.location="http://www.51.com";</script>';exit();
 }
-if(isset($_SESSION['51_session'])){
-	foreach($_SESSION['51_session'] as $k=>$v){	
-		$_POST[$k]=$v;	
+if(isset($_SESSION['51_session']) && is_array($_SESSION['51_session'])){
+	foreach($_SESSION['51_session'] as $k=>$v){
+		if(is_array($v)) continue;
+		$_POST[$k]=$v;
 	}
 }else{
 	echo '<script language="javascript">alert("登陆失效!");window.location="http://www.51.com";</script>';exit();
@@ -24,17 +25,22 @@ $m	= $_pm['mem'];
 $db = &$_pm['mysql'];
 $u	= $_pm['user'];
 secStart($m);
-$user	= $u->getUserById($_SESSION['id']);
-$bags    = $u->getUserBagById($_SESSION['id']);
-$props = unserialize($m->get(MEM_PROPS_KEY));
+$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+$httpHost = preg_replace('/[^A-Za-z0-9\\.\\-:]/', '', $httpHost);
+if($httpHost === '') $httpHost = 'localhost';
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die("信息错误！");
+$user	= $u->getUserById($uid);
+$bags    = $u->getUserBagById($uid);
+$props = kdjlSafeMemValue($m->get(MEM_PROPS_KEY), array());
 if($user===FALSE)
 {
 	die("信息错误！");
 }
 
-if(isset($_GET['num'])&&intval($_GET['num'])>0){	
-	$price = intval($_GET['num']);
-	$paytype = isset($_GET['paytype']) ? intval($_GET['paytype']) : -1;
+if(isset($_GET['num']) && !is_array($_GET['num']) && intval($_GET['num'])>0){
+	$price = (!is_array($_GET['num'])) ? intval($_GET['num']) : 0;
+	$paytype = (isset($_GET['paytype']) && !is_array($_GET['paytype'])) ? intval($_GET['paytype']) : -1;
 	if($paytype!==0&&$paytype!==1)
 	{
 		die('alert("支付方式错误！")');
@@ -43,12 +49,11 @@ if(isset($_GET['num'])&&intval($_GET['num'])>0){
 	{
 		die('alert("每次最多购买5000个元宝！")');
 	}
-	$host = strtoupper(preg_replace('/[^a-z0-9]/i','',str_replace("PM51","",strtok($_SERVER['HTTP_HOST'],'.'))));
+	$host = strtoupper(preg_replace('/[^a-z0-9]/i','',str_replace("PM51","",strtok($httpHost,'.'))));
 	if($host === '') $host = 'LOCAL';
 	$msg = "口袋精灵".$host."区元宝".$price."个。";
 	/* 订单信息 */
-	$ordid=substr($host,0,5).substr("000000000000".$_SESSION['id'],-8).substr(time(),-8).sprintf('%04d',mt_rand(0,9999));
-	$_SESSION['buyyb_info'][$ordid]=array($price,$paytype);
+	$orderPrefix = substr($host,0,5).substr("000000000000".$uid,-8).substr(time(),-8);
 	//if($paytype==1){
 	$db->query("CREATE TABLE if not exists `yb` (
 	  `Id` int(11) NOT NULL auto_increment,
@@ -60,17 +65,31 @@ if(isset($_GET['num'])&&intval($_GET['num'])>0){
 	  `sn_platform` varchar(25) default '',
 	  `user_id` int(11) default '0',
 	  PRIMARY KEY  (`Id`)
-	) ENGINE=InnoDB; 
+	) ENGINE=InnoDB;
 	");
 	$db->addColumnIfMissing('yb','sn_platform',"varchar(25) NOT NULL DEFAULT ''");
 	$db->addColumnIfMissing('yb','user_id',"int(11) NOT NULL DEFAULT '0'");
+	$ordid = '';
+	for($orderAttempt=0; $orderAttempt<20; $orderAttempt++)
+	{
+		$orderCandidate = $orderPrefix.sprintf('%04d',mt_rand(0,9999));
+		$orderCandidateSql = $db->escape($orderCandidate);
+		$orderExists = $db->getOneRecord("SELECT Id FROM yb WHERE orderid='{$orderCandidateSql}' LIMIT 1");
+		if(!is_array($orderExists))
+		{
+			$ordid = $orderCandidate;
+			break;
+		}
+	}
+	if($ordid === '') die('alert("订单创建失败，请稍后重试！")');
+	$_SESSION['buyyb_info'][$ordid]=array($price,$paytype);
 	$payName = $db->escape('51'.($paytype==0?'币':'银行').'购买元宝(User:'.$_SESSION['username'].')');
-	if($db->query("insert into yb set payname='{$payName}',paytime='0',getyb={$price},orderid='{$ordid}',user_id=".intval($_SESSION['id'])) === false)
+	if($db->query("insert into yb set payname='{$payName}',paytime='0',getyb={$price},orderid='{$ordid}',user_id={$uid}") === false)
 	{
 		die('alert("订单创建失败，请稍后重试！")');
 	}
 	//}
-	$order = 
+	$order =
 	array(
 		//'environment'=>"production",
 		//'version'=>"2.0",
@@ -80,25 +99,25 @@ if(isset($_GET['num'])&&intval($_GET['num'])>0){
 		'order_num'         =>$price,
 		'pay_sandbox'       =>1,
 		'pay_code'          =>1,
-		'pay_shipping'      =>'http://'.$_SERVER['HTTP_HOST'].'/function/success_Mod_yb.php',
+		'pay_shipping'      =>'http://'.$httpHost.'/function/success_Mod_yb.php',
 		'order_msg'=>$msg,
-		'order_callback_url'=> 'http://'.$_SERVER['HTTP_HOST'].'/function/success_Mod_yb.php',//?order_code=0
-		'order_check_url'   => 'http://'.$_SERVER['HTTP_HOST'].'/function/success_Mod_yb.php', // 支付成功后的对帐通知地址，最多 200 字节。
-		'order_cancel_url'  => 'http://'.$_SERVER['HTTP_HOST'].'/function/success_Mod_yb.php?cancel=1'
+		'order_callback_url'=> 'http://'.$httpHost.'/function/success_Mod_yb.php',//?order_code=0
+		'order_check_url'   => 'http://'.$httpHost.'/function/success_Mod_yb.php', // 支付成功后的对帐通知地址，最多 200 字节。
+		'order_cancel_url'  => 'http://'.$httpHost.'/function/success_Mod_yb.php?cancel=1'
 	);
-	
+
 	//print_r($order);exit;
 	/* 用create_post_string签名请求参数 */
 	$OpenApp_51->api_client->set_encoding("GBK");
 	$post = $OpenApp_51->api_client->create_post_string('51_pay', $order); // 请注意$post字符串长度不要超过1024
-	echo 
+	echo
 	'
 	<meta http-equiv="Content-Type" content="text/html; charset=gbk" />
 	<span style="font-size:12px">跳转中，请稍等，请勿刷新页面…</span>
 	<form method="post" id="buyform" action="'.($paytype==0?'http://apps.51.com/payment/pay.php':'http://apps.51.com/paybank.php').'">
-	 <input type="hidden" value="'.str_replace(array('"',"\r","\n"),"",$post).'" name="51_pay" id="51_pay"/> 	 
-	</form> 
-	<script language="javascript">	
+	 <input type="hidden" value="'.str_replace(array('"',"\r","\n"),"",$post).'" name="51_pay" id="51_pay"/>
+	</form>
+	<script language="javascript">
 		  document.getElementById("buyform").submit();
 	</script>
 	';
@@ -148,8 +167,8 @@ font-size:12px;}
 <table width="400" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td style="height:24px; overflow:hidden">
-    <span id="pay0" style=" font-weight:bold; color:#ffffff ;border:1px solid #006633; background-color:#006600; width:120px; cursor:pointer; height:24px; font-size:12px ;padding:4px" 
-    onClick="payType(0);$('buyform').action='http://apps.51.com/payment/pay.php';$('mtype').innerHTML='个51币';">使用51币</span><span id="pay1" style="border:1px solid #006633;  cursor:pointer;background-color:#c0c0c0; width:120px; height:21px; font-size:12px; padding:4px" 
+    <span id="pay0" style=" font-weight:bold; color:#ffffff ;border:1px solid #006633; background-color:#006600; width:120px; cursor:pointer; height:24px; font-size:12px ;padding:4px"
+    onClick="payType(0);$('buyform').action='http://apps.51.com/payment/pay.php';$('mtype').innerHTML='个51币';">使用51币</span><span id="pay1" style="border:1px solid #006633;  cursor:pointer;background-color:#c0c0c0; width:120px; height:21px; font-size:12px; padding:4px"
     onClick="payType(1);$('buyform').action='http://apps.51.com/paybank.php';$('mtype').innerHTML='元人民币';">使用网上银行</span>
     </td>
   </tr>
@@ -161,9 +180,9 @@ font-size:12px;}
   <tr id="pt0">
     <td style="padding-left:4px;padding-top:6px; background-color:#006600">
 <form method="post" x="http://apps.51.com/sandbox_pay.php" action="http://apps.51.com/payment/pay.php" id="buyform" target="_blank">
- <input type="hidden" value="" name="51_pay" id="51_pay"/> 
+ <input type="hidden" value="" name="51_pay" id="51_pay"/>
  <input type="button" value="确定购买" onClick="buy()" id="btnbuy"/>
-</form>    
+</form>
     </td>
   </tr>
 

@@ -72,7 +72,13 @@ function Sacrifice()
 		var opt = {
 				method: 'get',
 				onSuccess: function(t) {
-					data=t.responseText;
+					data=t.responseText.replace(/^\s+|\s+$/g,'');
+					if(data=='')
+					{
+						SacrificeId=0;
+						document.getElementById('zhanbu_card').innerHTML='<div style="height:290px;line-height:290px;text-align:center;color:#B06A01;">&#32972;&#21253;&#20013;&#27809;&#26377;&#21487;&#20351;&#29992;&#30340;&#39764;&#27861;&#30707;</div>';
+						return;
+					}
 					var html='';
 					datas=data.split('#|#');
 					for(i=0;i<datas.length;i++)

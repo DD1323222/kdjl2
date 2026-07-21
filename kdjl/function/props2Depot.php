@@ -41,11 +41,12 @@ class UserProps {
             foreach($userPropsList as $props) {
                 if (isset($props['bsum']) && $props['bsum'] > 0) {
                     $this->depotProps[$props['id']] = $props;
-                } 
-                // the same record may belong to depot, 
+                }
+                // the same record may belong to depot,
                 // and belong to bag at the same time
-                if (isset($props['sums']) && ($props['sums'] > 0) 
-                    && isset($props['zbing']) && ($props['zbing'] != 1)) {
+                if (isset($props['sums']) && ($props['sums'] > 0)
+                    && isset($props['zbing']) && intval($props['zbing']) == 0
+                    && (!isset($props['cantrade']) || intval($props['cantrade']) != 3)) {
                     $this->bagProps[$props['id']] = $props;
                 }
             }
@@ -107,16 +108,23 @@ class UserProps {
  * @param array $props
  * @return boolean
  */
-function movePropsInBag2Depot($props)
+function movePropsInBag2Depot($props, $uid)
 {
     $dbHandler = $GLOBALS['_pm']['mysql'];
     $numPropsBag = $props['sums'];
     $numPropsDepot = $props['bsum'];
+    if(isset($props['cantrade']) && intval($props['cantrade']) == 3){
+        return false;
+    }
+    $newDepotNum = kdjlSafeNonNegativeSum($numPropsBag, $numPropsDepot);
+    if($newDepotNum === false){
+        return false;
+    }
 
-    $sql = sprintf("UPDATE userbag SET sums=%d, bsum=%d WHERE id=%d",
-        0, $numPropsBag + $numPropsDepot, $props['id']);
+    $sql = sprintf("UPDATE userbag SET sums=%d, bsum=%d WHERE uid=%d AND id=%d AND sums=%d AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)",
+        0, $newDepotNum, $uid, $props['id'], $numPropsBag);
 
-    return $dbHandler->query($sql);
+    return $dbHandler->query($sql) && mysql_affected_rows($dbHandler->getConn()) == 1;
 }
 
 /**
@@ -125,33 +133,31 @@ function movePropsInBag2Depot($props)
  * @param array $props
  * @return boolean
  */
-function dropPropsInBag($props)
+function dropPropsInBag($props, $uid)
 {
     $dbHandler = $GLOBALS['_pm']['mysql'];
     $numPropsBag = $props['sums'];
     $numPropsDepot = $props['bsum'];
-	//$pcheck = $dbHandler -> getOneRecord("SELECT cantrade FROM userbag WHERE uid = {$_SESSION['id']} AND id = {$props['id']}");
-	/*if($pcheck['cantrade'] == 3){
-		return 'exit';
-	}else{*/
-		$sql = sprintf("UPDATE userbag SET sums=%d WHERE id=%d", 0, $props['id']);
+	if(isset($props['cantrade']) && intval($props['cantrade']) == 3){
+		return 'locked';
+	}
+	$sql = sprintf("UPDATE userbag SET sums=%d WHERE uid=%d AND id=%d AND sums=%d AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)", 0, $uid, $props['id'], $numPropsBag);
 
-    	return $dbHandler->query($sql);
-	//}
+	return $dbHandler->query($sql) && mysql_affected_rows($dbHandler->getConn()) == 1;
 
     // use update to drop the propos in bag,
     // if need to delete the record, there need to do two operations,
-    // 1. check if the record also be in depot, 
+    // 1. check if the record also be in depot,
     //    if it is a part of props in depot, can not delete the record,
     //    only do update operation.
     // 2. if the record only is a props in bag, it can be deleted.
-    
+
 }
 
 /**
  * get the time spacing between the nearly operation
  * if the operation is the first operation, it will return -1
- * 
+ *
  * @return integer (in seconds)
  */
 function getOperationTimeSpace()
@@ -168,11 +174,20 @@ function getOperationTimeSpace()
 
 
 // =============== the executable code =================
-$id  = intval($_REQUEST['id']); // userbag id
-$act = $_REQUEST['act'];
+$id  = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0; // userbag id
+$act = (isset($_REQUEST['act']) && !is_array($_REQUEST['act'])) ? $_REQUEST['act'] : '';
 //$id = 2663;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid <= 0)
+{
+	die('11');
+}
 require_once('../sec/dblock_fun.php');
-$a = getLock($_SESSION['id']);
+$a = getLock($uid);
+if(!is_array($a)){
+	realseLock();
+	die('服务器繁忙，请稍候再试！');
+}
 
 if ($id < 1) {
 	realseLock();
@@ -184,23 +199,14 @@ if (!in_array($act, array('move', 'drop'))) {
     die('1');
 }
 
-$user     = $_pm['user']->getUserById($_SESSION['id']);
-$userBags = $_pm['user']->getUserBagById($_SESSION['id']);
+$user     = $_pm['user']->getUserById($uid);
+$userBags = $_pm['user']->getUserBagById($uid);
 
 /*$user     = $_pm['user']->getUserById(26);
 $userBags = $_pm['user']->getUserBagById(26);*/
 //var_dump($user, $userBags);
 if (is_array($user) && is_array($userBags)) {
     $userProps = new UserProps($userBags);
-    //var_dump($userProps);
-    if ($act == 'move') {
-        // check whether the depot is full, if there is no space in depot,
-        // break at here, and return a message
-        if ($userProps->getDepotPropsLength() >= $user['maxbase']) {
-			realseLock();
-            die('2');
-        }
-    }
     // check whether the props is in the playr's bag, if it is not in,
     // break at here, and return a message
     if (!$userProps->isPropsInBag($id)) {
@@ -209,8 +215,16 @@ if (is_array($user) && is_array($userBags)) {
     }
     // get the props in bag
     $propsInBag = $userProps->getPropsInBag($id);
+    if ($act == 'move' && intval($propsInBag['bsum']) <= 0) {
+        // check whether the depot is full, if there is no space in depot,
+        // break at here, and return a message
+        if ($userProps->getDepotPropsLength() >= $user['maxbase']) {
+			realseLock();
+            die('2');
+        }
+    }
     // if the two operation's time spacing is less than 5 seconds, do nothing.
-    if (isset($_SESSION['propsMoveTime']) 
+    if (isset($_SESSION['propsMoveTime'])
         && getOperationTimeSpace() < MOVE_TIME_SPACE) {
 		realseLock();
         die('4');
@@ -219,11 +233,18 @@ if (is_array($user) && is_array($userBags)) {
     switch($act) {
     case 'move':
         // move props from bag to depot
-        if (movePropsInBag2Depot($propsInBag)) {
+        if (movePropsInBag2Depot($propsInBag, $uid)) {
+            if (!$_pm['mysql']->query('COMMIT')) {
+                $_pm['mysql']->query('ROLLBACK');
+				realseLock();
+				die('10');
+            }
             $_SESSION['propsMoveTime'] = time(); // record the moving time
+			$_pm['mem']->del(MEM_USERBAG_KEY);
 			realseLock();
             exit('0'); // operation success
         } else {
+			$_pm['mysql']->query('ROLLBACK');
 			realseLock();
             die('10'); // db operation failed.
         }
@@ -236,11 +257,23 @@ if (is_array($user) && is_array($userBags)) {
 			exit('100');
 			return;
 		}*/
-        if (dropPropsInBag($propsInBag)) {
+        $dropResult = dropPropsInBag($propsInBag, $uid);
+        if ($dropResult === 'locked') {
+			realseLock();
+            die('100'); // locked props can not be dropped.
+        }
+        if ($dropResult) {
+            if (!$_pm['mysql']->query('COMMIT')) {
+                $_pm['mysql']->query('ROLLBACK');
+				realseLock();
+				die('10');
+            }
             $_SESSION['propsMoveTime'] = time(); // record the moving time
+			$_pm['mem']->del(MEM_USERBAG_KEY);
 			realseLock();
             exit('0'); // operation success
         } else {
+			$_pm['mysql']->query('ROLLBACK');
 			realseLock();
             die('10'); // db operation failed.
         }

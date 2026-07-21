@@ -9,15 +9,17 @@
 
 require_once('../config/config.game.php');
 
-//define(TEAM_MSG_KEY,	'team_msg' . crc32(session_id()));
-
+//define('TEAM_MSG_KEY',	'team_msg' . crc32(session_id()));
 secStart($_pm['mem']);
+require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 
 
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('1');
+$user		= $_pm['user']->getUserById($uid);
+if(!is_array($user)) die('1');
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-
-$op = intval($_REQUEST['op']);
+$op = (isset($_REQUEST['op']) && !is_array($_REQUEST['op'])) ? intval($_REQUEST['op']) : 0;
 
 switch($op)
 
@@ -27,7 +29,7 @@ switch($op)
 
 	case 2: LMember();break;
 
-	
+
 
 }
 
@@ -41,9 +43,17 @@ function LMember()
 
 	global $user;
 
-	$team = new team();
-
-	$team->outTeam($user['id']);
+	$s = new socketmsg();
+	$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+	$team = new team($teamId, $s);
+	$team->checkMyTeam();
+	$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+	if($teamId > 0)
+	{
+		if($team->isTeamLeader($user['id'], $teamId)) $result=$team->disbandTeam();
+		else $result=$team->leaveTeam();
+		if($result!==true) die($result);
+	}
 
 	die('10');
 
@@ -59,23 +69,33 @@ function vMember()
 
 	global $_pm, $user;
 
-	$team = new team();
+	$s = new socketmsg();
+	$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+	$team = new team($teamId, $s);
+	$team->checkMyTeam();
 
 
 
-	if (strlen(trim($_REQUEST['u'])) < 3 && $_REQUEST['u']!='GM') return false;
+	$requestUserName = (isset($_REQUEST['u']) && !is_array($_REQUEST['u'])) ? $_REQUEST['u'] : '';
+	if (strlen(trim($requestUserName)) < 3 && $requestUserName!='GM') return false;
 
-	$userName = $_pm['mysql']->escape($_REQUEST['u']);
-
-	
-
-	if ($user['openteam']!=0 && $user['openteam']!=999999999) {die('您不是队长，不能邀请玩家！');return false;}
+	$userName = $_pm['mysql']->escape($requestUserName);
+	$userNameHtml = htmlspecialchars($requestUserName, ENT_QUOTES, 'UTF-8');
 
 
 
-	$rs = $_pm['mysql']->getOneRecord("SELECT id,lastvtime,online,openteam
+	if(!isset($_SESSION['team_id']) || intval($_SESSION['team_id']) < 1)
+	{
+		$rsCreate = $team->createTeam();
+		if($rsCreate !== true) die($rsCreate);
+		$team = new team(intval($_SESSION['team_id']), $s);
+	}
 
-										 FROM player 
+
+
+	$rs = $_pm['mysql']->getOneRecord("SELECT id,lastvtime
+
+										 FROM player
 
 										WHERE nickname='{$userName}'");
 
@@ -83,45 +103,13 @@ function vMember()
 
 
 
-	if ($rs['openteam'] != 0) die("玩家 {$userName} 已经有队伍！");
-
-	else if ($rs['lastvtime']+300 < time()) die("玩家 {$userName} 当前不在线！");
+	if ($rs['lastvtime']+300 < time()) die("玩家 {$userNameHtml} 当前不在线！");
 
 	else
 
 	{
-
-		// 写入邀请组队标记。
-
-		$key = crc32($userName);
-
-		$key = $key<1?1-$key-1:$key;
-
-		$_pm['mem']->set(array('k' =>$key ,'v'=> array($_SESSION['nickname'],$userName)));
-
-
-
-		$team->addTeamMember($user['id'], $rs['id']);	//	建立队伍信息。
-
-		// 更新队长信息。
-
-		$_pm['mysql']->query("UPDATE player
-
-								 SET openteam=999999999 
-
-							   WHERE id={$user['id']}
-
-							 ");
-
-		// 更新成员信息。
-
-		$_pm['mysql']->query("UPDATE player
-
-								 SET openteam={$user['id']} 
-
-							   WHERE id={$rs['id']}");
-
-		
+		$ret = $team->inviteTeam(intval($rs['id']));
+		if($ret !== true) die($ret);
 
 		die('1');
 

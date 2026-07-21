@@ -1,17 +1,59 @@
 <?php
 session_start();
 require_once('../config/config.game.php');
-//$_pm['mem']->set(array('k'=>'BAN_CARD_USER_'.$_SESSION['username'],'v'=>'0'));
-$ban_user=unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1)
+{
+	die('登录状态已失效，请重新登录！');
+}
+if(!$_pm['mysql']->query("INSERT INTO player_ext(uid,bbshow) VALUES({$uid},5) ON DUPLICATE KEY UPDATE uid=uid"))
+{
+	die('初始化玩家卡片数据失败！');
+}
+if(!isset($_SESSION['now_Achievement_title'])) $_SESSION['now_Achievement_title'] = '';
+function kdjlCardBanCount($username)
+{
+	global $_pm;
+	if($username === '') return 0;
+	$raw = $_pm['mem']->get('BAN_CARD_USER_'.$username);
+	if($raw === false || $raw === null || $raw === '') return 0;
+	if(is_numeric($raw)) return intval($raw);
+	if(!is_string($raw)) return 0;
+	$parsed = @unserialize($raw);
+	return is_numeric($parsed) ? intval($parsed) : 0;
+}
+function kdjlCardBanAdd($username)
+{
+	global $_pm;
+	if($username === '') return 0;
+	$num = kdjlCardBanCount($username) + 1;
+	$_pm['mem']->set(array('k'=>'BAN_CARD_USER_'.$username,'v'=>$num));
+	return $num;
+}
+function cardModHtml($value)
+{
+	return htmlspecialchars(strval($value), ENT_QUOTES);
+}
+function cardModImage($value)
+{
+	$value = basename(strval($value));
+	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
+}
+$cardBanUsername = isset($_SESSION['username']) ? $_SESSION['username'] : '';
+$ban_user = kdjlCardBanCount($cardBanUsername);
 if( $ban_user  >= 10  )
 {
 	die("卡片系统不对恶意用户开放,请联系管理员！！！");
 }
 require_once('get_para_verify.php');
 foreach( $_GET as $key => $val )
-{	
+{
 	$verify = true;
-	switch ($key)
+	if(is_array($val))
+	{
+		$verify = false;
+	}
+	else switch ($key)
 	{
 		case 'select_map' :
 		{
@@ -35,40 +77,27 @@ foreach( $_GET as $key => $val )
 	}
 	if( !$verify )
 	{
-		echo "你的帐号<font color = 'blue'>".$_SESSION['username']."</font>";
-		$ban_user=unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
-		if( $ban_user )
-		{
-			$bad_num =$ban_user + 1;
-		}
-		else
-		{
-			$bad_num  = 1;
-		}
-		$_pm['mem']->set(array('k'=>'BAN_CARD_USER_'.$_SESSION['username'],'v'=>$bad_num));
-		$bad_transport_time = unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
+		echo "你的帐号<font color = 'blue'>".$cardBanUsername."</font>";
+		$bad_transport_time = kdjlCardBanAdd($cardBanUsername);
 		echo "恶意传参次数:".$bad_transport_time.",超过10次会自动被永久封号，请注意！！！<br>";
-		die("非法传参数4");			
+		die("非法传参数4");
 	}
 }
 foreach( $_GET as $key => $val )
 {
+	if(is_array($val))
+	{
+		echo "你的帐号<font color = 'blue'>".$cardBanUsername."</font>";
+		$bad_transport_time = kdjlCardBanAdd($cardBanUsername);
+		echo "恶意传参次数:".$bad_transport_time.",超过10次会自动被永久封号，请注意！！！<br>";
+		die("非法传参数4");
+	}
 	if($key == 'select_map')
 	{
-		if( !get_para_verify($val) )
+		if( !get_para_verify_map($val) )
 		{
-			echo "你的帐号<font color = 'blue'>".$_SESSION['username']."</font>";
-			$ban_user=unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
-			if( $ban_user )
-			{
-				$bad_num =$ban_user + 1;
-			}
-			else
-			{
-				$bad_num  = 1;
-			}
-			$_pm['mem']->set(array('k'=>'BAN_CARD_USER_'.$_SESSION['username'],'v'=>$bad_num));
-			$bad_transport_time = unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
+			echo "你的帐号<font color = 'blue'>".$cardBanUsername."</font>";
+			$bad_transport_time = kdjlCardBanAdd($cardBanUsername);
 			echo "恶意传参次数:".$bad_transport_time.",超过10次会自动被永久封号，请注意！！！<br>";
 			die("非法传参数3");
 		}
@@ -76,27 +105,43 @@ foreach( $_GET as $key => $val )
 }
 $sql = " SELECT * FROM T_Card_Type ";
 $result_card_select = $_pm['mysql']->getRecords($sql);
+if(!is_array($result_card_select)) $result_card_select = array();
 $sql = " SELECT * FROM T_Card_to_Title order by id ";
 $result = $_pm['mysql']->getRecords($sql);
+if(!is_array($result)) $result = array();
 $title_num = 0;
-$sql = " SELECT F_Has_Title FROM player_ext WHERE uid = '".$_SESSION['id']."'";
+$user_has_title = array();
+$sql = " SELECT F_Has_Title FROM player_ext WHERE uid = '{$uid}'";
 $result_user_has_title = $_pm['mysql']->getOneRecord($sql);
+if(!is_array($result_user_has_title)) $result_user_has_title = array('F_Has_Title' => '');
+$sql = " SELECT now_Achievement_title FROM player_ext WHERE uid = '{$uid}'";
+$result_now_title = $_pm['mysql']->getOneRecord($sql);
+if(!is_array($result_now_title)) $result_now_title = array('now_Achievement_title' => '');
+$_SESSION['now_Achievement_title'] = isset($result_now_title['now_Achievement_title']) ? $result_now_title['now_Achievement_title'] : '';
 if( !empty($result_user_has_title['F_Has_Title']) )
 {
-	$user_has_title = explode(',',$result_user_has_title['F_Has_Title']);
+	$titleIds = explode(',',$result_user_has_title['F_Has_Title']);
+	foreach($titleIds as $titleId)
+	{
+		$titleId = intval($titleId);
+		if($titleId > 0) $user_has_title[$titleId] = $titleId;
+	}
 }
 ?>
 <?php
-if($_GET['view'] != 'list' && $_GET['view'] != 'title_use'  && !$_GET['cmd'] && !$_GET['prize'] )
+$view = (isset($_GET['view']) && !is_array($_GET['view'])) ? $_GET['view'] : '';
+$cmd = (isset($_GET['cmd']) && !is_array($_GET['cmd'])) ? $_GET['cmd'] : '';
+$prize = (isset($_GET['prize']) && !is_array($_GET['prize'])) ? $_GET['prize'] : '';
+if($view != 'list' && $view != 'title_use'  && !$cmd && !$prize )
 {
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=gbk" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>无标题文档</title>
 <style type="text/css">
-body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none} 
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none}
 .con{display:none;}
 .task{width:788px;height:319px;background:#f2ebc5; color:#B06A01; font-size:12px; background:url(../images/ui/card/bg.jpg);}
 .task_right{width:763px; height:319px;float:left; padding-left:25px;}
@@ -107,9 +152,9 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .task_nav li.on .a01{background:url(../images/ui/card/mkz.jpg) no-repeat 0 -29px;height:29px;}
 .a02{background:url(../images/ui/card/mkz.jpg) no-repeat -90px 0;height:29px;}
 .task_nav li.on .a02{background:url(../images/ui/card/mkz.jpg) no-repeat -90px -29px;height:29px;}
-.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }  
-.clearfix{zoom:1;}  
-ol,ul {list-style:none} 
+.clearfix:after {content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.clearfix{zoom:1;}
+ol,ul {list-style:none}
 
 
 .dt_task{width:763px;height:auto; overflow:auto;}
@@ -152,37 +197,37 @@ function getPrize()
 	Mod_iframe.location="card_Mod_Request.php?cmd=getprize";
 }
 function get_radio_value(field)
-{ 
+{
 	var has = 0;
 	if( field.value )
-	{	
-		window.location="card_Mod.php?usetitle="+field.value; 
+	{
+		window.location="card_Mod.php?usetitle="+field.value;
 	}
     if (field && field.length)
-	{ 
+	{
         for (var i = 0; i < field.length; i++)
-		{ 
+		{
             if (field[i].checked)
-			{  
+			{
 				has = 1;
-                window.location="card_Mod.php?usetitle="+field[i].value; 
-            } 
-        } 
+                window.location="card_Mod.php?usetitle="+field[i].value;
+            }
+        }
 		if( has == 0 )
 		{
 			alert("请先选择一个获得的称号哦！");
 			return false;
 		}
-		
+
     }
 	else
-	{ 
-        return;     
+	{
+        return;
     }
-} 
+}
 function unuse()
 {
-	window.location="card_Mod.php?usetitle=unuse_title"; 
+	window.location="card_Mod.php?usetitle=unuse_title";
 }
 </script>
 </head>
@@ -194,19 +239,19 @@ function unuse()
     <li id="tab1" onclick="setTab('tab',1,2)" class="on"><a class="a01" href="javascript:void(0)"></a></li>
     <li id="tab2" onclick="setTab('tab',2,2)"><a class="a02" href="javascript:void(0)"></a></li>
     </ul>
-    	<div class="dt_task" id="con_tab_1" >
-       		<div class="dt_map">
-       		  <table width="250" border="0" cellspacing="0" cellpadding="0">
+	<div class="dt_task" id="con_tab_1" >
+		<div class="dt_map">
+		  <table width="250" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td width="63" height="24">选择地图</td>
                   <td width="187"><label>
-					<select id="select_map" onchange="ChangeMap()">'+'<?php foreach( $result_card_select as $info ){?><option value="<?php echo $info['F_Class_Name']; ?>"><?php echo $info['F_Class_Name']; ?></option><?php }?>
+					<select id="select_map" onchange="ChangeMap()"><?php foreach( $result_card_select as $info ){?><option value="<?php echo $info['F_Class_Name']; ?>"><?php echo $info['F_Class_Name']; ?></option><?php }?>
 					</select>
 
                   </label></td>
                 </tr>
               </table>
-       		</div>
+		</div>
 			<div class="dt_box">
 			  <iframe name="Mod_iframe" src="card_Mod_Request.php?view=list&select_map=新手基地" width="720px" height="200px" title="卡片系统"></iframe>
 			</div>
@@ -214,16 +259,16 @@ function unuse()
 			  <table width="600" border="0" cellspacing="0" cellpadding="0">
                 <tr>
 
-	
+
 		<td width="81"><img src="../images/ui/card/cion01.jpg" width="69" height="17" onclick="getPrize() "/></td>
 		<td width="519">满足一定的条件就能得到丰厚的奖励哦！</td>
                 </tr>
               </table>
 			</div>
         </div>
- 
+
         <div class="dt_task con" id="con_tab_2" >
-        	<div class="dt_box02">
+	<div class="dt_box02">
 				<div class="dt_title">
 				  <table width="730" border="0" cellspacing="0" cellpadding="0">
                     <tr>
@@ -322,7 +367,7 @@ function unuse()
 				{
 					$introduction .= "减少#".$key."#:".$val." ";
 				}
-				
+
 			}
 		}
 		if( $introduction == '' )
@@ -330,48 +375,54 @@ function unuse()
 			$introduction = "称号效果稍后开放，敬请期待";
 		}
 		$introduction = str_replace($arr_title_name,$arr_title_chinaesename,$introduction);
+		$titleKey = isset($info['F_title_name']) ? $info['F_title_name'] : '';
+		$titleIdAttr = preg_replace('/[^A-Za-z0-9_-]/', '', $titleKey);
+		if($titleIdAttr === '') $titleIdAttr = 'title_'.intval(isset($info['id']) ? $info['id'] : 0);
+		$titleNameHtml = cardModHtml($titleKey);
+		$titleImg = cardModImage(isset($info['F_title_img']) ? $info['F_title_img'] : '');
+		$titleChineseHtml = cardModHtml(isset($info['F_title_Chinese']) ? $info['F_title_Chinese'] : '');
+		$titleMethodsHtml = cardModHtml(isset($info['F_title_get_methods']) ? $info['F_title_get_methods'] : '');
+		$introductionHtml = cardModHtml($introduction);
 		if( empty($result_user_has_title['F_Has_Title']) )
 		{
-			$echo_td_title = '<tr id ="TR_ID'.$info['F_title_name'].'">
+			$echo_td_title = '<tr id ="TR_ID'.$titleIdAttr.'">
 		<td width="5%"></td>
-		<td width="5%"><img src="../images/Achievement_title/'.$info['F_title_img'].'"</img></td>
-		<td width="15%" style="color:#999999";>'.$info['F_title_Chinese'].'</td>
-		<td width="25%" style="color:#999999";>'.$info['F_title_get_methods'].'</td>
-		<td width="40%" style="color:#999999";>'.$introduction.'</td>
+		<td width="5%"><img src="../images/Achievement_title/'.$titleImg.'" /></td>
+		<td width="15%" style="color:#999999";>'.$titleChineseHtml.'</td>
+		<td width="25%" style="color:#999999";>'.$titleMethodsHtml.'</td>
+		<td width="40%" style="color:#999999";>'.$introductionHtml.'</td>
 	</tr>';
 			echo $echo_td_title;
 		}
 		else
 		{
 			$title_num = 1;
-			$echo_td_title = '<tr id ="TR_ID'.$info['F_title_name'].'">
+			$echo_td_title = '<tr id ="TR_ID'.$titleIdAttr.'">
 		<td width="5%"></td>
-		<td width="5%"><img src="../images/Achievement_title/'.$info['F_title_img'].'"</img></td>
-		<td width="15%" style="color:#999999";>'.$info['F_title_Chinese'].'</td>
-		<td width="25%" style="color:#999999";>'.$info['F_title_get_methods'].'</td>
-		<td width="40%" style="color:#999999";>'.$introduction.'</td>
+		<td width="5%"><img src="../images/Achievement_title/'.$titleImg.'" /></td>
+		<td width="15%" style="color:#999999";>'.$titleChineseHtml.'</td>
+		<td width="25%" style="color:#999999";>'.$titleMethodsHtml.'</td>
+		<td width="40%" style="color:#999999";>'.$introductionHtml.'</td>
 	</tr>';
-			if( in_array($info['id'],$user_has_title) )
+				if( isset($user_has_title[intval($info['id'])]) )
 			{
-				$sql = " SELECT now_Achievement_title FROM player_ext WHERE uid = '".$_SESSION['id']."'";
-				$result_now_title = $_pm['mysql']->getOneRecord($sql);
-				$echo_td_title = '<tr id ="TR_ID'.$info['F_title_name'].'">
-		<td width="5%"><input type="radio" name="title_use" value="'.$info['F_title_name'].'" ></td>
-		<td width="5%"><img src="../images/Achievement_title/'.$info['F_title_img'].'"</img></td>
-		<td width="15%">'.$info['F_title_Chinese'].'</td>
-		<td width="25%">'.$info['F_title_get_methods'].'</td>
-		<td width="40%">'.$introduction.'</td>
+				$echo_td_title = '<tr id ="TR_ID'.$titleIdAttr.'">
+		<td width="5%"><input type="radio" name="title_use" value="'.$titleNameHtml.'" ></td>
+		<td width="5%"><img src="../images/Achievement_title/'.$titleImg.'" /></td>
+		<td width="15%">'.$titleChineseHtml.'</td>
+		<td width="25%">'.$titleMethodsHtml.'</td>
+		<td width="40%">'.$introductionHtml.'</td>
 	</tr>';
 				if ( $info['F_title_name'] == $result_now_title['now_Achievement_title'] )
 				{
-					$echo_td_title = '<tr id ="TR_ID'.$info['F_title_name'].'" style="background:green">
-		<td width="5%"><input type="radio" name="title_use" value="'.$info['F_title_name'].'"   checked = "true" ></td>
-		<td width="5%"><img src="../images/Achievement_title/'.$info['F_title_img'].'"</img></td>
-		<td width="15%">'.$info['F_title_Chinese'].'</td>
-		<td width="25%">'.$info['F_title_get_methods'].'</td>
-		<td width="40%">'.$introduction.'</td>
+					$echo_td_title = '<tr id ="TR_ID'.$titleIdAttr.'" style="background:green">
+		<td width="5%"><input type="radio" name="title_use" value="'.$titleNameHtml.'"   checked = "true" ></td>
+		<td width="5%"><img src="../images/Achievement_title/'.$titleImg.'" /></td>
+		<td width="15%">'.$titleChineseHtml.'</td>
+		<td width="25%">'.$titleMethodsHtml.'</td>
+		<td width="40%">'.$introductionHtml.'</td>
 	</tr>';
-				}			
+				}
 			}
 			echo $echo_td_title;
 		}
@@ -381,31 +432,23 @@ function unuse()
 	</tr>
 	<?php
 	}
-	if ( $_GET['usetitle'] )
+		if ( isset($_GET['usetitle']) && !is_array($_GET['usetitle']) && $_GET['usetitle'] )
 	{
-		$sql = " SELECT id FROM T_Card_to_Title WHERE  F_title_name = '".$_GET['usetitle']."'"; 
+		$requestUseTitle = (isset($_GET['usetitle']) && !is_array($_GET['usetitle'])) ? $_GET['usetitle'] : '';
+		$safeUseTitle = $_pm['mysql']->escape($requestUseTitle);
+		$sql = " SELECT id FROM T_Card_to_Title WHERE  F_title_name = '".$safeUseTitle."'";
 		$result_get_para = $_pm['mysql']->getOneRecord($sql);
-		if( !in_array($result_get_para['id'],$user_has_title) || !isset($user_has_title) )
+		if( !is_array($result_get_para) || !isset($result_get_para['id']) || !isset($user_has_title[intval($result_get_para['id'])]) )
 		{
-			if ($_GET['usetitle'] != 'unuse_title' )
+			if ($requestUseTitle != 'unuse_title' )
 			{
-				echo "你的帐号<font color = 'blue'>".$_SESSION['username']."</font>";
-				$ban_user=unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
-				if( $ban_user )
-				{
-					$bad_num =$ban_user + 1;
-				}
-				else
-				{
-					$bad_num  = 1;
-				}
-				$_pm['mem']->set(array('k'=>'BAN_CARD_USER_'.$_SESSION['username'],'v'=>$bad_num));
-				$bad_transport_time = unserialize($_pm['mem']->get('BAN_CARD_USER_'.$_SESSION['username']));
+				echo "你的帐号<font color = 'blue'>".$cardBanUsername."</font>";
+				$bad_transport_time = kdjlCardBanAdd($cardBanUsername);
 				echo "恶意传参次数:".$bad_transport_time.",超过10次会被永久封号，请注意！！！<br>";
 				die("非法传参数2");
 			}
 		}
-		if ($_GET['usetitle'] == 'unuse_title' && isset($result_now_title['now_Achievement_title'])  )
+		if ($requestUseTitle == 'unuse_title' && isset($result_now_title['now_Achievement_title'])  )
 		{
 			if( $_SESSION['now_Achievement_title'] != "" )
 			{
@@ -419,22 +462,24 @@ function unuse()
 				}
 				</script>
 			<?php
-				
-				$_SESSION['now_Achievement_title'] = "";
-				$sql = " UPDATE player_ext SET now_Achievement_title = '' WHERE uid ='".$_SESSION['id']."'";
+
+				$sql = " UPDATE player_ext SET now_Achievement_title = '' WHERE uid ='{$uid}'";
 				$result_unuse_title = $_pm['mysql']->query($sql);
 				if( $result_unuse_title )
 				{
+					$_SESSION['now_Achievement_title'] = '';
+					$_SESSION['now_Achievement_title_chinese'] = '';
 				?>
 					<script language="javascript">
 					unset_title();
 				</script>
 				<?php
-					$petsAll	= $_pm['user']->getUserPetById($_SESSION['id']);
+					$petsAll	= $_pm['user']->getUserPetById($uid);
+					if(!is_array($petsAll)) $petsAll = array();
 					foreach ( $petsAll as $info )
 					{
 						getzbAttrib($info['id']);
-						$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$_SESSION['id'],"v"=>1));
+						$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$uid,"v"=>1));
 					}
 				}
 				else
@@ -457,10 +502,10 @@ function unuse()
 				}
 			}
 		}
-		if ($_GET['usetitle'] != 'unuse_title')
+		if ($requestUseTitle != 'unuse_title')
 		{
-			$use_title_now = $_GET['usetitle'];
-			$sql = " UPDATE player_ext SET now_Achievement_title = '".$use_title_now."' WHERE uid ='".$_SESSION['id']."'";
+			$use_title_now = $requestUseTitle;
+			$sql = " UPDATE player_ext SET now_Achievement_title = '".$safeUseTitle."' WHERE uid ='{$uid}'";
 			unset($_GET['usetitle']);
 			$result_change_title = $_pm['mysql']->query($sql);
 			if( $result_change_title && $result_now_title['now_Achievement_title'] && !empty($result_now_title['now_Achievement_title']) && $use_title_now )
@@ -478,18 +523,26 @@ function unuse()
 			</script>
 			<?php
 				$_SESSION['now_Achievement_title'] = $use_title_now;
-				$sql = " SELECT F_title_Chinese FROM T_Card_to_Title WHERE F_title_name =  '".$use_title_now."'";
+				$sql = " SELECT F_title_Chinese FROM T_Card_to_Title WHERE F_title_name =  '".$safeUseTitle."'";
 				$result_title_chinese = $_pm['mysql']->getOneRecord($sql);
-				$_SESSION['now_Achievement_title_chinese'] = $result_title_chinese['F_title_Chinese'];
-				$petsAll	= $_pm['user']->getUserPetById($_SESSION['id']);
+				if(is_array($result_title_chinese) && isset($result_title_chinese['F_title_Chinese']))
+				{
+					$_SESSION['now_Achievement_title_chinese'] = $result_title_chinese['F_title_Chinese'];
+				}
+				else
+				{
+					$_SESSION['now_Achievement_title_chinese'] = '';
+				}
+				$petsAll	= $_pm['user']->getUserPetById($uid);
+				if(!is_array($petsAll)) $petsAll = array();
 				foreach ( $petsAll as $info )
 				{
 					getzbAttrib($info['id']);
-					$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$_SESSION['id'],"v"=>1));
+					$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$uid,"v"=>1));
 				}
-			}
-			else
-			{
+				}
+				else
+				{
 				if ( $result_change_title && empty($result_now_title['now_Achievement_title'])  && $use_title_now )
 				{
 				?>
@@ -504,18 +557,26 @@ function unuse()
 					</script>
 				<?php
 					$_SESSION['now_Achievement_title'] = $use_title_now;
-					$sql = " SELECT F_title_Chinese FROM T_Card_to_Title WHERE F_title_name =  '".$use_title_now."'";
+					$sql = " SELECT F_title_Chinese FROM T_Card_to_Title WHERE F_title_name =  '".$safeUseTitle."'";
 					$result_title_chinese = $_pm['mysql']->getOneRecord($sql);
+					if(is_array($result_title_chinese) && isset($result_title_chinese['F_title_Chinese']))
+				{
 					$_SESSION['now_Achievement_title_chinese'] = $result_title_chinese['F_title_Chinese'];
-					
-					$petsAll	= $_pm['user']->getUserPetById($_SESSION['id']);
+				}
+				else
+				{
+					$_SESSION['now_Achievement_title_chinese'] = '';
+				}
+
+					$petsAll	= $_pm['user']->getUserPetById($uid);
+					if(!is_array($petsAll)) $petsAll = array();
 					foreach ( $petsAll as $info )
 					{
 						getzbAttrib($info['id']);
-						$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$_SESSION['id'],"v"=>1));
+						$_pm['mem']->set(array("k"=>"User_bb_equip_changed_".$info['id'].'_'.$uid,"v"=>1));
 					}
 				}
-			}
+				}
 		}
 		unset($result_change_title);
 	}

@@ -13,14 +13,24 @@ class user
 
 	function __construct(){
 		global $_pm;
-		if (!is_array($_pm) || 
-			!is_object($_pm['mysql']) || 
+		if (!is_array($_pm) ||
+			!is_object($_pm['mysql']) ||
 			!is_object($_pm['mem'])
 			)
 		return false;
 
 		$this-> m_db = &$_pm['mysql'];
 		$this-> m_m	 = &$_pm['mem'];
+	}
+
+	private function memValue($key, $default=false)
+	{
+		$value = $this->m_m->get($key);
+		if ($value === false || $value === null || $value === '') return $default;
+		if (!is_string($value)) return $value;
+		$parsed = @unserialize($value);
+		if ($parsed === false && $value !== serialize(false)) return $default;
+		return $parsed;
 	}
 
 	/**
@@ -33,15 +43,27 @@ class user
 		{
 			if ($type =='int')
 			{
-				if (intval($value)<1) return false;
+				$values = is_array($value) ? $value : array($value);
+				foreach ($values as $oneValue)
+				{
+					if (intval($oneValue)<1) return false;
+				}
 			}
 			else if($type =='string')
 			{
-				if (empty($value) || $value=='' || strlen($value)<1) return false;
+				$values = is_array($value) ? $value : array($value);
+				foreach ($values as $oneValue)
+				{
+					if (empty($oneValue) || $oneValue=='' || strlen($oneValue)<1) return false;
+				}
 			}
 			else if($type == 'object')
 			{
-				if (!is_object($value)) return false;
+				$values = is_array($value) ? $value : array($value);
+				foreach ($values as $oneValue)
+				{
+					if (!is_object($oneValue)) return false;
+				}
 			}
 			else if($type == 'array')
 			{
@@ -58,6 +80,8 @@ class user
 	*/
 	public function getUserById($id, $field='*')
 	{
+		$id = intval($id);
+		if($field !== '*' && !preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*$/D', $field)) return false;
 		if ($this->check(array('int' => $id,'string' => $field)) === true)
 		{
 			$rs = $this->m_db->getOneRecord("SELECT {$field} FROM player WHERE id={$id} LIMIT 0,1");
@@ -65,21 +89,21 @@ class user
 			return $rs;
 		}else return false;
 	}
-	
+
 	/**
 	@ From memory get user info.
 	*/
 	public function mgetUserById()
 	{
-		if (!defined(MEM_USER_KEY))
-			define(MEM_USER_KEY, $_SESSION['id']. 'user');
-		return unserialize($this->m_m->get(MEM_USER_KEY));
+		if (!defined('MEM_USER_KEY'))
+			define('MEM_USER_KEY', $_SESSION['id']. 'user');
+		return $this->memValue(MEM_USER_KEY, false);
 	}
 
 	public function msetUserById($value)
 	{
-		if (!defined(MEM_USER_KEY))
-			define(MEM_USER_KEY, $_SESSION['id']. 'user');
+		if (!defined('MEM_USER_KEY'))
+			define('MEM_USER_KEY', $_SESSION['id']. 'user');
 		$this->m_m->set(array('k' =>MEM_USER_KEY, 'v' => $value));
 		unset($value);
 	}
@@ -102,6 +126,7 @@ class user
 	*/
 	public function getUserPetById($id)
 	{
+		$id = intval($id);
 		if ($this->check(array('int' => $id)) === true)
 		{
 			$rs = $this->m_db->getRecords("SELECT *
@@ -116,16 +141,18 @@ class user
 		}
 		return false;
 	}
-	
+
 	/**
 	@ Get user pets by id
 	*/
 	public function getUserPetByIdS($uid,$id)
 	{
-		if(intval($uid)<1||intval($id)<1) return false;
+		$uid = intval($uid);
+		$id = intval($id);
+		if($uid<1 || $id<1) return false;
 		$rs = $this->m_db->getOneRecord("SELECT *
 										 FROM userbb
-										WHERE uid={$uid} and id ={$id} 
+										WHERE uid={$uid} and id ={$id}
 										ORDER BY level DESC
 									 ");
 		if (is_array($rs))
@@ -140,15 +167,15 @@ class user
 	*/
 	public function mgetUserPetById()
 	{
-		if (!defined(MEM_USERBB_KEY))
-			define(MEM_USERBB_KEY, $_SESSION['id']. 'bb');
-		return unserialize($this->m_m->get(MEM_USERBB_KEY));
+		if (!defined('MEM_USERBB_KEY'))
+			define('MEM_USERBB_KEY', $_SESSION['id']. 'bb');
+		return $this->memValue(MEM_USERBB_KEY, false);
 	}
 
 	public function msetUserPetById($value)
 	{
-		if (!defined(MEM_USERBB_KEY))
-			define(MEM_USERBB_KEY, $_SESSION['id']. 'bb');
+		if (!defined('MEM_USERBB_KEY'))
+			define('MEM_USERBB_KEY', $_SESSION['id']. 'bb');
 		$this->m_m->set(array('k' =>MEM_USERBB_KEY, 'v' => $value));
 		unset($value);
 	}
@@ -158,12 +185,13 @@ class user
 	*/
 	public function getUserPetSkillById($id)
 	{
+		$id = intval($id);
 		if ($this->check(array('int' => $id)) === true)
 		{
 			$rs = $this->m_db->getRecords("SELECT s.*,
 												  b.uid as uid
 											 FROM userbb as b, skill as s
-					 						WHERE b.uid={$id} and b.id=s.bid
+											WHERE b.uid={$id} and b.id=s.bid
 										 ");
 			if ($this->check(array('array' => $rs))===true)
 		    {
@@ -177,7 +205,10 @@ class user
 	*/
 	public function getUserPetSkillByIdS($uid,$id,$sid)
 	{
-		if(intval($uid)<1||intval($id)<1) return false;
+		$uid = intval($uid);
+		$id = intval($id);
+		$sid = intval($sid);
+		if($uid<1 || $id<1 || $sid<1) return false;
 		$rs = $this->m_db->getOneRecord("SELECT s.*,
 											  b.uid as uid
 										 FROM userbb as b, skill as s
@@ -187,7 +218,7 @@ class user
 		if (is_array($rs))
 		{
 		   return $rs;
-		}		
+		}
 		return false;
 	}
 
@@ -196,15 +227,15 @@ class user
 	*/
 	public function mgetUserPetSkillById()
 	{
-		if (!defined(MEM_USERSK_KEY))
-			define(MEM_USERSK_KEY, $_SESSION['id']. 'sk');
-		return unserialize($this->m_m->get(MEM_USERSK_KEY));
+		if (!defined('MEM_USERSK_KEY'))
+			define('MEM_USERSK_KEY', $_SESSION['id']. 'sk');
+		return $this->memValue(MEM_USERSK_KEY, false);
 	}
-    
+
 	public function msetUserPetSkillById($value)
 	{
-		if (!defined(MEM_USERSK_KEY))
-			define(MEM_USERSK_KEY, $_SESSION['id']. 'sk');
+		if (!defined('MEM_USERSK_KEY'))
+			define('MEM_USERSK_KEY', $_SESSION['id']. 'sk');
 		$this->m_m->set(array('k' =>MEM_USERSK_KEY, 'v' => $value));
 		unset($value);
 	}
@@ -214,15 +245,15 @@ class user
 	*/
 	public function mgetUserBagById()
 	{
-		if (!defined(MEM_USERBAG_KEY))
-			define(MEM_USERBAG_KEY, $_SESSION['id']. 'bag');
-		return unserialize($this->m_m->get(MEM_USERBAG_KEY));
+		if (!defined('MEM_USERBAG_KEY'))
+			define('MEM_USERBAG_KEY', $_SESSION['id']. 'bag');
+		return $this->memValue(MEM_USERBAG_KEY, false);
 	}
 
 	public function msetUserBagById($value)
 	{
-		if (!defined(MEM_USERBAG_KEY))
-			define(MEM_USERBAG_KEY, $_SESSION['id']. 'bag');
+		if (!defined('MEM_USERBAG_KEY'))
+			define('MEM_USERBAG_KEY', $_SESSION['id']. 'bag');
 		$this->m_m->set(array('k' =>MEM_USERBAG_KEY, 'v' => $value));
 		unset($value);
 	}
@@ -232,6 +263,8 @@ class user
 	*/
 	public function getUserBagById($id,$petId=0)
 	{
+		$id = intval($id);
+		$petId = intval($petId);
 		if ($this->check(array('int' => $id)) === true)
 		{
 			$rs = $this->m_db->getRecords("SELECT b.id as id,
@@ -252,7 +285,7 @@ class user
 												  p.effect as effect,
 												  p.requires as requires,
 												  p.usages as usages,
-							  					  p.sell as sell,
+												  p.sell as sell,
 												  p.img as img,
 												  p.expire as expire,
 												  p.pluseffect as pluseffect,
@@ -282,10 +315,12 @@ class user
 		}
 		return false;
 	}
-	
+
 	public function getUserItemById($uid,$id)
 	{
-		if ($this->check(array('int' => $id)) === true)
+		$uid = intval($uid);
+		$id = intval($id);
+		if ($this->check(array('int' => array($uid,$id))) === true)
 		{
 			$rs = $this->m_db->getOneRecord("SELECT b.id as id,
 												  b.uid as uid,
@@ -305,7 +340,7 @@ class user
 												  p.effect as effect,
 												  p.requires as requires,
 												  p.usages as usages,
-							  					  p.sell as sell,
+												  p.sell as sell,
 												  p.img as img,
 												  p.pluseffect as pluseffect,
 												  p.postion as postion,
@@ -327,11 +362,13 @@ class user
 		}
 		return false;
 	}
-	
-	
+
+
 	public function getUserBagItemById($uid,$id)
 	{
-		if ($this->check(array('int' => $id)) === true)
+		$uid = intval($uid);
+		$id = intval($id);
+		if ($this->check(array('int' => array($uid,$id))) === true)
 		{
 			$rs = $this->m_db->getOneRecord("SELECT b.id as id,
 												  b.uid as uid,
@@ -351,7 +388,7 @@ class user
 												  p.effect as effect,
 												  p.requires as requires,
 												  p.usages as usages,
-							  					  p.sell as sell,
+												  p.sell as sell,
 												  p.img as img,
 												  p.pluseffect as pluseffect,
 												  p.postion as postion,
@@ -373,29 +410,29 @@ class user
 		}
 		return false;
 	}
-	
-	
+
+
 	// Use db data update
 	public function updateMemUser($id)
 	{
 		if ($id == '' || $id<1) return false;
 		$this->msetUserById($this->getUserById($id));
 	}
-	
+
 	// update userbb
 	public function updateMemUserbb($id)
 	{
 		if ($id == '' || $id<1) return false;
 		$this->msetUserPetById($this->getUserPetById($id));
 	}
-	
+
 	// update userskill
 	public function updateMemUsersk($id)
 	{
 		if ($id == '' || $id<1) return false;
 		$this->msetUserPetSkillById($this->getUserPetSkillById($id));
 	}
-	
+
 	// update userskill
 	public function updateMemUserbag($id)
 	{

@@ -12,177 +12,148 @@
 @##############################################
 */
 require_once('../config/config.game.php');
+require_once('../sec/dblock_fun.php');
 
 secStart($_pm['mem']);
-$err = 0;
-$check = 1;
-//die('');
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$bags		= $_pm['user']->getUserBagById($_SESSION['id']);
 
-$bid = intval($_REQUEST['bid']); // table: props => id
-$n	 = intval($_REQUEST['n']); //购买数量
-
-if($n <= 0)
+function familyBuyFinish($code, $rollback, $clearBag)
 {
-	unLockItem($bid);
+	global $_pm;
+	if($rollback) $_pm['mysql']->query('ROLLBACK');
+	if($clearBag && defined('MEM_USERBAG_KEY')) $_pm['mem']->del(MEM_USERBAG_KEY);
+	realseLock();
+	$_pm['mem']->memClose();
+	die(strval($code));
+}
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$bid = (isset($_REQUEST['bid']) && !is_array($_REQUEST['bid'])) ? intval($_REQUEST['bid']) : 0;
+$n = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
+if($uid < 1 || $bid < 1 || $n < 1 || $n > 10)
+{
+	die('2');
+}
+if($_pm['user']->check(array('int' => array($bid, $n))) === false)
+{
+	die('2');
+}
+if(getLock($uid) === false)
+{
 	die('2');
 }
 
-if(lockItem($bid) === false)
+$user = $_pm['mysql']->getOneRecord("SELECT maxbag FROM player WHERE id={$uid} FOR UPDATE");
+$member = $_pm['mysql']->getOneRecord("SELECT guild_id,contribution,honor FROM guild_members WHERE member_id={$uid} FOR UPDATE");
+if(!is_array($user) || !is_array($member))
 {
-	die('已经在处理了！');
+	familyBuyFinish('3', true, false);
 }
 
-if ($_pm['user']->check(array('int' => $bid, 'int' => $n)) === false || $n>10){
-	unLockItem($bid);
-	die('2');
-}
-$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-$wp = is_array($mempropsid) && isset($mempropsid[$bid]) ? $mempropsid[$bid] : false;
-if(!is_array($wp) || (!$wp['honor'] && !$wp['contribution']) || $wp['buy'] != 0 /*|| $rs['guild_level'] <= 0*/)
+$guildId = isset($member['guild_id']) ? intval($member['guild_id']) : 0;
+$guild = $guildId > 0
+	? $_pm['mysql']->getOneRecord("SELECT shop_level FROM guild WHERE id={$guildId} FOR UPDATE")
+	: false;
+$wp = $_pm['mysql']->getOneRecord("SELECT id,vary,sell,buy,honor,contribution,guild_level FROM props WHERE id={$bid} FOR UPDATE");
+if(!is_array($guild) || !is_array($wp))
 {
-	unLockItem($bid);
-	die('3');
-}
-/*$wp= $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY, 
-					   'v' => "if(\$rs['id'] == '{$bid}' && \$rs['buy']>0 && \$rs['yb']==0 && \$rs['prestige']==0) \$ret=\$rs;"
-				 ));*/
-if (!is_array($wp)) {
-	unLockItem($bid);
-	die("3");
+	familyBuyFinish('3', true, false);
 }
 
-/*if ($wp['buy']==0 || 
-	$wp['id']==0 || 
-	$wp['varyname']==9 || 
-	intval($wp['yb'])>0) {
-	unLockItem($bid);
-	die("2");
-}*/
-
-// Get current bag props num.
-$bagnum = 0;
-if (is_array($bags))
+$vary = isset($wp['vary']) ? intval($wp['vary']) : 0;
+$sell = isset($wp['sell']) ? intval($wp['sell']) : -1;
+$buy = isset($wp['buy']) ? intval($wp['buy']) : 0;
+$honor = isset($wp['honor']) ? intval($wp['honor']) : 0;
+$contribution = isset($wp['contribution']) ? intval($wp['contribution']) : 0;
+$requiredLevel = isset($wp['guild_level']) ? intval($wp['guild_level']) : 0;
+$shopLevel = isset($guild['shop_level']) ? intval($guild['shop_level']) : 0;
+if(($vary != 1 && $vary != 2) || $sell < 0 || $buy != 0 ||
+	($honor <= 0 && $contribution <= 0) || $honor < 0 || $contribution < 0 ||
+	$requiredLevel > $shopLevel)
 {
-	foreach ($bags as $k => $v)
+	familyBuyFinish('3', true, false);
+}
+
+$priceHonor = $honor > 0 ? kdjlSafePositiveProduct($honor, $n) : 0;
+$priceContribution = $contribution > 0 ? kdjlSafePositiveProduct($contribution, $n) : 0;
+if($priceHonor === false || $priceContribution === false)
+{
+	familyBuyFinish('3', true, false);
+}
+$memberHonor = isset($member['honor']) ? intval($member['honor']) : 0;
+$memberContribution = isset($member['contribution']) ? intval($member['contribution']) : 0;
+if($priceContribution > $memberContribution)
+{
+	familyBuyFinish('10', true, false);
+}
+if($priceHonor > $memberHonor)
+{
+	familyBuyFinish('11', true, false);
+}
+
+$bagRows = $_pm['mysql']->getRecords("SELECT id,pid,vary,sums,cantrade FROM userbag
+	WHERE uid={$uid} AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)
+	ORDER BY id FOR UPDATE");
+if($bagRows === false) familyBuyFinish('3', true, false);
+if(!is_array($bagRows)) $bagRows = array();
+
+$stackId = 0;
+foreach($bagRows as $bagRow)
+{
+	if(!is_array($bagRow)) continue;
+	if($vary == 1 && intval($bagRow['pid']) == $bid && intval($bagRow['vary']) == 1 &&
+		(!isset($bagRow['cantrade']) || intval($bagRow['cantrade']) == 0) && $stackId < 1)
 	{
-		if ($v['sums']>0 && $v['zbing']==0) $bagnum++;
+		$stackId = intval($bagRow['id']);
 	}
-	unset($bags);
+}
+$neededSlots = ($vary == 2) ? $n : ($stackId > 0 ? 0 : 1);
+$maxbag = isset($user['maxbag']) ? intval($user['maxbag']) : 0;
+if($maxbag < 1 || count($bagRows) + $neededSlots > $maxbag)
+{
+	familyBuyFinish('4', true, false);
 }
 
-if( ($wp['vary']==2 && ($n+$bagnum)>$user['maxbag']) || 
-	(($bagnum+1) > $user['maxbag']) ) $err= 4;
+$paid = $_pm['mysql']->query("UPDATE guild_members
+	SET honor=COALESCE(honor,0)-{$priceHonor},contribution=COALESCE(contribution,0)-{$priceContribution}
+	WHERE member_id={$uid} AND guild_id={$guildId}
+	AND COALESCE(honor,0)>={$priceHonor} AND COALESCE(contribution,0)>={$priceContribution}");
+if(!$paid || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+{
+	familyBuyFinish('10', true, false);
+}
+
+$now = time();
+$purchaseOk = true;
+if($vary == 2)
+{
+	for($i=0; $i<$n; $i++)
+	{
+		$sql = "INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+			VALUES({$uid},{$bid},{$sell},{$vary},1,{$now})";
+		if(!$_pm['mysql']->query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+		{
+			$purchaseOk = false;
+			break;
+		}
+	}
+}
+else if($stackId > 0)
+{
+	$purchaseOk = $_pm['mysql']->query("UPDATE userbag SET sums=sums+{$n},stime={$now}
+		WHERE id={$stackId} AND uid={$uid} AND pid={$bid} AND vary=1 AND sums>0
+		AND sums<=2147483647-{$n} AND zbing=0 AND (cantrade IS NULL OR cantrade=0)");
+	if($purchaseOk && mysql_affected_rows($_pm['mysql']->getConn()) != 1) $purchaseOk = false;
+}
 else
 {
-
-	$member = "SELECT guild_id,contribution,honor FROM guild_members where member_id={$_SESSION['id']}";
-	$member_eve = $_pm['mysql']->getOneRecord($member);
-	$user['honor'] = $member_eve['honor'];
-	$user['contribution'] = $member_eve['contribution'];
-	$price1 = $wp['honor']*$n;
-	$price2 = $wp['contribution']*$n;
-	
-	if($wp['honor'] <= 0 && $wp['contribution'] > 0 && $price2 > $user['contribution'])
-	{
-		$err= 10; // Money too less.
-		$check = 2;
-	}
-	if($wp['contribution'] <= 0 && $wp['honor'] > 0 && $price1 > $user['honor'])
-	{
-		$err= 11;
-		$check = 2;
-	}
-	if($wp['contribution'] > 0 && $wp['honor'] > 0)
-	{
-		if($price1 > $user['honor'])
-		{
-			$err = 11;//您的荣誉点不够
-			$check = 2;
-		}
-		if($price2 > $user['contribution'])
-		{
-			$err = 10;
-			$check = 2;
-		}
-		
-	}
-	if($check == 1)// Money Max
-	{
-		$_pm['mysql']->query('START TRANSACTION');
-		$_pm['mysql']->query("UPDATE guild_members
-						   SET honor=honor-{$price1},contribution=contribution-{$price2}
-						 WHERE member_id={$_SESSION['id']} and honor >= {$price1} and contribution >= {$price2}");
-		if(mysql_affected_rows($_pm['mysql']->getConn()) != 1)
-		{
-			$_pm['mysql']->query('ROLLBACK');
-			$err = 10;
-		}
-		else if ($wp['vary']==2) //不能叠加
-		{
-			$purchaseOk = true;
-			for ($i=0; $i<$n; $i++) // Add to memory.
-			{
-			    //$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
-				if($_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-							VALUES(
-								   {$user['id']},
-								   {$bid},
-								   {$wp['sell']},
-								   {$wp['vary']},
-								   1,
-								   unix_timestamp()
-								  );
-						  ") === false) $purchaseOk = false;
-			}
-			if($purchaseOk) $_pm['mysql']->query('COMMIT');
-			else
-			{
-				$_pm['mysql']->query('ROLLBACK');
-				$err = 3;
-			}
-		}
-		else
-		{
-			$ret = $_pm['mysql']->getOneRecord("SELECT id 
-										FROM userbag
-									   WHERE uid={$_SESSION['id']} and pid={$bid}
-									   LIMIT 0,1
-									");
-			if (is_array($ret))
-			{
-				$purchaseOk = $_pm['mysql']->query("UPDATE userbag 
-							   SET sums=sums+{$n} 
-							 WHERE uid={$_SESSION['id']} and id={$ret['id']} and sums+{$n}>0
-						  ") !== false;
-			}
-			else //create new data
-			{
-				//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
-				$purchaseOk = $_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-							VALUES(
-								   {$user['id']},
-								   {$bid},
-								   {$wp['sell']},
-								   {$wp['vary']},
-								   {$n},
-								   ".time()."
-								  );
-						  ") !== false;					
-			}
-			if($purchaseOk) $_pm['mysql']->query('COMMIT');
-			else
-			{
-				$_pm['mysql']->query('ROLLBACK');
-				$err = 3;
-			}
-		}
-	}	// end inner else
+	$purchaseOk = $_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
+		VALUES({$uid},{$bid},{$sell},1,{$n},{$now})");
+	if($purchaseOk && mysql_affected_rows($_pm['mysql']->getConn()) != 1) $purchaseOk = false;
 }
-//$_pm['user']->updateMemUser($_SESSION['id']);
-//$_pm['user']->updateMemUserbag($_SESSION['id']);
-$_pm['mem']->memClose();
-echo $err;
-unLockItem($bid);
+
+if(!$purchaseOk || !$_pm['mysql']->query('COMMIT'))
+{
+	familyBuyFinish('3', true, false);
+}
+familyBuyFinish('0', false, true);
 ?>

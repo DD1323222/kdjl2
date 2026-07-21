@@ -29,7 +29,7 @@ a {
   <tr>
     <td width="140" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
       <tr>
-        <td><img src="../images/ui/king/hg04.gif" width="140" height="149"></td>
+        <td><img src="../images/king/hg04.gif" width="140" height="149"></td>
       </tr>
       <tr>
         <td height="176" align="left" valign="top" background="../images/ui/shop/gm02.gif"><div style="width:95%;padding:3px;color:#7a4f27; line-height:1.7;font-size:12px;margin-left:3px;height:150px; overflow:auto;scrollbar-face-color:#DFDABC;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#DFDABC;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#DFDABC;scrollbar-track-color:#DFDABC;scrollbar-arrow-color:#ffffff;">
@@ -69,7 +69,7 @@ a {
           </table>
 	  </div>
 	  
-	  <div id="tag3" style="position:absolute;left:363px;top:15px;z-index:4; color:#F1EABA;font-weight:bold">
+	  <div id="tag4" style="position:absolute;left:363px;top:15px;z-index:4; color:#F1EABA;font-weight:bold">
           <table width="100" border="0" cellspacing="0" cellpadding="0">
             <tr>
               <td width="12"><img src="../images/ui/shop/gm03.gif" width="12" height="25" /></td>
@@ -152,7 +152,8 @@ function prestige()
 		return false;
 	}
 	var opt = {
-    		 	method: 'get',
+			  method: 'post',
+				 parameters: 'num='+encodeURIComponent(num),
 				 onSuccess: function(t) {
 				 var n = parseInt(t.responseText);
 				 if(n == 1)
@@ -179,6 +180,6 @@ function prestige()
     		 	},
     		 	asynchronous:true        
 			}
-		var ajax=new Ajax.Request('../function/KinPrestigeGate.php?num='+num, opt);
+		var ajax=new Ajax.Request('../function/KinPrestigeGate.php', opt);
 }
 </script>

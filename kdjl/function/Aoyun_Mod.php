@@ -10,26 +10,30 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/aoyun_common.php');
 
 secStart($_pm['mem']);
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) exit;
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) exit;
+$king = '';
 
 //Word part.
-$timearr1 = unserialize($_pm['mem']->get(MEM_TIMENEW_KEY));
-$timearr = $timearr1['dati'];
-foreach($timearr as $k => $v)
-{
-	$dayarr = explode("-",$v['days']);
-}
+$timearr1 = kdjlSafeMemValue($_pm['mem']->get(MEM_TIMENEW_KEY), array());
+$timearr = (is_array($timearr1) && isset($timearr1['dati']) && is_array($timearr1['dati'])) ? $timearr1['dati'] : array();
+$aoyunActive = kdjlAoyunActiveWindow($timearr, time()) !== false;
 
-$taskword= taskcheck($user['task'],6);
+$taskword= taskcheck(isset($user['task']) ? $user['task'] : '',6);
 
 $rs = $_pm['mysql']->getOneRecord("SELECT times, result,oksum
 									 FROM aoyun_player
-									WHERE uid={$_SESSION['id']}
+									WHERE uid={$uid}
+								 ORDER BY id LIMIT 1
 								 ");
-if (is_array($rs) && $rs['times']>0 && $rs['result']==1)	//设置领奖激活。
+$oksum = is_array($rs) && isset($rs['oksum']) ? $rs['oksum'] : 0;
+if ($aoyunActive && is_array($rs) && isset($rs['times']) && isset($rs['result']) && $rs['times']>0 && $rs['result']==1)	//设置领奖激活。
 {
 	// in here add time limit.
 	$active="style='cursor:pointer;'";
@@ -38,11 +42,11 @@ else $active='';
 
 $welcome = memContent2Arr("db_welcome",'code');
 
-$a = $welcome['dati']['contents'];
+$a = (is_array($welcome) && isset($welcome['dati']['contents'])) ? $welcome['dati']['contents'] : '';
 if(empty($a))
 {
 	$rs = $_pm['mysql']->getOneRecord("SELECT contents from welcome where code='dati'");
-	$a = $rs['contents'];
+	$a = is_array($rs) && isset($rs['contents']) ? $rs['contents'] : '';
 }
 
 if(empty($a))
@@ -55,7 +59,7 @@ $tn = $_game['template'] . 'tpl_aoyun.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array(
 				 '#word#',
 				 '#active#',
@@ -65,8 +69,8 @@ if (file_exists($tn))
 	$des = array(
 				 $taskword,
 		         $active,
-				 $rs['oksum'],
-				 $a				 
+				 $oksum,
+				 $a
 				);
 	$king = str_replace($src, $des, $tpl);
 }

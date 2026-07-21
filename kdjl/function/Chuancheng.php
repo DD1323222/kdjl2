@@ -1,20 +1,43 @@
 <?php
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
-$uid = intval($_SESSION['id']);
-$type = isset($_REQUEST['type']) ? intval($_REQUEST['type']) : 0;
-$bid = isset($_REQUEST['bid']) ? intval($_REQUEST['bid']) : 0;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) exit;
+$type = (isset($_REQUEST['type']) && !is_array($_REQUEST['type'])) ? intval($_REQUEST['type']) : 0;
+$bid = (isset($_REQUEST['bid']) && !is_array($_REQUEST['bid'])) ? intval($_REQUEST['bid']) : 0;
+$ccTransactionActive = false;
+$ccLockedUserIds = array();
+
+function ccShutdown()
+{
+	global $_pm, $ccTransactionActive;
+	$error = error_get_last();
+	if(!is_array($error) || !in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR), true))
+	{
+		return;
+	}
+	if($ccTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$ccTransactionActive = false;
+	}
+}
+register_shutdown_function('ccShutdown');
 
 function ccFail($message, $rollback=false)
 {
-	global $_pm;
-	if ($rollback) $_pm['mysql']->query('ROLLBACK');
+	global $_pm, $ccTransactionActive;
+	if ($rollback || $ccTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$ccTransactionActive = false;
+	}
 	die($message);
 }
 
 function ccBegin($userIds)
 {
-	global $_pm;
+	global $_pm, $ccTransactionActive, $ccLockedUserIds;
 	$ids = array();
 	foreach ($userIds as $userId)
 	{
@@ -27,20 +50,35 @@ function ccBegin($userIds)
 	foreach ($ids as $userId) $values[] = '('.$userId.',0)';
 	$_pm['mysql']->query('INSERT IGNORE INTO `lock` (uid,lockvalue) VALUES '.implode(',', $values));
 	if (!$_pm['mysql']->query('START TRANSACTION')) return false;
+	$ccTransactionActive = true;
 	$rows = $_pm['mysql']->getRecords(
 		'SELECT uid FROM `lock` WHERE uid IN ('.implode(',', $ids).') ORDER BY uid FOR UPDATE'
 	);
-	return is_array($rows) && count($rows) == count($ids);
+	if(!is_array($rows) || count($rows) != count($ids)) return false;
+	$ccLockedUserIds = $ids;
+	return true;
 }
 
 function ccCommit()
 {
-	global $_pm;
+	global $_pm, $ccTransactionActive, $ccLockedUserIds;
 	if (!$_pm['mysql']->query('COMMIT'))
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		$ccTransactionActive = false;
 		die('操作提交失败，请重试！');
 	}
+	$ccTransactionActive = false;
+	foreach($ccLockedUserIds as $lockedUid)
+	{
+		$lockedUid = intval($lockedUid);
+		if($lockedUid < 1) continue;
+		$_pm['mem']->del($lockedUid);
+		$_pm['mem']->del($lockedUid.'bb');
+		$_pm['mem']->del($lockedUid.'sk');
+		$_pm['mem']->del($lockedUid.'bag');
+	}
+	$ccLockedUserIds = array();
 }
 
 function ccNotify($targetUid, $content)
@@ -85,7 +123,7 @@ function ccMaterial($uid, $bagId, $effectName)
 	$row = $_pm['mysql']->getOneRecord(
 		'SELECT b.id,b.pid,b.sums,b.vary,p.effect FROM userbag AS b '.
 		'INNER JOIN props AS p ON p.id=b.pid WHERE b.uid='.intval($uid).' AND b.id='.$bagId.
-		' AND b.sums>0 AND p.varyname=20 FOR UPDATE'
+		' AND b.sums>0 AND b.zbing=0 AND (b.cantrade IS NULL OR b.cantrade<>3) AND p.varyname=20 FOR UPDATE'
 	);
 	if (!is_array($row)) return false;
 	$effect = explode(':', $row['effect']);
@@ -99,13 +137,26 @@ function ccConsumeMaterial($uid, $item)
 	if (!is_array($item)) return false;
 	if (intval($item['vary']) == 2)
 	{
-		$sql = 'DELETE FROM userbag WHERE uid='.intval($uid).' AND id='.intval($item['id']).' AND sums>0';
+		$sql = 'DELETE FROM userbag WHERE uid='.intval($uid).' AND id='.intval($item['id']).' AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)';
 	}
 	else
 	{
-		$sql = 'UPDATE userbag SET sums=sums-1 WHERE uid='.intval($uid).' AND id='.intval($item['id']).' AND sums>=1';
+		$sql = 'UPDATE userbag SET sums=sums-1 WHERE uid='.intval($uid).' AND id='.intval($item['id']).' AND sums>=1 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)';
 	}
 	return $_pm['mysql']->query($sql) && mysql_affected_rows($_pm['mysql']->getConn()) == 1;
+}
+
+function ccHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function ccJsSingle($value)
+{
+	$value = str_replace("\\", "\\\\", (string)$value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	return $value;
 }
 
 function ccPetListHtml($rows)
@@ -116,8 +167,8 @@ function ccPetListHtml($rows)
 	{
 		$id = intval($pet['id']);
 		$name = strval($pet['name']);
-		$nameHtml = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-		$selectAction = 'sel(this);copyWord('.json_encode($name).');bid='.$id.';';
+		$nameHtml = ccHtml($name);
+		$selectAction = "sel(this);copyWord('".ccJsSingle($name)."');bid=".$id.";";
 		$addAction = 'sel(this);jinchuanc('.$id.');';
 		$color = isset($pet['chchengcolor']) ? $pet['chchengcolor'] : '';
 		if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#000000';
@@ -125,13 +176,13 @@ function ccPetListHtml($rows)
 			'<td width="100px" style="cursor:pointer;text-align:center;" '.
 			'onmouseover="pos=1;mcbbshow('.$id.');this.style.border=\'solid 1px #DFD496\';" '.
 			'onmouseout="mcbbdisplay();this.style.border=0;" onclick="'.
-			htmlspecialchars($selectAction, ENT_QUOTES, 'UTF-8').'">'.
+			ccHtml($selectAction).'">'.
 			'<font color="'.$color.'">'.$nameHtml.'</font></td>'.
 			'<td style="text-align:center;" width="60px">'.intval($pet['level']).'</td>'.
-			'<td style="text-align:center;" width="60px">'.htmlspecialchars($pet['czl'], ENT_QUOTES, 'UTF-8').'</td>'.
+			'<td style="text-align:center;" width="60px">'.ccHtml($pet['czl']).'</td>'.
 			'<td width="80px" style="cursor:pointer;text-align:center;" '.
 			'onmouseover="this.style.border=\'solid 1px #DFD496\';" onmouseout="this.style.border=0;" '.
-			'onclick="'.htmlspecialchars($addAction, ENT_QUOTES, 'UTF-8').'">'.
+			'onclick="'.ccHtml($addAction).'">'.
 			'<img src="../new_images/ui/add05.gif" border="0" /></td></tr></table>';
 	}
 	return $html;
@@ -192,6 +243,43 @@ function ccCreateSkillDetail($petId, $sid, $level)
 	return $_pm['mysql']->query($sql) && mysql_affected_rows($_pm['mysql']->getConn()) == 1;
 }
 
+function ccUpdateSkillDetail($detailId, $petId, $sid, $level)
+{
+	global $_pm;
+	$config = $_pm['mysql']->getOneRecord('SELECT * FROM skillsys WHERE id='.intval($sid));
+	if (!is_array($config)) return false;
+	$sql = 'UPDATE skill SET name='.$_pm['mysql']->quote($config['name']).',level='.intval($level).','.
+		'vary='.$_pm['mysql']->quote($config['vary']).',wx='.intval($config['wx']).','.
+		'value='.$_pm['mysql']->quote(ccSkillValueAtLevel($config['ackvalue'], $level)).','.
+		'plus='.$_pm['mysql']->quote(ccSkillValueAtLevel($config['plus'], $level)).','.
+		'img='.$_pm['mysql']->quote(ccSkillValueAtLevel($config['imgeft'], $level)).','.
+		'uhp='.intval(ccSkillValueAtLevel($config['uhp'], $level)).','.
+		'ump='.intval(ccSkillValueAtLevel($config['ump'], $level)).
+		' WHERE id='.intval($detailId).' AND bid='.intval($petId).' AND sid='.intval($sid);
+	return $_pm['mysql']->query($sql);
+}
+
+function ccResolveBasePet($pet, $byName, $byId)
+{
+	if(!is_array($pet)) return false;
+	$oldBid = isset($pet['old_bid']) ? intval($pet['old_bid']) : 0;
+	if($oldBid > 0 && is_array($byId) && isset($byId[$oldBid]) && is_array($byId[$oldBid])){
+		return $byId[$oldBid];
+	}
+	if(is_array($byId)){
+		foreach($byId as $basePet){
+			if(!is_array($basePet) || !isset($basePet['name']) || $basePet['name'] != $pet['name']) continue;
+			if((string)$basePet['remakelevel'] == (string)$pet['remakelevel'] &&
+				(string)$basePet['remakeid'] == (string)$pet['remakeid'] &&
+				(string)$basePet['remakepid'] == (string)$pet['remakepid']) return $basePet;
+		}
+	}
+	if(is_array($byName) && isset($byName[$pet['name']]) && is_array($byName[$pet['name']])){
+		return $byName[$pet['name']];
+	}
+	return false;
+}
+
 function ccSyncSkillDetails($petId, $skillList)
 {
 	global $_pm;
@@ -220,7 +308,11 @@ function ccSyncSkillDetails($petId, $skillList)
 	)) return false;
 	foreach ($skills as $sid => $level)
 	{
-		if (!isset($kept[$sid]) && !ccCreateSkillDetail($petId, $sid, $level)) return false;
+		if (isset($kept[$sid]))
+		{
+			if (!ccUpdateSkillDetail($kept[$sid], $petId, $sid, $level)) return false;
+		}
+		else if (!ccCreateSkillDetail($petId, $sid, $level)) return false;
 	}
 	return true;
 }
@@ -238,6 +330,7 @@ if($type==1){  //加入
 	) : false;
 	$selectedUid = is_array($selectedPreview) ? intval($selectedPreview['uid']) : 0;
 	if (!ccBegin(array($uid, $selectedUid))) ccFail('3', true);
+	if (!$_pm['mysql']->query('INSERT INTO player_ext(uid,bbshow) VALUES('.$uid.',5) ON DUPLICATE KEY UPDATE uid=uid')) ccFail('3', true);
 
 	$playerExt = $_pm['mysql']->getOneRecord(
 		'SELECT chchengbb,chouqu_chongwu FROM player_ext WHERE uid='.$uid.' FOR UPDATE'
@@ -354,12 +447,13 @@ if($type==1){  //加入
 	$arr = $_pm['mysql']->getRecords($sql);
 	die(ccPetListHtml($arr));
 }elseif($type==5){ //添加其他玩家的宠物到传承中
-	$cwid = isset($_REQUEST['cwid']) ? intval($_REQUEST['cwid']) : 0;
+	$cwid = (isset($_REQUEST['cwid']) && !is_array($_REQUEST['cwid'])) ? intval($_REQUEST['cwid']) : 0;
 	if($bid < 1) ccFail('1');
 	$targetPreview = $_pm['mysql']->getOneRecord('SELECT uid FROM userbb WHERE id='.$bid);
 	$targetUid = is_array($targetPreview) ? intval($targetPreview['uid']) : 0;
 	if($targetUid < 1 || $targetUid == $uid) ccFail('11');
 	if(!ccBegin(array($uid, $targetUid))) ccFail('1', true);
+	if (!$_pm['mysql']->query('INSERT INTO player_ext(uid,bbshow) VALUES('.$uid.',5) ON DUPLICATE KEY UPDATE uid=uid')) ccFail('1', true);
 
 	$target = $_pm['mysql']->getOneRecord('SELECT * FROM userbb WHERE uid='.$targetUid.' AND id='.$bid.' FOR UPDATE');
 	if(!is_array($target) || intval($target['muchang']) != 3 || intval($target['tgflag']) != 0){
@@ -399,17 +493,17 @@ if($type==1){  //加入
 
 }elseif($type==6){
 $merge_list="";
-$sel = isset($_REQUEST['value']) ? strval($_REQUEST['value']) : '';
-$ts = isset($_REQUEST['ts']) ? strval($_REQUEST['ts']) : '';
+$sel = (isset($_REQUEST['value']) && !is_array($_REQUEST['value'])) ? strval($_REQUEST['value']) : '';
+$ts = (isset($_REQUEST['ts']) && !is_array($_REQUEST['ts'])) ? strval($_REQUEST['ts']) : '';
 if($ts=="ts"){
 	$sel .= chr(14);
 }
 $sql='SELECT id FROM player WHERE nickname='.$_pm['mysql']->quote($sel).' LIMIT 1';
 	$id=$_pm['mysql']->getOneRecord($sql);
-	$sel = htmlspecialchars($sel, ENT_QUOTES, 'UTF-8');
+	$sel = ccHtml($sel);
 	if(is_array($id)){ //用户是否存在
 		$sql="select request_merge,merge,request from player_ext where uid={$id['id']}";
-		$arr=$_pm['mysql']->getOneRecord($sql);//查找的人是否有婚姻	
+		$arr=$_pm['mysql']->getOneRecord($sql);//查找的人是否有婚姻
 		if(is_array($arr)){
 			//$sql="select request_merge,merge from player_ext where uid={$_SESSION['id']}";
 			//$arr2=$_pm['mysql']->getOneRecord($sql);
@@ -433,19 +527,21 @@ $sql='SELECT id FROM player WHERE nickname='.$_pm['mysql']->quote($sel).' LIMIT 
 							  <td width='100' align='left'>向你求婚</td>
 							</tr>";
 					}
-					
+
 				}elseif(is_array($arr) && $arr['request_merge']==0 && $arr['merge']>0){
 					$usernickname		= $_pm['user']->getUserById($arr['merge']);
+					$spouseName = is_array($usernickname) && isset($usernickname['nickname']) ? ccHtml($usernickname['nickname']) : '';
 					$merge_list="<tr id='t".$id['id']."' style='cursor:pointer;text-align:center;' onmouseover='this.style.border=\"solid 1px #DFD496\";'  onmouseout='this.style.border=0;' onclick='sel(this);xy_qx();'>
 							  <td width='100' align='center' >".$sel."</td>
-							  <td width='70' align='left'>".$usernickname['nickname']."</td>
+							  <td width='70' align='left'>".$spouseName."</td>
 							  <td width='100' align='left'>已婚</td>
 							</tr>";
 				}elseif(is_array($arr) && $arr['request_merge']!=$_SESSION['id'] && $arr['request_merge']>0 && $arr['merge']==0){
-					$usernickname		= $_pm['user']->getUserById($arr['merge']);
+					$usernickname		= $_pm['user']->getUserById($arr['request_merge']);
+					$requestName = is_array($usernickname) && isset($usernickname['nickname']) ? ccHtml($usernickname['nickname']) : '';
 					$merge_list="<tr id='t".$id['id']."' style='cursor:pointer;' onmouseover='this.style.border=\"solid 1px #DFD496\";'  onmouseout='this.style.border=0;' onclick='sel(this);xy_qx();'>
 							  <td width='100' align='center' >".$sel."</td>
-							  <td width='70' align='left'>".$usernickname['nickname']."</td>
+							  <td width='70' align='left'>".$requestName."</td>
 							  <td width='100' align='left'>已向别人求婚</td>
 							</tr>";
 				}
@@ -458,8 +554,8 @@ $sql='SELECT id FROM player WHERE nickname='.$_pm['mysql']->quote($sel).' LIMIT 
 		}
 	}
 echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
-}elseif($type==7){	
-	$cwid = isset($_REQUEST['cwid']) ? intval($_REQUEST['cwid']) : 0;
+}elseif($type==7){
+	$cwid = (isset($_REQUEST['cwid']) && !is_array($_REQUEST['cwid'])) ? intval($_REQUEST['cwid']) : 0;
 	if($cwid < 1) ccFail('1');
 	$preview = $_pm['mysql']->getOneRecord(
 		'SELECT chchengbb FROM userbb WHERE uid='.$uid.' AND id='.$cwid
@@ -500,8 +596,8 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	}
 
 	if(empty($pet['chchengwp'])){
-		$orbBagId = isset($_REQUEST['zhu']) ? intval($_REQUEST['zhu']) : 0;
-		$skillBagId = isset($_REQUEST['jn']) ? intval($_REQUEST['jn']) : 0;
+		$orbBagId = (isset($_REQUEST['zhu']) && !is_array($_REQUEST['zhu'])) ? intval($_REQUEST['zhu']) : 0;
+		$skillBagId = (isset($_REQUEST['jn']) && !is_array($_REQUEST['jn'])) ? intval($_REQUEST['jn']) : 0;
 		$orb = ccMaterial($uid, $orbBagId, 'chuanc');
 		if(!is_array($orb)) ccFail('50', true);
 		$skillItem = false;
@@ -558,8 +654,8 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	die('5');
 
 }elseif($type==8){
-	$cwid = isset($_REQUEST['cwid']) ? intval($_REQUEST['cwid']) : 0;
-	$finishMode = isset($_REQUEST['t']) ? intval($_REQUEST['t']) : 0;
+	$cwid = (isset($_REQUEST['cwid']) && !is_array($_REQUEST['cwid'])) ? intval($_REQUEST['cwid']) : 0;
+	$finishMode = (isset($_REQUEST['t']) && !is_array($_REQUEST['t'])) ? intval($_REQUEST['t']) : 0;
 	if($cwid < 1) ccFail('1');
 	if($finishMode != 1 && $finishMode != 2) ccFail('4');
 	if(!ccBegin(array($uid))) ccFail('4', true);
@@ -570,12 +666,14 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	if(intval($pet['muchang']) != 6) ccFail('4', true);
 	if(intval($pet['level']) < 90 || floatval($pet['czl']) < 60) ccFail('数据有误！', true);
 
-	$templates = $_pm['mysql']->getRecords(
-		'SELECT id,ac,mc,hp,mp,hits,miss,speed FROM bb WHERE wx=6 AND name='.
-		$_pm['mysql']->quote($pet['name']).' LIMIT 2'
+	$baseByName = kdjlSafeMemValue($_pm['mem']->get('db_bbname'), array());
+	$baseById = kdjlSafeMemValue($_pm['mem']->get('db_bbid'), array());
+	$templateConfig = ccResolveBasePet($pet, $baseByName, $baseById);
+	if(!is_array($templateConfig) || intval($templateConfig['wx']) != 6) ccFail('宠物模板数据错误！', true);
+	$template = $_pm['mysql']->getOneRecord(
+		'SELECT id,ac,mc,hp,mp,hits,miss,speed FROM bb WHERE id='.intval($templateConfig['id'])
 	);
-	if(!is_array($templates) || count($templates) != 1) ccFail('宠物模板数据错误！', true);
-	$template = $templates[0];
+	if(!is_array($template)) ccFail('宠物模板数据错误！', true);
 
 	$materialIds = explode(',', strval($pet['chchengwp']));
 	$orbPid = isset($materialIds[0]) ? intval($materialIds[0]) : 0;
@@ -667,7 +765,7 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	die('2');
 
 }elseif($type==9){
-	$ser = isset($_REQUEST['txt']) ? trim(strval($_REQUEST['txt'])) : '';
+	$ser = (isset($_REQUEST['txt']) && !is_array($_REQUEST['txt'])) ? trim(strval($_REQUEST['txt'])) : '';
 	if($ser===''){
 		die('3');
 	}
@@ -711,7 +809,7 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	}
 
 	$bagRows = $_pm['mysql']->getRecords(
-		'SELECT id,pid,sums,sell,bsum,psum,pyb,zbing,zbpets FROM userbag WHERE uid='.$uid.' FOR UPDATE'
+		'SELECT id,pid,vary,sums,sell,bsum,psum,pyb,zbing,zbpets,cantrade FROM userbag WHERE uid='.$uid.' FOR UPDATE'
 	);
 	if(!is_array($bagRows)) $bagRows = array();
 	$usedSlots = 0;
@@ -719,9 +817,12 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	foreach($bagRows as $bagRow){
 		if(intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0) $usedSlots++;
 		if(intval($bagRow['sums']) > 0 && intval($bagRow['zbing']) == 0 &&
+			intval($bagRow['vary']) == 1 &&
 			intval($bagRow['bsum']) == 0 &&
 			intval($bagRow['psum']) == 0 && intval($bagRow['pyb']) == 0 &&
-			intval($bagRow['zbpets']) == 0 && !isset($stackByPid[intval($bagRow['pid'])])){
+			intval($bagRow['zbpets']) == 0 &&
+			(!isset($bagRow['cantrade']) || intval($bagRow['cantrade']) == 0) &&
+			!isset($stackByPid[intval($bagRow['pid'])])){
 			$stackByPid[intval($bagRow['pid'])] = intval($bagRow['id']);
 		}
 	}
@@ -737,7 +838,7 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	foreach($materials as $material){
 		$propsId = intval($material['id']);
 		if(intval($material['vary']) != 2 && isset($stackByPid[$propsId])){
-			$sql = 'UPDATE userbag SET sums=sums+1 WHERE uid='.$uid.' AND id='.$stackByPid[$propsId];
+			$sql = 'UPDATE userbag SET sums=COALESCE(sums,0)+1 WHERE uid='.$uid.' AND id='.$stackByPid[$propsId].' AND vary=1 AND COALESCE(sums,0) <= 2147483646 AND zbing=0 AND (cantrade IS NULL OR cantrade=0)';
 		}else{
 			$sql = 'INSERT INTO userbag (uid,pid,sell,vary,sums,stime) VALUES ('.$uid.','.$propsId.','.
 				intval($material['sell']).','.intval($material['vary']).',1,'.time().')';
@@ -768,6 +869,6 @@ echo (is_array($id) ? intval($id['id']) : 0)."|".$merge_list;
 	if($reciprocal) ccNotify($partnerUid, '玩家【'.$nickname.'】已经取回了宠物,拒绝与你的宠物传承！');
 	die('4');
 
-}	
+}
 $_pm['mem']->memClose();
 ?>

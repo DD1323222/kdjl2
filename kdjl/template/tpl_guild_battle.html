@@ -32,7 +32,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 <body>
 <div class="task">
 	<div class="task_left">
-	<div style=" top:50px; position:absolute; width:280px; height:230px; left:20px;pxbackground-color:#FFF;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+	<div style="top:50px; position:absolute; width:280px; height:230px; left:20px; background-color:#FFF; overflow-x:hidden; overflow-y:auto; scrollbar-face-color:#E1D395; scrollbar-highlight-color:#ffffff; scrollbar-3dlight-color:#E1D395; scrollbar-shadow-color:#ffffff; scrollbar-darkshadow-color:#F3EDC9; scrollbar-track-color:#F3EDC9; scrollbar-arrow-color:#ffffff;">
 	  <table width="256px" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
 	    #zrlist#
       </table>
@@ -40,11 +40,11 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 	</div>
 	<div class="task_center"><img src="../new_images/ui/zc_04.jpg" width="164" height="319" border="0" usemap="#Map" />
     <map name="Map" id="Map">
-    <area shape="rect" coords="51,294,114,315" href="#" onclick="$('activity_dis_2').style.display='block'";/>
+    <area shape="rect" coords="51,294,114,315" href="#" onclick="$('activity_dis_2').style.display='block';return false;" />
     </map>
 </div>
     <div class="task_right">
-	<div style=" top:50px; position:absolute; width:280px; height:230px; left:500px;pxbackground-color:#FFF;overflow-x:hidden;overflow-y:auto;scrollbar-face-color:#E1D395;scrollbar-highlight-color:#ffffff;scrollbar-3dlight-color:#E1D395;scrollbar-shadow-color:#ffffff;scrollbar-darkshadow-color:#F3EDC9;scrollbar-track-color:#F3EDC9;scrollbar-arrow-color:#ffffff;">
+	<div style="top:50px; position:absolute; width:280px; height:230px; left:500px; background-color:#FFF; overflow-x:hidden; overflow-y:auto; scrollbar-face-color:#E1D395; scrollbar-highlight-color:#ffffff; scrollbar-3dlight-color:#E1D395; scrollbar-shadow-color:#ffffff; scrollbar-darkshadow-color:#F3EDC9; scrollbar-track-color:#F3EDC9; scrollbar-arrow-color:#ffffff;">
       <table width="100%" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
         <tr>
         <td height="230" align="center" valign="top">
@@ -102,7 +102,7 @@ function down_the_gauntlet(id){
 					}else if(ret == 4){
 						window.parent.Alert('该家族已经收到三份战书，不能再下了，试试别的吧');
 					}else if(ret == 5){
-						window.parent.Alert('您只能对等级相差为5的家族下战书');
+						window.parent.Alert('您只能向等级最多相差9级的家族下战书');
 					}else if(ret == 6){
 						window.parent.Alert('您的家族已经对此家族下了战书');
 					}else if(ret == 10){
@@ -133,7 +133,7 @@ function accept(id){
 					}else if(ret == 3){
 						window.parent.Alert('您的家族或者对方家族已经接受战书，不能再接受了此战书了！');
 					}else if(ret == 5){
-						window.parent.Alert('您只能接受等级相差为5的战书');
+						window.parent.Alert('您只能接受等级最多相差9级的战书');
 					}else if(ret == 10){
 						window.parent.Alert('操作成功');
 						window.location.reload();

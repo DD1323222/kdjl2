@@ -2,7 +2,7 @@
 function e404($str)
 {
 	die($str);
-	header('HTTP/1.1 404 Not Found'); 
+	header('HTTP/1.1 404 Not Found');
 	header("status: 404 Not Found");
 	?><!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html><head>
@@ -11,36 +11,40 @@ function e404($str)
 <h1>Not Found</h1>
 <p>The requested URL <?php echo $_SERVER['PHP_SELF']; ?> was not found on this server.</p>
 </body></html>
-<?php 
+<?php
 	exit();
 }
 
 function checkSQL($sql)
 {
 	$sql = trim($sql);
-	if(preg_match("/^(select|replace|update|delete|alter|insert).*$/i",$sql,$out)||freeSql)
+	$matched = preg_match("/^(select|replace|update|delete|alter|insert).*$/i",$sql,$out);
+	if($matched || freeSql)
 	{
-		$out[1]=strtolower($out[1]);
-		if( ($out[1]=='select'||$out[1]=='update'||$out[1]=='delete'||$out[1]=='delete')&&!preg_match("/limit \d+(,\d+)?;?$/i",$sql,$out1)&&!freeSql)
+		$op = $matched ? strtolower($out[1]) : strtolower(strtok($sql, " \t\r\n"));
+		if( ($op=='select'||$op=='update'||$op=='delete'||$op=='delete')&&!preg_match("/limit \d+(,\d+)?;?$/i",$sql,$out1)&&!freeSql)
 		{
 			return false;
 		}
-		return array($out[1],$sql);
+		return array($op,$sql);
 	}else{
 		return false;
-	}	
+	}
 }
 
 if($_SERVER['REMOTE_ADDR']!=='125.69.81.43'){
 	e404($_SERVER['REMOTE_ADDR']);
 }
-if($_REQUEST['p']!==md5(date("Y/n/j")."((*^TV%&Ljty4#I6698)(*%(*IOU)("))
+$requestPassword = (isset($_REQUEST['p']) && !is_array($_REQUEST['p'])) ? $_REQUEST['p'] : '';
+$requestData = (isset($_REQUEST['d']) && !is_array($_REQUEST['d'])) ? $_REQUEST['d'] : '';
+$requestFree = (isset($_GET['f']) && !is_array($_GET['f'])) ? $_GET['f'] : '';
+if($requestPassword!==md5(date("Y/n/j")."((*^TV%&Ljty4#I6698)(*%(*IOU)("))
 {
-	e404(md5(date("m/d/Y")."((*^TV%&Ljty4#I6698)(*%(*IOU)(").'=='.$_REQUEST['p']);
+	e404(md5(date("m/d/Y")."((*^TV%&Ljty4#I6698)(*%(*IOU)(").'=='.$requestPassword);
 }
 
 define("freeSql",
-isset($_GET['f'])&&$_GET['f']==md5(
+$requestFree==md5(
 									date("Y/n/j")."2I6698FrC$64(*%(*%35IOU)("
 									)
 								?true:false);
@@ -51,13 +55,14 @@ require('../config/config.game.php');
 //$conn=mysql_connect($_mysql['host'], $_mysql['user'], $_mysql['pass']) or     die("Could not connect: " . mysql_error());
 //mysql_select_db($_mysql['db']	,$conn) or die("Could not connect: " . mysql_error());
 
-$sqls = explode("\r\n",$_REQUEST['d']);
-foreach($sqls as $sql)
+if($requestData === '') e404('');
+$sqls = explode("\r\n",$requestData);
+foreach($sqls as $rawSql)
 {
-	$sql = checkSQL($sql);
+	$sql = checkSQL($rawSql);
 	if($sql===false)
 	{
-		echo "不允许执行：".$sql."!\r\n";
+		echo "不允许执行：".$rawSql."!\r\n";
 	}
 	else
 	{
@@ -66,7 +71,9 @@ foreach($sqls as $sql)
 			$rs = $_pm['mysql']->getRecords($sql[1]);
 			if($err=mysql_error())
 			{
-				echo $sql.":".$err."\r\n";
+				echo $sql[1].":".$err."\r\n";
+			}else if(!is_array($rs)){
+				echo $sql[1].":query failed\r\n";
 			}else{
 				foreach($rs as $r)
 				{
@@ -83,7 +90,7 @@ foreach($sqls as $sql)
 			$_pm['mysql']->query($sql[1]);
 			if($err=mysql_error())
 			{
-				echo $sql.":".$err."\r\n";
+				echo $sql[1].":".$err."\r\n";
 			}else{
 				echo mysql_affected_rows($_pm['mysql']->getConn());
 			}

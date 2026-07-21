@@ -78,7 +78,7 @@ function adminTaskParseNeed($value)
 	foreach (adminTaskSplitTokens($value) as $token)
 	{
 		if (preg_match('/^see:[0-9]+$/', $token)) continue;
-		if (preg_match('/^giveitem:([0-9|]+):([0-9]+)$/', $token, $m))
+		if (preg_match('/^(?:giveitem|giveitm):([0-9|]+):([0-9]+)$/', $token, $m))
 		{
 			$result['items'][] = $m[1] . ':' . $m[2];
 			continue;
@@ -103,7 +103,7 @@ function adminTaskParseLimit($value)
 	$result = array('level_min' => '', 'level_max' => '', 'comself' => '', 'cishu_times' => '', 'cishu_days' => '', 'raw' => array());
 	foreach (adminTaskSplitTokens($value) as $token)
 	{
-		if (preg_match('/^lv:([0-9]+)\|([0-9]*)$/', $token, $m))
+		if (preg_match('/^(?:lv|level):([0-9]+)\|([0-9]*)$/', $token, $m))
 		{
 			$result['level_min'] = $m[1];
 			$result['level_max'] = $m[2];
@@ -130,7 +130,7 @@ function adminTaskParseResult($value)
 	$result = array('exp' => '', 'props' => array(), 'raw' => array());
 	foreach (adminTaskSplitTokens($value) as $token)
 	{
-		if (preg_match('/^exp:([0-9]+)$/', $token, $m))
+		if (preg_match('/^exp:([0-9]+)$/i', $token, $m))
 		{
 			$result['exp'] = $m[1];
 			continue;
@@ -297,9 +297,7 @@ function adminTaskNextSuffix($tasks, $color, $excludeId)
 
 function adminTaskNextXulie($tasks)
 {
-	$max = 0;
-	foreach ($tasks as $row) if (intval($row['xulie']) > $max) $max = intval($row['xulie']);
-	return $max + 1;
+	return adminNextFreeNumericId($tasks, 'xulie');
 }
 
 function adminTaskNextId($tasks, $taskId)
@@ -354,6 +352,15 @@ function adminTaskDateInput($value)
 	return $m[1] . '-' . $m[2] . '-' . $m[3] . 'T' . $m[4] . ':' . $m[5];
 }
 
+function adminTaskUtf8Length($value)
+{
+	$value = (string)$value;
+	if ($value === '') return 0;
+	if (!preg_match('//u', $value)) return false;
+	$count = preg_match_all('/./us', $value, $matches);
+	return $count === false ? false : $count;
+}
+
 function adminTaskSaveSchedule($db, $flag, $start, $end)
 {
 	$flag = intval($flag);
@@ -375,6 +382,13 @@ function adminTaskSaveSchedule($db, $flag, $start, $end)
 	return $db->query("INSERT INTO timeconfig(Id,titles,days,starttime,endtime) VALUES({$newId},'task','{$flag}','{$startSql}','{$endSql}')") ? true : false;
 }
 
+function adminTaskDeleteSchedule($db, $flag)
+{
+	$flag = intval($flag);
+	if ($flag < 1) return true;
+	return $db->query("DELETE FROM timeconfig WHERE titles='task' AND days='{$flag}'") ? true : false;
+}
+
 function adminTaskFail($db, $message, $returnUrl, $rollback)
 {
 	if ($rollback) $db->query('ROLLBACK');
@@ -394,7 +408,7 @@ function adminTaskNames($ids, $map)
 	{
 		$id = intval($id);
 		if ($id < 1) continue;
-		$result[] = isset($map[$id]) ? ('#' . $id . ' ' . $map[$id]['name']) : ('#' . $id . ' 不存在');
+		$result[] = isset($map[$id]) ? ('id=' . $id . ' ' . $map[$id]['name']) : ('id=' . $id . ' 不存在');
 	}
 	return implode(' / ', $result);
 }
@@ -423,24 +437,24 @@ function adminTaskPickerField($label, $name, $value, $source, $mode, $quantity, 
 
 $colors = adminTaskColorLabels();
 $categories = adminTaskCategories($colors);
-$view = isset($_GET['view']) ? $_GET['view'] : 'limited';
+$view = adminGet('view', 'limited');
 if (!isset($categories[$view])) $view = 'limited';
-$q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+$q = trim(adminGet('q'));
 $returnUrl = adminTaskUrl($view, $q, array());
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 {
-	$action = isset($_POST['action']) ? $_POST['action'] : '';
-	$postView = isset($_POST['view']) ? $_POST['view'] : $view;
+	$action = adminPost('action');
+	$postView = adminPost('view', $view);
 	if (!isset($categories[$postView])) $postView = 'limited';
-	$postQ = isset($_POST['q']) ? trim((string)$_POST['q']) : '';
+	$postQ = trim(adminPost('q'));
 	$returnUrl = adminTaskUrl($postView, $postQ, array());
 
 	if ($action === 'save_task')
 	{
-		$taskId = isset($_POST['task_id']) ? intval($_POST['task_id']) : 0;
+		$taskId = intval(adminPost('task_id', 0));
 		$isNew = $taskId < 1;
-		$adminDb->query('START TRANSACTION');
+		if (!adminStartTransaction($adminDb)) adminTaskFail($adminDb, '保存任务失败：无法开始数据库事务。', $returnUrl, false);
 		$lockedTasks = $adminDb->getRecords('SELECT * FROM task ORDER BY id FOR UPDATE');
 		if (!is_array($lockedTasks)) adminTaskFail($adminDb, '任务表读取失败：' . $adminDb->getError(), $returnUrl, true);
 		$taskMap = array();
@@ -457,33 +471,42 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			$taskMap[$taskId] = $existing;
 		}
 
-		$title = trim((string)(isset($_POST['title']) ? $_POST['title'] : ''));
+		$title = trim(adminPost('title'));
 		if ($title === '') adminTaskFail($adminDb, '任务标题不能为空。', $returnUrl, true);
-		$frommsg = (string)(isset($_POST['frommsg']) ? $_POST['frommsg'] : '');
-		$okmsg = (string)(isset($_POST['okmsg']) ? $_POST['okmsg'] : '');
-		$color = isset($_POST['color']) ? intval($_POST['color']) : 0;
-		$hide = isset($_POST['hide']) ? intval($_POST['hide']) : 1;
+		$frommsg = adminPost('frommsg');
+		$okmsg = adminPost('okmsg');
+		$titleLength = adminTaskUtf8Length($title);
+		$frommsgLength = adminTaskUtf8Length($frommsg);
+		$okmsgLength = adminTaskUtf8Length($okmsg);
+		if ($titleLength === false || $frommsgLength === false || $okmsgLength === false) adminTaskFail($adminDb, '任务文字不是有效的 UTF-8 内容。', $returnUrl, true);
+		if ($titleLength > 100) adminTaskFail($adminDb, '任务标题超过 100 个字符，无法保存。', $returnUrl, true);
+		if ($okmsgLength > 255) adminTaskFail($adminDb, '完成信息超过 255 个字符，无法保存。', $returnUrl, true);
+		if (strlen($frommsg) > 65535) adminTaskFail($adminDb, '接取信息超过 65535 字节，无法保存。', $returnUrl, true);
+		$color = intval(adminPost('color', 0));
+		if ($color < 0 || $color > 255) adminTaskFail($adminDb, 'color 分类超过可保存范围。', $returnUrl, true);
+		$hide = intval(adminPost('hide', 1));
 		if ($hide < 0 || $hide > 2) $hide = 1;
 
 		$oknpc = $isNew ? 8 : intval($existing['oknpc']);
 		if ($oknpc < 1) $oknpc = 8;
-		$completionMode = isset($_POST['completion_mode']) ? trim((string)$_POST['completion_mode']) : 'sequence';
+		$completionMode = trim(adminPost('completion_mode', 'sequence'));
 		if ($completionMode === 'unlimited') $completionMode = 'repeat';
 		if ($completionMode !== 'sequence' && $completionMode !== 'once' && $completionMode !== 'limited' && $completionMode !== 'repeat') $completionMode = 'sequence';
 
-		$need = adminTaskBuildNeed($oknpc, isset($_POST['need_items']) ? $_POST['need_items'] : '', isset($_POST['need_kills']) ? $_POST['need_kills'] : '', isset($_POST['need_monself']) ? $_POST['need_monself'] : '', isset($_POST['need_raw']) ? $_POST['need_raw'] : '');
+		$need = adminTaskBuildNeed($oknpc, adminPost('need_items'), adminPost('need_kills'), adminPost('need_monself'), adminPost('need_raw'));
 		if ($need === false) adminTaskFail($adminDb, '所需物品、击杀怪物或交付主战宠物格式不正确。', $returnUrl, true);
-		$limitlv = adminTaskBuildLimit(isset($_POST['level_min']) ? $_POST['level_min'] : '', isset($_POST['level_max']) ? $_POST['level_max'] : '', isset($_POST['accept_comself']) ? $_POST['accept_comself'] : '', isset($_POST['limit_raw']) ? $_POST['limit_raw'] : '', $completionMode, isset($_POST['cishu_times']) ? $_POST['cishu_times'] : '', isset($_POST['cishu_days']) ? $_POST['cishu_days'] : '');
+		$limitlv = adminTaskBuildLimit(adminPost('level_min'), adminPost('level_max'), adminPost('accept_comself'), adminPost('limit_raw'), $completionMode, adminPost('cishu_times'), adminPost('cishu_days'));
 		if ($limitlv === false) adminTaskFail($adminDb, '接取等级、出战宠物要求或完成次数限制格式不正确。', $returnUrl, true);
-		$result = adminTaskBuildResult(isset($_POST['reward_exp']) ? $_POST['reward_exp'] : '', isset($_POST['reward_props']) ? $_POST['reward_props'] : '', isset($_POST['reward_raw']) ? $_POST['reward_raw'] : '');
+		$result = adminTaskBuildResult(adminPost('reward_exp'), adminPost('reward_props'), adminPost('reward_raw'));
 		if ($result === false) adminTaskFail($adminDb, '奖励经验或奖励物品格式不正确。', $returnUrl, true);
 
 		$oldRwl = adminTaskRwlParts($existing['cid']);
+		$oldSequenceId = intval($existing['xulie']);
 		$sequenceId = 0;
 		$cid = 'self';
 		$cacheTaskIds = array($taskId);
-		$nextId = isset($_POST['next_task_id']) ? intval($_POST['next_task_id']) : 0;
-		$postedXulie = isset($_POST['sequence_id']) ? intval($_POST['sequence_id']) : 0;
+		$nextId = intval(adminPost('next_task_id', 0));
+		$postedXulie = intval(adminPost('sequence_id', 0));
 		$isSequence = $completionMode === 'sequence';
 		if (!$isSequence)
 		{
@@ -491,25 +514,10 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			$postedXulie = 0;
 		}
 
-		if (!$isSequence && $oldRwl !== false)
-		{
-			foreach ($lockedTasks as $row)
-			{
-				$rowId = intval($row['id']);
-				if ($rowId === $taskId) continue;
-				$parts = adminTaskRwlParts($row['cid']);
-				if ($parts !== false && intval($parts['next']) === $taskId)
-				{
-					$newCid = adminTaskMakeRwl($parts['current'], $oldRwl['next']);
-					$cacheTaskIds[] = $rowId;
-					if (!$adminDb->query("UPDATE task SET cid='" . $adminDb->escape($newCid) . "' WHERE id={$rowId}")) adminTaskFail($adminDb, '调整原序列关联任务失败：' . $adminDb->getError(), $returnUrl, true);
-				}
-			}
-		}
-
 		if ($isSequence)
 		{
-			if ($nextId > 0 && (!isset($taskMap[$nextId]) || $nextId === $taskId)) adminTaskFail($adminDb, '后续任务不存在或不能选择当前任务。', $returnUrl, true);
+			$keepsLegacySelfLink = !$isNew && $oldRwl !== false && intval($oldRwl['next']) === $taskId && $nextId === $taskId;
+			if ($nextId > 0 && (!isset($taskMap[$nextId]) || ($nextId === $taskId && !$keepsLegacySelfLink))) adminTaskFail($adminDb, '后续任务不存在或不能选择当前任务。', $returnUrl, true);
 			if ($isNew)
 			{
 				$sequenceId = adminTaskNextXulie($lockedTasks);
@@ -524,8 +532,11 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 				if ($sequenceId < 1 && $nextId > 0 && isset($taskMap[$nextId])) $sequenceId = intval($taskMap[$nextId]['xulie']);
 				if ($sequenceId < 1) $sequenceId = adminTaskNextXulie($lockedTasks);
 			}
-			if ($nextId > 0 && intval($taskMap[$nextId]['xulie']) > 0 && intval($taskMap[$nextId]['xulie']) !== $sequenceId) adminTaskFail($adminDb, '后续任务必须属于选择的现有序列号。', $returnUrl, true);
-			$cid = adminTaskMakeRwl($taskId, $nextId);
+			$keepsLegacyLink = !$isNew && $oldRwl !== false && intval($oldRwl['next']) === $nextId && $oldSequenceId === $sequenceId;
+			if ($nextId > 0 && intval($taskMap[$nextId]['xulie']) !== $sequenceId && !$keepsLegacyLink) adminTaskFail($adminDb, '后续任务必须属于选择的现有序列号。', $returnUrl, true);
+			$keepsLegacyCid = !$isNew && $oldSequenceId === $sequenceId &&
+				(($oldRwl !== false && intval($oldRwl['next']) === $nextId) || ($oldRwl === false && $nextId === 0));
+			$cid = $keepsLegacyCid ? $existing['cid'] : adminTaskMakeRwl($taskId, $nextId);
 			if ($sequenceId > 255) adminTaskFail($adminDb, '序列号超过 task.xulie 可保存范围。', $returnUrl, true);
 		}
 		else
@@ -534,6 +545,25 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			if ($completionMode === 'once') $cid = '0';
 			else if ($completionMode === 'repeat') $cid = 'self';
 			else $cid = ($oldRwl === false && trim((string)$existing['cid']) !== '' && trim((string)$existing['cid']) !== '0') ? $existing['cid'] : 'self';
+		}
+
+		$leavesOldSequence = !$isNew && $oldSequenceId > 0 && (!$isSequence || $sequenceId !== $oldSequenceId);
+		if ($leavesOldSequence)
+		{
+			$replacementNext = $oldRwl !== false ? intval($oldRwl['next']) : 0;
+			if ($replacementNext === $taskId) $replacementNext = 0;
+			foreach ($lockedTasks as $row)
+			{
+				$rowId = intval($row['id']);
+				if ($rowId === $taskId || intval($row['xulie']) !== $oldSequenceId) continue;
+				$parts = adminTaskRwlParts($row['cid']);
+				if ($parts !== false && intval($parts['next']) === $taskId)
+				{
+					$newCid = adminTaskMakeRwl($parts['current'], $replacementNext);
+					$cacheTaskIds[] = $rowId;
+					if (!$adminDb->query("UPDATE task SET cid='" . $adminDb->escape($newCid) . "' WHERE id={$rowId}")) adminTaskFail($adminDb, '调整原序列关联任务失败：' . $adminDb->getError(), $returnUrl, true);
+				}
+			}
 		}
 
 		$fromParsed = adminTaskParseFromNpc($existing['fromnpc']);
@@ -550,8 +580,8 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 
 		$flags = 0;
 		$scheduleChanged = false;
-		$startInput = isset($_POST['limit_start']) ? trim((string)$_POST['limit_start']) : '';
-		$endInput = isset($_POST['limit_end']) ? trim((string)$_POST['limit_end']) : '';
+		$startInput = trim(adminPost('limit_start'));
+		$endInput = trim(adminPost('limit_end'));
 		if ($startInput !== '' || $endInput !== '')
 		{
 			$flags = intval($existing['flags']);
@@ -564,12 +594,23 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 			if ($flags > 255) adminTaskFail($adminDb, '限时任务 flags 超过 task.flags 可保存范围。', $returnUrl, true);
 			$start = adminTaskDateToCompact($startInput);
 			$end = adminTaskDateToCompact($endInput);
-			if ($start === false || $end === false || $start === '' || $end === '' || $start > $end) adminTaskFail($adminDb, '限时任务必须填写有效的开始和结束时间。', $returnUrl, true);
+			if ($start === false || $end === false || $start === '' || $end === '' || $start >= $end) adminTaskFail($adminDb, '限时任务必须填写有效的开始和结束时间。', $returnUrl, true);
 			if (!adminTaskSaveSchedule($adminDb, $flags, $start, $end)) adminTaskFail($adminDb, '保存限时任务时间失败：' . $adminDb->getError(), $returnUrl, true);
 			$scheduleChanged = true;
 		}
 		else if (intval($existing['flags']) > 0)
 		{
+			$oldFlags = intval($existing['flags']);
+			$flagsStillUsed = false;
+			foreach ($lockedTasks as $row)
+			{
+				if (intval($row['id']) !== $taskId && intval($row['flags']) === $oldFlags)
+				{
+					$flagsStillUsed = true;
+					break;
+				}
+			}
+			if (!$flagsStillUsed && !adminTaskDeleteSchedule($adminDb, $oldFlags)) adminTaskFail($adminDb, '删除限时任务时间失败：' . $adminDb->getError(), $returnUrl, true);
 			$scheduleChanged = true;
 		}
 
@@ -592,7 +633,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 
 		$cacheOk = adminRefreshTaskCache($adminDb, $adminMem, $cacheTaskIds);
 		if ($scheduleChanged) $cacheOk = adminRefreshTimeConfigCache($adminDb, $adminMem) && $cacheOk;
-		adminSetFlash($cacheOk ? 'success' : 'warning', '任务 #' . $taskId . ' 已保存' . ($cacheOk ? '。' : '，但任务或时间缓存刷新失败。'));
+		adminSetFlash($cacheOk ? 'success' : 'warning', '任务 id=' . $taskId . ' 已保存' . ($cacheOk ? '。' : '，但任务或时间缓存刷新失败。'));
 		adminRedirect(adminTaskUrl($postView, $postQ, array('edit' => $taskId)));
 	}
 }
@@ -634,7 +675,7 @@ $gpcRows = $adminDb->getRecords('SELECT id,name FROM gpc ORDER BY id');
 $gpcMap = array();
 if (is_array($gpcRows)) foreach ($gpcRows as $row) $gpcMap[intval($row['id'])] = $row;
 
-$editId = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$editId = intval(adminGet('edit', 0));
 $showNew = isset($_GET['new']) ? true : false;
 $editTask = false;
 if ($editId > 0 && isset($taskMap[$editId])) $editTask = $taskMap[$editId];
@@ -721,7 +762,7 @@ if (is_array($editTask))
 	<div class="task-modal">
 		<div class="task-dialog">
 			<div class="task-dialog-head">
-				<h2><?php echo intval($editTask['id']) > 0 ? '编辑任务 #' . intval($editTask['id']) : '新增任务'; ?></h2>
+				<h2><?php echo intval($editTask['id']) > 0 ? '编辑任务 id=' . intval($editTask['id']) : '新增任务'; ?></h2>
 				<a class="btn secondary" href="<?php echo adminH($returnUrl); ?>">关闭</a>
 			</div>
 			<form method="post" class="task-form">
@@ -750,8 +791,8 @@ if (is_array($editTask))
 					<?php adminTaskPickerField('奖励物品', 'reward_props', adminTaskJoined($result['props']), 'props', 'count', true, 'task-wide', false); ?>
 					<textarea name="reward_raw" hidden="hidden"><?php echo adminH(adminTaskJoined($result['raw'])); ?></textarea>
 					<div class="field task-full task-time-pair">
-						<div><label>现有序列号</label><select class="select" name="sequence_id" data-task-sequence-select="1"><option value="0">自动新序列</option><?php $seenXulie = array(); foreach ($taskRows as $row) { $x = intval($row['xulie']); if ($x < 1 || isset($seenXulie[$x])) continue; $seenXulie[$x] = true; ?><option value="<?php echo $x; ?>"<?php echo intval($editTask['xulie']) === $x ? ' selected="selected"' : ''; ?>><?php echo $x; ?></option><?php } ?></select></div>
-						<div><label>后续任务</label><select class="select" name="next_task_id" data-task-next-select="1" data-task-initial-next="<?php echo intval($selectedNextId); ?>"><option value="0" data-task-xulie="0">无后续</option><?php foreach ($taskRows as $row) { $rowId = intval($row['id']); if ($rowId === intval($editTask['id'])) continue; $rowXulie = intval($row['xulie']); ?><option value="<?php echo $rowId; ?>" data-task-xulie="<?php echo $rowXulie; ?>"<?php echo $selectedNextId === $rowId ? ' selected="selected"' : ''; ?>><?php echo $rowId; ?> - <?php echo adminH($row['title']); ?> (xulie=<?php echo $rowXulie; ?>, cid=<?php echo adminH($row['cid']); ?>)</option><?php } ?></select></div>
+						<div><label>现有序列号</label><select class="select" name="sequence_id" data-task-sequence-select="1"><option value="0">自动新序列</option><?php $seenXulie = array(); if (intval($editTask['id']) > 0) foreach ($taskRows as $row) { $x = intval($row['xulie']); if ($x < 1 || isset($seenXulie[$x])) continue; $seenXulie[$x] = true; ?><option value="<?php echo $x; ?>"<?php echo intval($editTask['xulie']) === $x ? ' selected="selected"' : ''; ?>><?php echo $x; ?></option><?php } ?></select></div>
+						<div><label>后续任务</label><select class="select" name="next_task_id" data-task-next-select="1" data-task-initial-next="<?php echo intval($selectedNextId); ?>" data-task-initial-sequence="<?php echo intval($editTask['xulie']); ?>"><option value="0" data-task-xulie="0">无后续</option><?php if ($selectedNextId === intval($editTask['id']) && intval($editTask['id']) > 0) { ?><option value="<?php echo intval($editTask['id']); ?>" data-task-xulie="<?php echo intval($editTask['xulie']); ?>" selected="selected"><?php echo intval($editTask['id']); ?> - 当前任务（历史自指，保持不变）</option><?php } ?><?php foreach ($taskRows as $row) { $rowId = intval($row['id']); if ($rowId === intval($editTask['id'])) continue; $rowXulie = intval($row['xulie']); ?><option value="<?php echo $rowId; ?>" data-task-xulie="<?php echo $rowXulie; ?>"<?php echo $selectedNextId === $rowId ? ' selected="selected"' : ''; ?>><?php echo $rowId; ?> - <?php echo adminH($row['title']); ?> (xulie=<?php echo $rowXulie; ?>, cid=<?php echo adminH($row['cid']); ?>)</option><?php } ?></select></div>
 					</div>
 					<div class="field task-wide task-time-pair">
 						<div><label>限时开始</label><input class="input" type="datetime-local" name="limit_start" value="<?php echo $schedule ? adminH(adminTaskDateInput($schedule['starttime'])) : ''; ?>" /></div>

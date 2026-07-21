@@ -15,29 +15,34 @@
 require_once('../config/config.game.php');
 
 /*if (!defined('BATTLE_TIME_START'))
-	define(BATTLE_TIME_START, "20:00");
+	define('BATTLE_TIME_START', "20:00");
 if (!defined('BATTLE_TIME_END'))
-	define(BATTLE_TIME_END, "22:00");*/
+	define('BATTLE_TIME_END', "22:00");*/
 
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
 $today = date("Y-m-d", time());
 
 
 
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) die('');
 
 // 当前玩家战场个人信息。
 $battleinfo = $_pm['mysql']->getOneRecord("SELECT pos,jgvalue,curjgvalue
 										     FROM battlefield_user
-											WHERE uid={$_SESSION['id']}
+											WHERE uid={$uid} AND pos IN(1,2)
+											  AND lastvtime>=UNIX_TIMESTAMP(CURDATE())
+										 ORDER BY id LIMIT 1
 										");
 if (!is_array($battleinfo)) die('数据出错！');
 
 
 // 获得双方阵营HP
 $nshp = $_pm['mysql']->getRecords("SELECT srchp,hp,id,level_get
-							      FROM battlefield 
+							      FROM battlefield
 								 ORDER BY id
 							  ");
 if (!is_array($nshp)) die('不能获得数据!');
@@ -45,15 +50,25 @@ $zrhp = array();
 $ayhp = array();
 foreach ($nshp as $k => $v)
 {
+	if (!is_array($v)) continue;
 	if ($v['id'] == 1) $zrhp = $v;
 	else $ayhp = $v;
 }
+$zrhp['hp'] = isset($zrhp['hp']) ? intval($zrhp['hp']) : 0;
+$zrhp['srchp'] = isset($zrhp['srchp']) ? intval($zrhp['srchp']) : 1;
+$zrhp['level_get'] = isset($zrhp['level_get']) ? $zrhp['level_get'] : '';
+$ayhp['hp'] = isset($ayhp['hp']) ? intval($ayhp['hp']) : 0;
+$ayhp['srchp'] = isset($ayhp['srchp']) ? intval($ayhp['srchp']) : 1;
+$ayhp['level_get'] = isset($ayhp['level_get']) ? $ayhp['level_get'] : '';
+if($zrhp['srchp'] < 1) $zrhp['srchp'] = 1;
+if($ayhp['srchp'] < 1) $ayhp['srchp'] = 1;
 
 // 军功排名
 // 左边阵营军功排名
 $topzr = $_pm['mysql']->getRecords("SELECT b.curjgvalue as jgvalue,p.nickname as nickname
 								      FROM player as p,battlefield_user as b
 									 WHERE p.id=b.uid and b.pos=1 and b.curjgvalue>0
+									   AND b.lastvtime>=UNIX_TIMESTAMP(CURDATE())
 									 ORDER BY b.curjgvalue desc
 									 LIMIT 0,10
 								  ");
@@ -62,14 +77,20 @@ $topzr = $_pm['mysql']->getRecords("SELECT b.curjgvalue as jgvalue,p.nickname as
 $topay = $_pm['mysql']->getRecords("SELECT b.curjgvalue as jgvalue,p.nickname as nickname
 								      FROM player as p,battlefield_user as b
 									 WHERE p.id=b.uid and b.pos=2 and b.curjgvalue>0
+									   AND b.lastvtime>=UNIX_TIMESTAMP(CURDATE())
 									 ORDER BY b.curjgvalue desc
 									 LIMIT 0,10
 								  ");
+$zrlist = '';
+$aylist = '';
+$cet = '';
 if (is_array($topzr))
 {
 	foreach ($topzr as $k => $v)
 	{
-		$zrlist .= "<tr><td width=24%>".(++$k)."</td><td width=76>{$v['nickname']}</td></tr>";
+		$nickname = (is_array($v) && isset($v['nickname'])) ? $v['nickname'] : '';
+		$nickname = htmlspecialchars((string)$nickname, ENT_QUOTES, 'UTF-8');
+		$zrlist .= "<tr><td width=24%>".(++$k)."</td><td width=76>{$nickname}</td></tr>";
 	}
 }
 else $zrlist .= '';
@@ -78,7 +99,9 @@ if (is_array($topay))
 {
 	foreach ($topay as $k => $v)
 	{
-		$aylist .= "<tr><td width=24%>".(++$k)."</td><td width=76>{$v['nickname']}</td></tr>";
+		$nickname = (is_array($v) && isset($v['nickname'])) ? $v['nickname'] : '';
+		$nickname = htmlspecialchars((string)$nickname, ENT_QUOTES, 'UTF-8');
+		$aylist .= "<tr><td width=24%>".(++$k)."</td><td width=76>{$nickname}</td></tr>";
 	}
 }
 else $aylist .= '';
@@ -88,22 +111,24 @@ $a = 175; b=186
 */
 $imgwa = 173;
 $imgwb = 182;
-$initwa =  intval(($imgwa/$zrhp['srchp'])*$zrhp['hp']);// init img width.
-$initwb =  intval(($imgwb/$ayhp['srchp'])*$ayhp['hp']);// init img width.
+$zrMaxHp = isset($zrhp['srchp']) ? max(1, intval($zrhp['srchp'])) : 1;
+$ayMaxHp = isset($ayhp['srchp']) ? max(1, intval($ayhp['srchp'])) : 1;
+$initwa =  intval(($imgwa/$zrMaxHp)*intval($zrhp['hp']));// init img width.
+$initwb =  intval(($imgwb/$ayMaxHp)*intval($ayhp['hp']));// init img width.
 $initwa = $initwa<1?1:$initwa;
 $initwb = $initwb<1?1:$initwb;
 
 // 获得战场等级。30-45:10:1|0:1,46-60:20:1|0:1,61-70:30:2|0:1,71-80:40:2|0:1,81-90:50:3|0:1,91-100:60:3|0:1
-$patter = $zrhp['level_get'];
+$patter = intval($battleinfo['pos']) == 2 ? $ayhp['level_get'] : $zrhp['level_get'];
 $par = explode(',', $patter);
 $battlearr = array();
 $i=0;
 foreach ($par as $k => $v)
 {
 	$inparr = explode(':', $v, 2);
-	$battlearr[$i++] = $inparr[0];
-}	
-$battlelist  ='';				
+	if(isset($inparr[0]) && preg_match('/^[0-9]+-[0-9]+$/', $inparr[0])) $battlearr[$i++] = $inparr[0];
+}
+$battlelist  ='';
 foreach ($battlearr as $k => $v)
 {
 	if ($k == 3) $battlelist .= '<br/>';
@@ -117,7 +142,7 @@ $tn = $_game['template'] . 'tpl_battle_info.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#zrlist#',
 		         '#aylist#',
 		         '#userjgvalue#',
@@ -147,7 +172,7 @@ ob_end_flush();
 * @Usage: 战场是否结束。
 * @Param: none
 * @Return: true of false
-* Note: 
+* Note:
      结束有2种情况，一种是对方HP=0，另外是战场时间结束。
 */
 function battle_end()

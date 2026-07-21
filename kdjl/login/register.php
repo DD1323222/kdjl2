@@ -1,7 +1,6 @@
 <?php
 @session_start();
 require_once('../config/config.game.php');
-@session_start();
 ob_start();
 if(!isset($_SESSION['manager']) || $_SESSION['manager'] != 1)
 {
@@ -26,11 +25,13 @@ function grantNewPlayerRewards($db, $uid)
 	$rows = $db->getRecords('SELECT id,sell,vary FROM props WHERE id IN (' . implode(',', array_keys($rewardCounts)) . ')');
 	if (!is_array($rows) || count($rows) !== count($rewardCounts)) return false;
 	$values = array();
+	$found = array();
 	$now = time();
 	foreach ($rows as $row)
 	{
 		$pid = intval($row['id']);
 		if (!isset($rewardCounts[$pid])) continue;
+		$found[$pid] = true;
 		$count = intval($rewardCounts[$pid]);
 		$sell = intval($row['sell']);
 		$vary = intval($row['vary']);
@@ -43,17 +44,29 @@ function grantNewPlayerRewards($db, $uid)
 			for ($i = 0; $i < $count; $i++) $values[] = '(' . intval($uid) . ",{$pid},{$sell},{$vary},1,{$now})";
 		}
 	}
-	if (count($values) !== count($rewardCounts)) return false;
+	if (count($found) !== count($rewardCounts) || empty($values)) return false;
 	return $db->query('INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES ' . implode(',', $values)) ? true : false;
 }
 
-$battletimearr = unserialize($_pm['mem']->get(MEM_TIME_KEY));
-foreach($battletimearr as $v)
+function registerFail($message)
 {
-	if($v['titles'] == "login")
+	global $_pm;
+	if(isset($_pm['mysql'])) $_pm['mysql']->query('ROLLBACK');
+	die($message);
+}
+
+$login = '0';
+$_gm = array('name' => array());
+$battletimearr = kdjlSafeMemValue($_pm['mem']->get(MEM_TIME_KEY), array());
+if (is_array($battletimearr))
+{
+	foreach($battletimearr as $v)
 	{
-		$login = $v['days'];
-		break;
+		if($v['titles'] == "login")
+		{
+			$login = $v['days'];
+			break;
+		}
 	}
 }
 if($login != "0")
@@ -62,44 +75,32 @@ if($login != "0")
 	$gm_in_mem = $welcome['admin']['contents'];
 	if(!empty($gm_in_mem))
 	{
-		$_gm['name'] = array_merge($_gm['name'],preg_split("/[,；;，]/",$gm_in_mem));
+	$_gm['name'] = array_merge($_gm['name'], preg_split("/(?:,|;|\\xEF\\xBC\\x8C|\\xEF\\xBC\\x9B)+/", $gm_in_mem, -1, PREG_SPLIT_NO_EMPTY));
 	}
-	/*if(!in_array($_SESSION['username'],$_gm['name']) ) 
+	/*if(!in_array($_SESSION['username'],$_gm['name']) )
 	{
 		die('维护中，暂停注册！');
 	}*/
 }
 //die('维护中，暂停注册！');
 
-if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
+$requestBname = (isset($_REQUEST['bname']) && !is_array($_REQUEST['bname'])) ? $_REQUEST['bname'] : '';
+$requestBc = (isset($_REQUEST['bc']) && !is_array($_REQUEST['bc'])) ? $_REQUEST['bc'] : '';
+if($requestBname!='' && $requestBc!='')
 {
 	require_once("../config/config.game.php");
 
-	$p['bname']=preg_replace("/[\s]/",'',trim(isset($_GET['bname']) ? $_GET['bname'] : ''));
-	//echo $p['bname']."  5<br/>\r\n";
-	require_once('../socketChat/badWord.php');
-	for($i=0;$i<count($badArr);$i++)
+	$p['bname']=preg_replace("/[\s]/",'',trim($requestBname));
+	if(!kdjlValidNickname($p['bname']))
 	{
-		if(!empty($badArr[$i]) && substr($p['bname'],0,strlen($badArr[$i])) == $badArr[$i])
-		{
-			ob_clean();
-			
-			ob_end_flush();
-			
-			die("输入的角色名中(".$badArr[$i].")为禁止使用的词！");
-		}
-		else if(!empty($badArr[$i]) && strpos($p['bname'],$badArr[$i]) > 0)
-		{
-			ob_clean();
-			
-			ob_end_flush();
-			
-			die("输入的角色名中(".$badArr[$i].")为禁止使用的词！");
-		}
-		else
-		{
-			//echo $badArr[$i];
-		}
+		die('角色名格式或长度不符！');
+	}
+	//echo $p['bname']."  5<br/>\r\n";
+	require_once(dirname(__FILE__).'/../socketChat/badWord.php');
+	$blockedWord = kdjlFindBlockedWord($p['bname']);
+	if($blockedWord !== false)
+	{
+		die('输入的角色名中('.$blockedWord.')为禁止使用的词！');
 	}
 	//echo $p['bname']."  2<br/>\r\n";
 	$msg =$p['bname'];
@@ -109,44 +110,62 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 	$tuSql = $_pm['mysql']->escape($tu);
 	//$tu	= mysql_real_escape_string(preg_replace("/[ 	 _\s　	]/",'',trim($p['bname'])));
 	//$tu	= preg_replace("/[\s_]/",'',$p['bname']);
-	
-	$u	= isset($_GET['username']) ? $_GET['username'] : '';
+
+	$u	= (isset($_REQUEST['username']) && !is_array($_REQUEST['username'])) ? trim($_REQUEST['username']) : '';
+	if(!kdjlValidAccountName($u))
+	{
+		die('账号格式错误！');
+	}
+	$pass = (isset($_REQUEST['pass']) && !is_array($_REQUEST['pass'])) ? $_REQUEST['pass'] : '';
+	if($pass === '' || strlen($pass) > 64)
+	{
+		die('密码格式错误！');
+	}
 	$uSql = $_pm['mysql']->escape($u);
 	//$bc	= $p['bc'];
-	$bc	= isset($_GET['bc']) ? intval($_GET['bc']) : 1;
-	$rs = $_pm['mysql']->getOneRecord("SELECT id 
-							   FROM player 
+	$bc	= intval($requestBc);
+	$rs = $_pm['mysql']->getOneRecord("SELECT id
+							   FROM player
 							  WHERE nickname='{$tuSql}'");
 
 	if (!is_array($rs))
 	{
-		$rs = $_pm['mysql']->getOneRecord("SELECT id 
-							   FROM player 
-							  WHERE name='{$uSql}' and password <>'".str_repeat('0',32)."'");
+		$rs = $_pm['mysql']->getOneRecord("SELECT id
+							   FROM player
+							  WHERE name='{$uSql}'");
 	}
-	if(!isset($_GET['sex'])) $_GET['sex']=0;
-	
-	$p['sex'] = $_GET['sex']==1?'帅哥':'美女';
-	
-	if (strlen(trim($tu))<4 || strlen(trim($tu))>21){ $err="角色名长度不符！";echo $err;exit();}
+	$requestSex = (isset($_REQUEST['sex']) && !is_array($_REQUEST['sex'])) ? intval($_REQUEST['sex']) : 0;
+	if($requestSex !== 1 && $requestSex !== 2) die('请选择角色性别！');
+	$p['sex'] = $requestSex==1?'帅哥':'美女';
+
 	if (is_array($rs))
 	{
 		die('角色已经存在或者您已经有一个角色!');
 	}
 	else
 	{
-		$p['head'] = (isset($_GET['head']) && intval($_GET['head'])>0)?intval($_GET['head']):1;
+		$p['head'] = (isset($_REQUEST['head']) && !is_array($_REQUEST['head'])) ? intval($_REQUEST['head']) : 0;
+		if($p['head'] < 1 || $p['head'] > 6) die('请选择有效头像！');
 		if($bc < 1 || $bc > 5) $bc=1;
 		//die('注册成功！调试');
 		// insert user data.
 
-		$pass = isset($_GET['pass']) ? $_GET['pass'] : '';
-		$_pm['mysql']->query("INSERT INTO player(name,secret,nickname,sex,regtime,lastvtime,money,yb,headimg,task)
+		if(!$_pm['mysql']->query('START TRANSACTION'))
+		{
+			die('注册失败：系统繁忙。');
+		}
+		if(!$_pm['mysql']->query("INSERT INTO player(name,secret,nickname,sex,regtime,lastvtime,money,yb,headimg,task)
 				    VALUES('{$uSql}','".md5($pass)."','{$tuSql}','{$p['sex']}',".time().",".time().",0,0,'{$p['head']}','')
-				  ");
-		$_SESSION['username'] = 	$u;	
-		$_SESSION['id'] = $_pm['mysql']->last_id(); 
-		$_SESSION['LoginApiState'] = 1;
+				  "))
+		{
+			if(mysql_errno($_pm['mysql']->getConn()) == 1062) registerFail('角色已经存在或者您已经有一个角色!');
+			registerFail('注册失败：玩家数据创建失败。');
+		}
+		$newUid = intval($_pm['mysql']->last_id());
+		if($newUid < 1)
+		{
+			registerFail('注册失败：玩家数据创建失败。');
+		}
 		// insert user bb init data.
 		switch($bc)
 		{
@@ -159,64 +178,116 @@ if($_REQUEST['bname']!='' && $_REQUEST['bc']!='')
 			default:$tbc = 1;break;
 		}
 		$bb = $_pm['mysql']->getOneRecord("SELECT * FROM bb WHERE id={$tbc} LIMIT 0,1");
-		
+
 		if (is_array($bb))
 		{
 			$czl = getCzl($bb['czl']);
-			$uinfo = $_pm['mysql']->getOneRecord("SELECT id,nickname 
-										  FROM player 
-										 WHERE name='{$uSql}' 
-										 LIMIT 0,1");
-
-			
-			$_pm['mysql']->query("INSERT INTO userbb(name,uid,username,level,wx,ac,mc,srchp,hp,srcmp,mp,skillist,stime,nowexp,
-									lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg)
-					    VALUES('{$bb['name']}','{$uinfo['id']}','{$uinfo['nickname']}','1','{$bb['wx']}',
-						       '{$bb['ac']}','{$bb['mc']}','{$bb['hp']}','{$bb['hp']}','{$bb['mp']}','{$bb['mp']}','{$bb['skillist']}',unix_timestamp(),
-							  '{$bb['nowexp']}','55','{$bb['imgstand']}','{$bb['imgack']}','{$bb['imgdie']}',
-							   '{$bb['hits']}','{$bb['miss']}','{$bb['speed']}','{$bb['kx']}','{$bb['remakelevel']}',
-							   '{$bb['remakeid']}','{$bb['remakepid']}','{$czl}','t{$tbc}.gif','k{$tbc}.gif','q{$tbc}.gif')
-					  ");
-			$ids = $_pm['mysql']->getOneRecord("SELECT id 
-										FROM userbb 
-									   WHERE uid={$uinfo['id']} 
-									   ORDER BY stime DESC 
-									   LIMIT 0,1"); // get last bb.
-			
-			$arr = split(":", $bb['skillist']);
-			// Get jn info.
-			$jn = $_pm['mysql']->getOneRecord("SELECT * 
-									   FROM skillsys 
-									  WHERE id = {$arr[0]}");
-			$ack  = split(",", $jn['ackvalue']);
-			$plus = split(",", $jn['plus']);
-			$uhp  = split(",", $jn['uhp']);
-			$ump  = split(",", $jn['ump']);
-			// Insert userbb jn.
-						
-			$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump)
-					  	VALUES('{$ids['id']}', '{$jn['name']}','{$arr['1']}','{$jn['vary']}','{$jn['wx']}','{$ack['0']}','{$plus['0']}','{$jn['img']}','{$uhp['0']}','{$ump['0']}')
-					  ");
+			$uinfo = array('id' => $newUid, 'nickname' => $tu);
 			$uinfoNicknameSql = $_pm['mysql']->escape($uinfo['nickname']);
-			$_pm['mysql']->query("UPDATE player SET mbid = {$ids['id']} WHERE nickname='{$uinfoNicknameSql}'");
+			$bbNameSql = $_pm['mysql']->escape($bb['name']);
+			$bbSkillistSql = $_pm['mysql']->escape($bb['skillist']);
+			$bbImgStandSql = $_pm['mysql']->escape($bb['imgstand']);
+			$bbImgAckSql = $_pm['mysql']->escape($bb['imgack']);
+			$bbImgDieSql = $_pm['mysql']->escape($bb['imgdie']);
+			$bbKxSql = $_pm['mysql']->escape($bb['kx']);
+			$bbRemakeLevelSql = $_pm['mysql']->escape($bb['remakelevel']);
+			$bbRemakeIdSql = $_pm['mysql']->escape($bb['remakeid']);
+			$bbRemakePidSql = $_pm['mysql']->escape($bb['remakepid']);
+
+
+			if(!$_pm['mysql']->query("INSERT INTO userbb(name,uid,username,level,wx,ac,mc,srchp,hp,srcmp,mp,skillist,stime,nowexp,
+									lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg,old_bid)
+					    VALUES('{$bbNameSql}','{$uinfo['id']}','{$uinfoNicknameSql}','1','".intval($bb['wx'])."',
+						       '".intval($bb['ac'])."','".intval($bb['mc'])."','".intval($bb['hp'])."','".intval($bb['hp'])."','".intval($bb['mp'])."','".intval($bb['mp'])."','{$bbSkillistSql}',unix_timestamp(),
+							  '".intval($bb['nowexp'])."','55','{$bbImgStandSql}','{$bbImgAckSql}','{$bbImgDieSql}',
+							   '".intval($bb['hits'])."','".intval($bb['miss'])."','".intval($bb['speed'])."','{$bbKxSql}','{$bbRemakeLevelSql}',
+							   '{$bbRemakeIdSql}','{$bbRemakePidSql}','{$czl}','t{$tbc}.gif','k{$tbc}.gif','q{$tbc}.gif','{$tbc}')
+					  "))
+			{
+				registerFail('注册失败：初始宠物创建失败。');
+			}
+			$newPetId = intval($_pm['mysql']->last_id());
+			if($newPetId < 1)
+			{
+				registerFail('注册失败：初始宠物创建失败。');
+			}
+			$ids = array('id' => $newPetId);
+
+			$arr = explode(":", $bb['skillist']);
+			if(count($arr) < 2 || intval($arr[0]) < 1 || intval($arr[1]) < 1)
+			{
+				registerFail('注册失败：初始技能配置错误。');
+			}
+			// Get jn info.
+			$jn = $_pm['mysql']->getOneRecord("SELECT *
+									   FROM skillsys
+									  WHERE id = ".intval($arr[0]));
+			if(!is_array($jn))
+			{
+				registerFail('注册失败：初始技能读取失败。');
+			}
+			$ack  = explode(",", $jn['ackvalue']);
+			$plus = explode(",", $jn['plus']);
+			$uhp  = explode(",", $jn['uhp']);
+			$ump  = explode(",", $jn['ump']);
+			if(!isset($ack[0]) || !isset($plus[0]) || !isset($uhp[0]) || !isset($ump[0]))
+			{
+				registerFail('注册失败：初始技能配置错误。');
+			}
+			$skillNameSql = $_pm['mysql']->escape($jn['name']);
+			$skillVarySql = $_pm['mysql']->escape($jn['vary']);
+			$skillWxSql = $_pm['mysql']->escape($jn['wx']);
+			$skillAckSql = $_pm['mysql']->escape($ack[0]);
+			$skillPlusSql = $_pm['mysql']->escape($plus[0]);
+			$skillImgSql = $_pm['mysql']->escape($jn['img']);
+			$skillUhpSql = $_pm['mysql']->escape($uhp[0]);
+			$skillUmpSql = $_pm['mysql']->escape($ump[0]);
+			// Insert userbb jn.
+
+			if(!$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump)
+						VALUES('{$ids['id']}', '{$skillNameSql}','".intval($arr[1])."','{$skillVarySql}','{$skillWxSql}','{$skillAckSql}','{$skillPlusSql}','{$skillImgSql}','{$skillUhpSql}','{$skillUmpSql}')
+					  "))
+			{
+				registerFail('注册失败：初始技能创建失败。');
+			}
+			if(!$_pm['mysql']->query("UPDATE player SET mbid = {$ids['id']} WHERE id={$uinfo['id']}"))
+			{
+				registerFail('注册失败：主战宠物设置失败。');
+			}
 			if (!$_pm['mysql']->query("INSERT INTO player_ext(uid,bbshow,new_guide_step) VALUES({$uinfo['id']},5,-1)"))
 			{
-				die('注册失败：玩家扩展数据创建失败。');
+				registerFail('注册失败：玩家扩展数据创建失败。');
 			}
 			if (!grantNewPlayerRewards($_pm['mysql'], $uinfo['id']))
 			{
-				die('注册失败：新手奖励发放失败。');
+				registerFail('注册失败：新手奖励发放失败。');
 			}
-			$_pm['mysql'] -> query("INSERT INTO `lock`(uid,lockvalue) values({$uinfo['id']},0)");
+			if(!$_pm['mysql'] -> query("INSERT INTO `lock`(uid,lockvalue) values({$uinfo['id']},0)"))
+			{
+				registerFail('注册失败：玩家锁数据创建失败。');
+			}
+			if(!$_pm['mysql']->query('COMMIT'))
+			{
+				registerFail('注册失败：数据提交失败。');
+			}
+			session_regenerate_id(true);
+			$_SESSION['username'] = 	$u;
+			$_SESSION['name'] = $u;
+			$_SESSION['nickname'] = $tu;
+			$_SESSION['id'] = $newUid;
+			$_SESSION['LoginApiState'] = 1;
+			$_SESSION['game_server_flag'] = GAME_SERVER_FLAG;
 
-			$_pm['mem']->set(array('k'=>MEM_SYSWORD_KEY, 
+			$_pm['mem']->set(array('k'=>MEM_SYSWORD_KEY,
 					      'v'=>'欢迎新'.$p['sex'].$tu.'携带宝宝 '.$bb['name'].' 进入口袋精灵世界！'));
 ###########################网易用户通知  2011-3-11 薛原####################################
-			$dom = explode('.',$_SERVER['HTTP_HOST']);	  
-			die("1");
+			$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+			$dom = explode('.',$httpHost);
+			die("OK1");
 		}
 		else
 		{
+			$_pm['mysql']->query('ROLLBACK');
 			die('注册失败！！！\n请联系客服！');
 		}
 	}

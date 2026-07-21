@@ -1,5 +1,5 @@
 <?php
-require_once('config/config.game.php');
+require_once(dirname(__FILE__).'/config/config.game.php');
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -26,7 +26,7 @@ a:hover {text-decoration:underline}
 <div class="news" style="color:#330000;line-height:23px;font-size:12px;">
 <?php
 $c = $_pm['mysql'] -> getOneRecord('SELECT contents FROM welcome WHERE code = "ifrc"');
-echo $c['contents'];
+echo is_array($c) && isset($c['contents']) ? $c['contents'] : '';
 ?>
 </div>
 </body>

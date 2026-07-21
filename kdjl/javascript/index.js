@@ -3,7 +3,7 @@
 var def1=['zdh05-0.gif','zdh06-0.gif','zdh07-0.gif','zdh08-0.gif'];
 var sel1=['zdh05.gif','zdh06.gif','zdh07.gif','zdh08.gif'];
 var autoack=false;
-var waittime=10;
+var waittime=5;
 var usejn=1;
 var test=0;
 var settime;
@@ -128,13 +128,13 @@ function ShowBox(name,cursel,n)
 }
 
 
-function getTaskAll(){
+function getTaskAll(keepDetail){
 
 		var taskall_bot=$('Box_Tools_3');
 		var taskall_list=$('task_every_list');
 			taskall_bot.style.display='block';
 			taskall_list.style.display='block';
-			$('task_every_list').innerHTML=''
+			if(!keepDetail) $('task_every_list').innerHTML=''
 			
 		
 		var opt = {
@@ -454,7 +454,16 @@ function ctips(obj)
 }
 function sel(obj)
 {
-	if(selid!=0) selid.style.backgroundColor='#F1F7DC';
+	if(selid!=0 && selid.style)
+	{
+		selid.style.backgroundColor = typeof(selid._kdjlOriginalBackground) == 'string'
+			? selid._kdjlOriginalBackground
+			: '';
+	}
+	if(typeof(obj._kdjlOriginalBackground) == 'undefined')
+	{
+		obj._kdjlOriginalBackground = obj.style.backgroundColor || '';
+	}
 	selid=obj;
 	obj.style.backgroundColor='#DFD496';
 }
@@ -557,7 +566,7 @@ function putBagPropsAllSameIn() {
                 }else if (ret == 5) {
                     window.parent.Alert('没有需要放入仓库的道具!');
                 }else{
-                    window.parent.Alert('error!'+ret);
+                    window.parent.Alert('操作失败，错误码：'+ret);
                 }
             },
             asynchronous:true        
@@ -1328,7 +1337,7 @@ function doSacrifice()
 			},
 		asynchronous:true
 	}
-	var ajax=new Ajax.Request('/function/usedProps.php?id='+$('SacrificeList').value+'&js', opt);	
+	var ajax=new Ajax.Request('/function/usedProps.php?pid='+$('SacrificeList').value+'&js=1', opt);
 }
 //
 function Sacrifice()
@@ -1354,7 +1363,7 @@ function Sacrifice()
     		 	},
     	 	asynchronous:true
 		}
-		var ajax=new Ajax.Request('/function/getBagOfVary.php', opt);	
+		var ajax=new Ajax.Request('/function/getBagOfVary.php?format=options', opt);
 	}catch(e){
 		
 	}

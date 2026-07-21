@@ -5,6 +5,7 @@ function adminPageStart($title, $active)
 	$shopOpen = in_array($active, array('yb', 'sj', 'vip', 'limited'));
 	$queryOpen = in_array($active, array('evolution', 'slime', 'nirvana', 'merge'));
 	$dropOpen = in_array($active, array('monster_drops', 'item_drops', 'activity_drops'));
+	$contentOpen = in_array($active, array('pets', 'items'));
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -19,6 +20,11 @@ function adminPageStart($title, $active)
 		<aside class="sidebar">
 			<div class="brand">游戏管理</div>
 			<nav>
+				<details class="nav-group"<?php echo $contentOpen ? ' open="open"' : ''; ?>>
+					<summary>内容定制</summary>
+					<a<?php echo $active === 'pets' ? ' class="active"' : ''; ?> href="pets.php">宠物定制管理</a>
+					<a<?php echo $active === 'items' ? ' class="active"' : ''; ?> href="items.php">道具修改管理</a>
+				</details>
 				<details class="nav-group"<?php echo $dropOpen ? ' open="open"' : ''; ?>>
 					<summary>掉落管理</summary>
 					<a<?php echo $active === 'monster_drops' ? ' class="active"' : ''; ?> href="drops.php">怪物掉落管理</a>
@@ -27,6 +33,7 @@ function adminPageStart($title, $active)
 				</details>
 				<a class="nav-direct<?php echo $active === 'activities' ? ' active' : ''; ?>" href="activities.php">活动管理</a>
 				<a class="nav-direct<?php echo $active === 'tasks' ? ' active' : ''; ?>" href="tasks.php">任务管理</a>
+				<a class="nav-direct<?php echo $active === 'grant' ? ' active' : ''; ?>" href="grant.php">物品发放</a>
 				<details class="nav-group"<?php echo $shopOpen ? ' open="open"' : ''; ?>>
 					<summary>神秘商店管理</summary>
 					<a<?php echo $active === 'yb' ? ' class="active"' : ''; ?> href="index.php">神秘商店管理</a>
@@ -63,7 +70,7 @@ function adminPageEnd()
 function adminPropLabel($row)
 {
 ?>
-	<div class="item"><img src="../images/ui/bag/<?php echo intval($row['varyname']); ?>.gif" alt="" /><div><strong><?php echo adminH($row['name']); ?></strong><span>#<?php echo intval($row['id']); ?></span></div></div>
+	<div class="item"><img src="../images/ui/bag/<?php echo intval($row['varyname']); ?>.gif" alt="" /><div><strong><?php echo adminH($row['name']); ?></strong><span>id=<?php echo intval($row['id']); ?></span></div></div>
 <?php
 }
 

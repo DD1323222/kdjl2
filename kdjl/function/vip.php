@@ -55,6 +55,7 @@ $atime = date("Hi");
 	$sql = "SELECT * from yblog where buytime >= {$time3}";//在这段时间的元宝售出记录
 	$ybarr = $_pm['mysql'] -> getRecords($sql);
 	$namearr = array();
+	$arrs = array();
 	if(is_array($ybarr))
 	{
 		foreach($ybarr as $v)
@@ -76,7 +77,8 @@ $atime = date("Hi");
 			}
 		}
 	}
-	$props = unserialize($m->get(MEM_PROPS_KEY));
+	$props = kdjlSafeMemValue($m->get(MEM_PROPS_KEY), array());
+	if(!is_array($props)) $props = array();
 	foreach($props as $p)
 	{
 		foreach($arrs as $k => $av)
@@ -87,7 +89,9 @@ $atime = date("Hi");
 				$sql = "SELECT sum(sums) as sums,sum(bsum) as bsum,sum(psum) as psum from userbag where pid = {$p['id']}";
 				//$sql = "SELECT sum(sums) as sums,sum(bsum) as bsum,sum(psum) as psum from userbag where pid = {$p['id']} and types != 0";
 				$result = $_pm['mysql'] -> getOneRecord($sql);
-				$nums = $result['sums'] + $result['bsum'] + $result['psum'];
+				$nums = is_array($result)
+					? intval($result['sums']) + intval($result['bsum']) + intval($result['psum'])
+					: 0;
 				$arrs[$k]['snums'] = $nums;
 			}
 			else
@@ -98,6 +102,10 @@ $atime = date("Hi");
 	}
 	foreach($arrs as $ams)
 	{
+		if(!isset($ams['pid']) || intval($ams['pid']) < 1) continue;
+		$ams['pid'] = intval($ams['pid']);
+		$ams['snums'] = isset($ams['snums']) ? intval($ams['snums']) : 0;
+		$ams['nums'] = isset($ams['nums']) ? intval($ams['nums']) : 0;
 		$tt = time();
 		$sql = "SELECT times FROM monlog where pid = {$ams['pid']} ORDER BY id desc limit 0,1";
 		$ar = $_pm['mysql'] -> getOneRecord($sql);

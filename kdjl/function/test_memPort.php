@@ -1,6 +1,4 @@
 <?php
-
-require_once('../config/config.game.php');
-
-echo $_mem['host'].':'.$_mem['port'];
+header('HTTP/1.1 404 Not Found');
+exit;
 ?>

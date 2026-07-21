@@ -1,12 +1,51 @@
 <?php
-header('Content-Type:text/html;charset=gbk');
+header('Content-Type:text/html;charset=UTF-8');
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$guildBattleMaxLevelGap = 9;
 
-$op = isset($_GET['op']) ? $_GET['op'] : '';
+function guildHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function guildJsSingle($value)
+{
+	return addcslashes((string)$value, "\\'\n\r");
+}
+
+function guildLegacyTextLength($value)
+{
+	$value = strval($value);
+	if($value === '') return 0;
+	if(!preg_match_all('/./us', $value, $matches)) return PHP_INT_MAX;
+	$length = 0;
+	foreach($matches[0] as $character) $length += strlen($character) == 1 ? 1 : 2;
+	return $length;
+}
+
+function guildTransactionDie($message)
+{
+	global $_pm;
+	if(isset($_pm['mysql'])) $_pm['mysql']->query('ROLLBACK');
+	die($message);
+}
+
+function guildClearUserCache($targetUid, $clearBag)
+{
+	global $_pm;
+	$targetUid = intval($targetUid);
+	if($targetUid < 1) return;
+	$_pm['mem']->del(strval($targetUid));
+	if($clearBag) $_pm['mem']->del($targetUid.'bag');
+}
+
+$op = (isset($_GET['op']) && !is_array($_GET['op'])) ? $_GET['op'] : '';
 //guild_update_mem();exit;
 if($op == 'show'){
-	$id = intval($_GET['id']);
+	$id = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
 
 	if($id == 1){
 		$order = 'honor';
@@ -48,20 +87,26 @@ if($op == 'show'){
 				</tr>';
 	}else{
 		foreach($guild as $v){
+			$gid = isset($v['gid']) ? intval($v['gid']) : 0;
+			$gname = guildHtml(isset($v['gname']) ? $v['gname'] : '');
+			$nickname = guildHtml(isset($v['nickname']) ? $v['nickname'] : '');
+			$honor = isset($v['honor']) ? intval($v['honor']) : 0;
+			$level = isset($v['level']) ? intval($v['level']) : 0;
+			$memberNumber = isset($v['number_of_member']) ? intval($v['number_of_member']) : 0;
 			$guildstr .= '<tr>
-				  <td width="20%" height="24" style="cursor:pointer" onclick="show_guild_info('.$v['gid'].')" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'">'.$v['gname'].'</td>
-				  <td width="20%" height="24" align="center">'.$v['nickname'].'</td>
-				  <td width="20%" height="24" align="center">'.$v['honor'].'</td>
-				  <td width="20%" height="24" align="center">'.$v['level'].'</td>
-				  <td width="20%" height="24" align="center">'.$v['number_of_member'].'</td>
+				  <td width="20%" height="24" style="cursor:pointer" onclick="show_guild_info('.$gid.')" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'">'.$gname.'</td>
+				  <td width="20%" height="24" align="center">'.$nickname.'</td>
+				  <td width="20%" height="24" align="center">'.$honor.'</td>
+				  <td width="20%" height="24" align="center">'.$level.'</td>
+				  <td width="20%" height="24" align="center">'.$memberNumber.'</td>
 				</tr>';
 		}
-		
+
 	}
 	$guildstr .= '</table>';
 	echo $guildstr;
 }else if($op == 'create'){
-	function getWordCharInt($str) 
+	function getWordCharInt($str)
 	{
 		$stro=$str;
 		if(strpos($str,'　') !== false){
@@ -73,24 +118,24 @@ if($op == 'show'){
 		)
 		{
 			return false;
-		}	
-		
+		}
+
 		$str = $stro;
-		
+
 		$list = array('{','}','gm','日','客服','法轮功','胡锦涛','妈','搞','\?','<','>','管理','系统','公告','颁奖','元宝','出售','提示','kefu','代练','共产党','国民党','商务','5173','销售','淘宝','江泽民','毛泽东','温家宝','周恩来','习近平','奥巴马','热比娅','台湾','西藏','新疆','藏','本拉登','暴动','吸毒','赌博','走私','抽头','开房','一夜情','海洛因','大麻','鸦片','傻逼','shit','bitch');
-		
+
 		foreach($list as $v)
 		{
-			$reg = '/'.$v.'/i';
+			$reg = '/'.preg_quote($v, '/').'/i';
 			if(preg_match($reg,$str)){
 				return false;
 			}
 		}
 		return true;
 	}
-	$guild_name = $_GET['name'];
-	$guild_info = $_GET['info'];
-	$check_time = $_pm['mem'] -> get('last_exit_guild_time_'.$_SESSION['id']);
+	$guild_name = (isset($_GET['name']) && !is_array($_GET['name'])) ? $_GET['name'] : '';
+	$guild_info = (isset($_GET['info']) && !is_array($_GET['info'])) ? $_GET['info'] : '';
+	$check_time = $_pm['mem'] -> get('last_exit_guild_time_'.$uid);
 	if ($check_time > 0) {
 		$time = time();
 		$ctime = ($time - $check_time) - 24 * 3600;
@@ -102,22 +147,30 @@ if($op == 'show'){
 	{
 		die("输入的名称和信息不能含有特殊符号或者禁止使用的词！");
 	}
-	if($guild_name == '' || $guild_info == '' || strlen($guild_name) < 4  || strlen($guild_name) > 16 || strlen($guild_info) > 400){
+	$guildNameLength = guildLegacyTextLength($guild_name);
+	$guildInfoLength = guildLegacyTextLength($guild_info);
+	if($guild_name == '' || $guild_info == '' || $guildNameLength < 4 || $guildNameLength > 16 || $guildInfoLength > 400){
 		die('1');//格式不正确
 	}
 	//判断是否符合创建条件
 
-	$user = $_pm['mysql'] -> getOneRecord("SELECT guild_request,vip FROM player_ext,player WHERE player.id = player_ext.uid AND uid = {$_SESSION['id']}");
-	
-	$guildcheck = $_pm['mysql'] -> getOneRecord("SELECT member_id FROM guild_members WHERE member_id = {$_SESSION['id']}");
+	if(!$_pm['mysql'] -> query("INSERT INTO player_ext(uid,bbshow) VALUES($uid,5) ON DUPLICATE KEY UPDATE uid=uid")){
+		die('7');
+	}
+	$user = $_pm['mysql'] -> getOneRecord("SELECT guild_request,vip FROM player_ext,player WHERE player.id = player_ext.uid AND uid = $uid");
+	if(!is_array($user)){
+		die('7');
+	}
+
+	$guildcheck = $_pm['mysql'] -> getOneRecord("SELECT member_id FROM guild_members WHERE member_id = $uid");
 	if(is_array($guildcheck)){
 		die('3');//您已经加入到其它家族，不能创建！
 	}
-	
+
 	if($user['vip'] < 10){
 		die('4');//您的积分不足10，不能创建！
 	}
-	
+
 	//判断是否拥有当月vip卡
 	/*$arr = array("1427","1474","1475","1476","1477","1478","1479","1480","1481","1482","1483","1484","1485");
 	$arrayid=date('n');
@@ -127,8 +180,8 @@ if($op == 'show'){
 		$arrayidjian=$arrayid-1;
 		$arraycode=array("1427",$arr[$arrayidjian],$arr[$arrayid]);
 	}
-	$u_bags=getUserBagByIds($_SESSION['id'], $arraycode, $_pm['mysql']); 
-	
+	$u_bags=getUserBagByIds($uid, $arraycode, $_pm['mysql']);
+
    $userIsVip = false;
 	foreach($u_bags as $v)
 	{
@@ -138,126 +191,218 @@ if($op == 'show'){
 			break;
 		}
 	}
-	
+
 	if($userIsVip !== true){
 		die('5');//您没有当月vip卡，不能创建！
 	}*/
-	$bagCheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM userbag WHERE uid = {$_SESSION['id']} AND pid = 2494 AND sums > 0");
-	if(!is_array($bagCheck)) die('5');
 	//判断通过，创建家族
+	$uid = intval($uid);
+	$guildNameSql = $_pm['mysql']->escape($guild_name);
+	$guildInfoSql = $_pm['mysql']->escape($guild_info);
 	$time = time();
-	$_pm['mysql'] -> query("INSERT INTO guild(name,info,creator_id,president_id,create_time) VALUES('$guild_name','$guild_info',{$_SESSION['id']},{$_SESSION['id']},$time)");
+	if(!$_pm['mysql'] -> query('START TRANSACTION')){
+		die('7');
+	}
+	if(!$_pm['mysql'] -> query("INSERT INTO player_ext(uid,bbshow) VALUES($uid,5) ON DUPLICATE KEY UPDATE uid=uid")){
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('7');
+	}
+	$lockedUser = $_pm['mysql']->getOneRecord("SELECT player.vip,player_ext.guild_request
+		FROM player INNER JOIN player_ext ON player.id=player_ext.uid
+		WHERE player.id=$uid FOR UPDATE");
+	if(!is_array($lockedUser)){
+		$_pm['mysql']->query('ROLLBACK');
+		die('7');
+	}
+	if(intval($lockedUser['guild_request']) > 0){
+		$_pm['mysql']->query('ROLLBACK');
+		die('2');
+	}
+	$lockedMember = $_pm['mysql']->getOneRecord("SELECT member_id FROM guild_members WHERE member_id=$uid FOR UPDATE");
+	if(is_array($lockedMember)){
+		$_pm['mysql']->query('ROLLBACK');
+		die('3');
+	}
+	if(intval($lockedUser['vip']) < 10){
+		$_pm['mysql']->query('ROLLBACK');
+		die('4');
+	}
+	$sameName = $_pm['mysql']->getOneRecord("SELECT id FROM guild WHERE name='$guildNameSql' LIMIT 1 FOR UPDATE");
+	if(is_array($sameName)){
+		$_pm['mysql']->query('ROLLBACK');
+		die('9');
+	}
+	$bagCheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM userbag WHERE uid = $uid AND pid = 2494 AND sums > 0 AND zbing = 0 AND (cantrade IS NULL OR cantrade <> 3) ORDER BY id LIMIT 1 FOR UPDATE");
+	if(!is_array($bagCheck)){
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('5');
+	}
+	$guildCreated = $_pm['mysql'] -> query("INSERT INTO guild(name,info,creator_id,president_id,create_time,victory_times,failed_times) VALUES('$guildNameSql','$guildInfoSql',$uid,$uid,$time,0,0)");
+	$guildCreateError = $guildCreated ? 0 : mysql_errno($_pm['mysql'] -> getConn());
 	$lastid = $_pm['mysql'] ->last_id();
-	if(mysql_affected_rows($_pm['mysql'] -> getConn()) == 1){
-		$_pm['mysql'] -> query("UPDATE player SET vip = vip - 10 WHERE id = {$_SESSION['id']} AND vip >= 10");
-		
-		if(mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
-			$_pm['mysql'] -> query("DELETE FROM guild WHERE creator_id = {$_SESSION['id']}");
+	if($guildCreated && mysql_affected_rows($_pm['mysql'] -> getConn()) == 1){
+		$vipUsed = $_pm['mysql'] -> query("UPDATE player SET vip = vip - 10 WHERE id = $uid AND vip >= 10");
+
+		if(!$vipUsed || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
+			$_pm['mysql'] -> query('ROLLBACK');
 			die('8');//没有足够积分
 		}
-		$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = {$_SESSION['id']}");
+		if(!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $uid")){
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('7');
+		}
 		//写入内存供聊天
-		
-		
-		$_pm['mysql'] -> query("INSERT INTO guild_members(member_id,guild_id,join_time,priv) VALUES({$_SESSION['id']},$lastid,$time,3)");
-		$_pm['mysql'] -> query("UPDATE userbag SET sums = sums - 1 WHERE id = {$bagCheck['id']} AND sums > 0");
+
+
+		if(!$_pm['mysql'] -> query("INSERT INTO guild_members(member_id,guild_id,join_time,priv) VALUES($uid,$lastid,$time,3)") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('7');
+		}
+		$bagId = intval($bagCheck['id']);
+		if(!$_pm['mysql'] -> query("UPDATE userbag SET sums = sums - 1 WHERE id = $bagId AND uid = $uid AND zbing = 0 AND sums > 0 AND (cantrade IS NULL OR cantrade <> 3)") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1){
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('5');
+		}
+		if(!$_pm['mysql'] -> query("DELETE FROM userbag WHERE id = $bagId AND uid = $uid AND sums <= 0 AND bsum <= 0 AND psum <= 0 AND pyb = 0 AND zbing = 0 AND (cantrade IS NULL OR cantrade <> 3)")){
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('7');
+		}
+		if(!$_pm['mysql'] -> query('COMMIT')){
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('7');
+		}
+		guildClearUserCache($uid, true);
 		guild_update_mem();
 		die('6');//创建成功！
-	}else die('7');//创建失败!
+	}else{
+		$_pm['mysql'] -> query('ROLLBACK');
+		if($guildCreateError == 1062) die('9');
+		die('7');//创建失败!
+	}
 }else if($op == 'show_guild_info'){
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
 	if($gid == 0){//0表示查询自己所在的队伍的信息
 		//die('1');//参数有误！
-		$ar = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = {$_SESSION['id']}");
+		$ar = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = $uid");
 		if(!is_array($ar)){
 			die('<br />&nbsp;&nbsp;<span style="font-size:12px">您还没有加入任何家族！</font>');
 		}
 		$gid = $ar['guild_id'];
 	}
 	$arr = $_pm['mysql'] -> getOneRecord("SELECT guild.name as name,info,player.nickname as cname,president_id,honor,level,create_time,guild.number_of_member FROM guild,player WHERE player.id = guild.president_id AND guild.id = $gid");
-	$current = $_pm['mysql'] -> getOneRecord("SELECT max_member_number FROM guild_settings WHERE level = {$arr['level']}");
 	if(!is_array($arr)){
 		die('2');//没有这个家族
 	}
-	$guild_bag = $_pm['mysql'] -> getRecords("SELECT pid,sums FROM guild_bag WHERE guild_id = $gid");
-	$memprops = unserialize($_pm['mem']->get('db_propsid'));
-	if(!is_array($guild_bag)){
+	$arrDefaults = array('name'=>'', 'info'=>'', 'cname'=>'', 'president_id'=>0, 'honor'=>0, 'level'=>0, 'create_time'=>0, 'number_of_member'=>0);
+	foreach($arrDefaults as $arrDefaultKey => $arrDefaultValue)
+	{
+		if(!isset($arr[$arrDefaultKey])) $arr[$arrDefaultKey] = $arrDefaultValue;
+	}
+	$arr['honor'] = intval($arr['honor']);
+	$arr['level'] = intval($arr['level']);
+	$arr['create_time'] = intval($arr['create_time']);
+	$arr['number_of_member'] = intval($arr['number_of_member']);
+	$current = $_pm['mysql'] -> getOneRecord("SELECT max_member_number FROM guild_settings WHERE level = {$arr['level']}");
+	if(!is_array($current)) $current = array('max_member_number' => 0);
+	$current['max_member_number'] = isset($current['max_member_number']) ? intval($current['max_member_number']) : 0;
+	$guild_bag = $_pm['mysql'] -> getRecords("SELECT pid,COALESCE(SUM(sums),0) AS sums FROM guild_bag WHERE guild_id = $gid GROUP BY pid");
+	$memprops = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
+	if(!is_array($guild_bag) || count($guild_bag) < 1){
 		$itemstr = '暂时没有宝藏';
 	}else{
+		$itemstr = '';
 		foreach($guild_bag as $v){
-			$itemstr .= ','.$memprops[$v['pid']]['name'].'×'.$v['sums'];//echo $itemstr.'<br />';
+			$propId = intval($v['pid']);
+			$propName = (isset($memprops[$propId]) && isset($memprops[$propId]['name'])) ? $memprops[$propId]['name'] : $propId;
+			$itemstr .= ','.$propName.'×'.intval($v['sums']);//echo $itemstr.'<br />';
 		}
 		$itemstr = substr($itemstr,1);
 	}
 //exit;
-	
-	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE guild_id = $gid AND member_id = {$_SESSION['id']}");
+
+	$next_need_str = '';
+	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE guild_id = $gid AND member_id = $uid");
 	if (is_array($check)) {
 		/*$str = '<tr>
               <td height="25" colspan="3" style="border-bottom-style:solid; border-bottom-width:1px; border-bottom-color:#000000">家族信息                </td>
               <td height="25" style="border-bottom-style:solid; border-bottom-width:1px; border-bottom-color:#000000;" onclick="giveProps()">家族捐献</td>
             </tr><tr>';*/
-		
+
 		  if($check['priv'] == '3'){
 				$str = '<div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="dissolut()"> 解散家族</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="dissolut()"> 解散家族</div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
 			  </div><div class="box03">';
 		  }else{
-		  	$str = '<div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="exit()">退出家族</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
+			$str = '<div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="exit()">退出家族</div>
+						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
 			  </div><div class="box03">';
 		  }
-			
+
 		//读出升级到下一级要的荣誉点及道具
 		$next_level = $arr['level'];
+		$next_level = intval($arr['level']);
 		$next_level_need = $_pm['mysql'] -> getOneRecord("SELECT * FROM guild_settings WHERE level = $next_level");
-		
-		
+		if(!is_array($next_level_need)) $next_level_need = array('need_props' => '', 'need_honor' => 0, 'need_member_number' => 0);
+		$next_level_need_props = '';
+
+
 		if (!empty($next_level_need['need_props'])) {
 			$next_p_arr = explode(',',$next_level_need['need_props']);
 			foreach ($next_p_arr as $v){
 				//$next_level_need_props .= ','.$memprops[$v]['name'];
 				$nv = explode('|',$v);
-				$have_props = $_pm['mysql'] -> getOneRecord("SELECT sums FROM guild_bag WHERE pid = $nv[0] AND guild_id = $gid");
-				if(is_array($have_props)) $havesums = $have_props['sums'];
+				$needPropId = isset($nv[0]) ? intval($nv[0]) : 0;
+				$needPropSum = isset($nv[1]) ? intval($nv[1]) : 0;
+				if($needPropId <= 0) continue;
+				$have_props = $_pm['mysql'] -> getOneRecord("SELECT COALESCE(SUM(sums),0) AS sums FROM guild_bag WHERE pid = $needPropId AND guild_id = $gid");
+				if(is_array($have_props)) $havesums = intval($have_props['sums']);
 				else $havesums = 0;//print_r($nv);
-				$next_level_need_props .= ','.$memprops[$nv[0]]['name'].':'.$nv[1].'/'.$havesums;
+				$needPropName = (isset($memprops[$needPropId]) && isset($memprops[$needPropId]['name'])) ? $memprops[$needPropId]['name'] : $needPropId;
+				$next_level_need_props .= ','.$needPropName.':'.$needPropSum.'/'.$havesums;
 			}
 			$next_level_need_props = substr($next_level_need_props,1);
 		}else $next_level_need_props = '';
-		
-		$next_need_str = '升级到 '.($next_level+1).' 级需要的物品'.$next_level_need_props.',需要荣誉:'.$next_level_need['need_honor'].',需要成员数:'.$next_level_need['need_member_number'];
-		  
+
+		if(!is_array($next_level_need)) $next_level_need = array('need_honor' => 0, 'need_member_number' => 0);
+		$nextNeedHonor = isset($next_level_need['need_honor']) ? intval($next_level_need['need_honor']) : 0;
+		$nextNeedMembers = isset($next_level_need['need_member_number']) ? intval($next_level_need['need_member_number']) : 0;
+		$next_need_str = '升级到 '.($next_level+1).' 级需要的物品'.$next_level_need_props.',需要荣誉:'.$nextNeedHonor.',需要成员数:'.$nextNeedMembers;
+
 	}else{
 		/*$str = '<tr>
               <td height="25" colspan="3" style="border-bottom-style:solid; border-bottom-width:1px; border-bottom-color:#000000">家族信息                </td>
               <td height="25" style="border-bottom-style:solid; border-bottom-width:1px; border-bottom-color:#000000"></td>
             </tr><tr>';*/
-		$str = '		
+		$str = '
 		<div class="box01">
-  			<div class="box02"><div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="apply();"> <font color=red><b>申请加入</b></font></div>
-                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(..//../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> <font color=red><b>返回</b></font></div>
+			<div class="box02"><div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
+                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="apply();"> <font color=red><b>申请加入</b></font></div>
+                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> <font color=red><b>返回</b></font></div>
 		  </div><div class="box03">';
 	}
-	
+
+	$guildNameHtml = guildHtml($arr['name']);
+	$guildLeaderHtml = guildHtml($arr['cname']);
+	$guildInfoHtml = guildHtml($arr['info']);
+	$guildBagHtml = guildHtml($itemstr);
+	$nextNeedTitle = guildHtml($next_need_str);
 	$str .= '<table border="0" cellspacing="0" class="tit01">
                     <tr>
                       <td width="12%" height="24" align="left" style="padding-left:10px;">家族名称：</td>
-                      <td width="18%" align="left" >'.$arr['name'].'</td>
+                      <td width="18%" align="left" >'.$guildNameHtml.'</td>
                       <td width="12%" align="left" >家族荣誉度：</td>
                       <td width="23%" align="left" >'.$arr['honor'].'</td>
                       <td width="11%" align="left" >族长：</td>
-                      <td width="24%" align="left" >'.$arr['cname'].'</td>
+                      <td width="24%" align="left" >'.$guildLeaderHtml.'</td>
                     </tr>
 					<tr>
                       <td height="24" align="left" style="padding-left:10px;">家族宝藏：</td>
-                      <td align="left" >'.$itemstr.'</td>
-                      <td align="left" title="'.$next_need_str.'">家族等级：</td>
+                      <td align="left" >'.$guildBagHtml.'</td>
+                      <td align="left" title="'.$nextNeedTitle.'">家族等级：</td>
                       <td align="left" >'.$arr['level'].'</td>
                       <td align="left" >创建时间：</td>
                       <td align="left" >'.date('Y-m-d H:i',$arr['create_time']).'</td>
@@ -272,7 +417,7 @@ if($op == 'show'){
                     </tr>
                     <tr>
                       <td height="24" align="left" style="padding-left:10px;">家族介绍：</td>
-                      <td colspan="5" align="left" >'.$arr['info'].'</td>
+                      <td colspan="5" align="left" >'.$guildInfoHtml.'</td>
                     </tr>
                   </table>
 				  <table border="0" cellspacing="0" class="tit01">
@@ -286,7 +431,7 @@ if($op == 'show'){
 				  <tr>
 				    <td height="1" colspan="6" align="left" style="padding-left:10px;" bgcolor="#CC6600"></td>
 			      </tr>';
-	
+
 	/*$str .= '<tr>
               <td height="23" align="center">家族名称：</td>
 			  <td height="23" align="left">'.$arr['name'].'</td>
@@ -339,30 +484,39 @@ if($op == 'show'){
                    <td width="12%" height="20" align="center">职位</td>
                   <td width="30%" height="20" align="center">&nbsp;</td>
                 </tr>';*/
-				
-	$guild_member = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname as pnickname,userbb.level,userbb.czl,priv FROM player,userbb,guild_members WHERE player.id = guild_members.member_id AND player.mbid = userbb.id AND guild_members.guild_id = $gid ORDER BY priv DESC");
-	$applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname as pnickname,userbb.level,userbb.czl FROM player,userbb,player_ext WHERE player.id = player_ext.uid AND player.mbid = userbb.id AND player_ext.guild_request = $gid");
-	
+
+$guild_member = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname as pnickname,userbb.level,userbb.czl,priv FROM player,userbb,guild_members WHERE player.id = guild_members.member_id AND player.mbid = userbb.id AND userbb.uid = player.id AND guild_members.guild_id = $gid ORDER BY priv DESC");
+$applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname as pnickname,userbb.level,userbb.czl FROM player,userbb,player_ext WHERE player.id = player_ext.uid AND player.mbid = userbb.id AND userbb.uid = player.id AND player_ext.guild_request = $gid");
+
+	if (!is_array($guild_member)) $guild_member = array();
 	if (is_array($applyarr)) {
 		$guild_member = array_merge($guild_member,$applyarr);
 	}
 	//print_r($applyarr);
-	
+
 	$v = '';
 
 	foreach($guild_member as $v){
 		$qx = '';
-		if ($v['priv'] == 1) {
+		if(!isset($v['priv'])) $v['priv'] = 0;
+		$memberPriv = isset($v['priv']) ? intval($v['priv']) : 0;
+		if ($memberPriv == 1) {
 			$qx = '成员';
 		}else if($v['priv'] == 2) $qx = '长老';
 		else if($v['priv'] == 3) $qx = '族长';
+		$memberNameHtml = guildHtml(isset($v['pnickname']) ? $v['pnickname'] : '');
+		$memberNameJs = guildJsSingle(isset($v['pnickname']) ? $v['pnickname'] : '');
+		$memberNameHtmlJs = guildJsSingle($memberNameHtml);
+		$memberPid = isset($v['pid']) ? intval($v['pid']) : 0;
+		$memberLevel = isset($v['level']) ? intval($v['level']) : 0;
+		$memberCzl = isset($v['czl']) ? intval($v['czl']) : 0;
 		$str .= '<tr>
-				    <td height="24" align="center" style="padding-left:10px;cursor:pointer"onclick="$(\'permissions\').style.display=\'block\';$(\'qxname\').innerHTML=\''.$v['pnickname'].'\';qxuid='.$v['pid'].';setTimeout(\'guild_permissions_none()\',5000);" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'">'.$v['pnickname'].'&nbsp;</td>
-				    <td align="center" >'.$v['level'].'</td>
-				    <td align="center" >'.$v['czl'].'</td>
+				    <td height="24" align="center" style="padding-left:10px;cursor:pointer"onclick="$(\'permissions\').style.display=\'block\';$(\'qxname\').innerHTML=\''.$memberNameHtmlJs.'\';qxuid='.$memberPid.';setTimeout(\'guild_permissions_none()\',5000);" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'">'.$memberNameHtml.'&nbsp;</td>
+				    <td align="center" >'.$memberLevel.'</td>
+				    <td align="center" >'.$memberCzl.'</td>
 				    <td align="center" >'.$qx.'</td>
-				    <td width="14%" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'"><span onclick="friendlist(\''.$v['pnickname'].'\')" style="cursor:pointer"><img src="../new_images/ui/add06.gif" border="0" /></span></td>
-				    <td width="15%" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'"><span onclick="fire('.$v['pid'].','.$gid.')" style="cursor:pointer"><img src="../new_images/ui/add07.gif" border="0" /></span></td>
+				    <td width="14%" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'"><span onclick="friendlist(\''.$memberNameJs.'\')" style="cursor:pointer"><img src="../new_images/ui/add06.gif" border="0" /></span></td>
+				    <td width="15%" align="center" onmouseover="this.style.color=\'#ff0000\'" onmouseout="this.style.color=\'#600\'"><span onclick="fire('.$memberPid.','.$gid.')" style="cursor:pointer"><img src="../new_images/ui/add07.gif" border="0" /></span></td>
 			      </tr>';
 		/*$str .= '<tr>
                   <td height="20" align="center" style="cursor:pointer" onclick="$(\'permissions\').style.display=\'block\';$(\'qxname\').innerHTML=\''.$v['pnickname'].'\';qxuid='.$v['pid'].'">'.$v['pnickname'].'</td>
@@ -372,7 +526,7 @@ if($op == 'show'){
                   <td height="20" align="center"><span onclick="friendlist(\''.$v['pnickname'].'\')" style="cursor:pointer">加为好友</span>&nbsp;&nbsp; <span onclick="fire('.$v['pid'].','.$gid.')" style="cursor:pointer">开除成员</span></td>
                 </tr>';*/
 	}
-	
+
 	$str .= '</table></div></div><div id="jzlevel" align="center" style="position:absolute;  left:241px; cursor:pointer; padding-top:5px; height: 14px; top: 33px;" onclick="guild_level_info()"> <img src=\'../new_images/ui/guild_next.gif\' />
 						</div>';
 	/*if (is_array($check)) {
@@ -388,72 +542,96 @@ if($op == 'show'){
 	}*/
 	echo $str;
 }else if($op == 'fire'){
-	$member_id = intval($_GET['member_id']);
-	$guild_id = intval($_GET['guild_id']);
-	
+	$member_id = (isset($_GET['member_id']) && !is_array($_GET['member_id'])) ? intval($_GET['member_id']) : 0;
+	$guild_id = (isset($_GET['guild_id']) && !is_array($_GET['guild_id'])) ? intval($_GET['guild_id']) : 0;
+	$selfUid = intval($uid);
+
 	if($member_id == 0 || $guild_id == 0){
 		die('1');//操作有误！
 	}
-	if($member_id == $_SESSION['id']){
+	if($member_id == $selfUid){
 		die('2');//您不能操作自己！
 	}
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('开除成员失败！');
 	//检查是否有权限作此项操作
-	$checkme = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = {$_SESSION['id']} AND guild_id = $guild_id");
+	$checkme = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = $selfUid AND guild_id = $guild_id FOR UPDATE");
 	if(!is_array($checkme)){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('3');//您不在此家族，不能作此操作！
 	}
 	if($checkme['priv'] == 1){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('4');//您是普通成员，不能开除其它成员
 	}
-	
-	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = $member_id AND guild_id = $guild_id");
-	
+
+	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = $member_id AND guild_id = $guild_id FOR UPDATE");
+
 	if(is_array($check) && $checkme['priv'] <= $check['priv']){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('6');//您没有权限开除比您职位高的成员！
 	}
 	if(!is_array($check)){
-		$apply = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = $member_id AND guild_request = $guild_id");
+		$apply = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = $member_id AND guild_request = $guild_id FOR UPDATE");
 		if (!is_array($apply)) {
+			$_pm['mysql'] -> query('ROLLBACK');
 			die('5');//对方不在此家族，您不能操作
 		}
-		//退出后记录退出时间。写内内存
-		$_pm['mem'] -> setns('last_exit_guild_time_'.$member_id,time().'');
-		$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $member_id AND guild_request = $guild_id");
 		$str = $_SESSION['nickname'].'拒绝了您的家族请求！';
-	
+		$strSql = $_pm['mysql']->escape($str);
+		if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $member_id AND guild_request = $guild_id") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('开除成员失败！');
+		}
+		if (!$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($member_id,'$strSql')")) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('开除成员失败！');
+		}
+		if (!$_pm['mysql'] -> query('COMMIT')) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('开除成员失败！');
+		}
+		guildClearUserCache($member_id, false);
 		require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
-	
-		$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($member_id,'$str')");
-		
 		$s=new socketmsg();
-		$rs=$s->sendMsg('an|'.iconv('gbk','utf-8',$str),array(substr($member_id,1)));
-		$rs=$s->sendMsg(iconv('gbk','utf-8','SYSN|information-->'),array(substr($member_id,1)));
+		$rs=$s->sendMsg('an|'.$str,array($member_id));
+		$rs=$s->sendMsg('SYSN|information-->',array($member_id));
 		die('7');
 	}
 	$str = $_SESSION['nickname'].'把您被请出了家族！';
-	
-	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
-
-	$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($member_id,'$str')");
-	
-	$s=new socketmsg();
-	$rs=$s->sendMsg('an|'.iconv('gbk','utf-8',$str),array(substr($member_id,1)));
-	$rs=$s->sendMsg(iconv('gbk','utf-8','SYSN|information-->'),array(substr($member_id,1)));
-	
-	
-	$_pm['mysql'] -> query("DELETE FROM guild_members WHERE member_id = $member_id AND guild_id = $guild_id");
-	$_pm['mysql'] -> query("UPDATE guild SET number_of_member = number_of_member - 1 WHERE id = $guild_id");
+	$strSql = $_pm['mysql']->escape($str);
+	if (!$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($member_id,'$strSql')")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('开除成员失败！');
+	}
+	if (!$_pm['mysql'] -> query("DELETE FROM guild_members WHERE member_id = $member_id AND guild_id = $guild_id") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('开除成员失败！');
+	}
+	if (!$_pm['mysql'] -> query("UPDATE guild SET number_of_member = IF(number_of_member > 0, number_of_member - 1, 0) WHERE id = $guild_id")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('开除成员失败！');
+	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('开除成员失败！');
+	}
 	//$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $member_id AND guild_request = $guild_id");
 	guild_update_mem();
 	//退出后记录退出时间。写内内存
 	$_pm['mem'] -> setns('last_exit_guild_time_'.$member_id,time().'');
+	guildClearUserCache($member_id, false);
+	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
+	$s=new socketmsg();
+	$rs=$s->sendMsg('an|'.$str,array($member_id));
+	$rs=$s->sendMsg('SYSN|information-->',array($member_id));
 	die('7');
 }else if($op == 'apply'){
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$uid = intval($uid);
 	if($gid == 0){
 		die('');
 	}
-	$check_time = $_pm['mem'] -> get('last_exit_guild_time_'.$_SESSION['id']);
+	$check_time = $_pm['mem'] -> get('last_exit_guild_time_'.$uid);
 	if ($check_time > 0) {
 		$time = time();
 		$ctime = ($time - $check_time) - 24 * 3600;
@@ -461,264 +639,425 @@ if($op == 'show'){
 			die('10');
 		}
 	}
-	$ac = $_GET['ac'];
+	$ac = (isset($_GET['ac']) && !is_array($_GET['ac'])) ? $_GET['ac'] : '';
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('申请加入家族失败！');
+	if(!$_pm['mysql'] -> query("INSERT INTO player_ext(uid,bbshow) VALUES($uid,5) ON DUPLICATE KEY UPDATE uid=uid")){
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('申请加入家族失败！');
+	}
+	$user = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = $uid FOR UPDATE");
+	if(!is_array($user)){
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('申请加入家族失败！');
+	}
 	if($ac != 'do'){
-		$user = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = {$_SESSION['id']}");
 		if($user['guild_request'] > 0){
+			$_pm['mysql'] -> query('ROLLBACK');
 			die('1');//您已经申请加入别的家族，不能再申请了
 		}
 	}
-	
+
 	//echo "SELECT guild_id FROM guild_members WHERE member_id = {$_SESSION['id']}";exit;
-	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = {$_SESSION['id']}");
+	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = $uid FOR UPDATE");
 	if(is_array($guild_check)){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('2');//您已经加入其它或者此家族，不能再申请！
 	}
-	
+
 	//人数限制
-	$settings = $_pm['mysql'] -> getOneRecord("SELECT max_member_number,number_of_member FROM guild_settings,guild WHERE guild.id = $gid AND guild.level=guild_settings.level");
+	$settings = $_pm['mysql'] -> getOneRecord("SELECT max_member_number,number_of_member FROM guild_settings,guild WHERE guild.id = $gid AND guild.level=guild_settings.level FOR UPDATE");
 	if(!is_array($settings) || $settings['number_of_member'] >= $settings['max_member_number']){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('4');//对方人数已满，不能再申请
 	}
-	
-	
-	$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = $gid WHERE uid = {$_SESSION['id']}");
-	//发请求给族长和长老（写入）
-	$guild = $_pm['mysql'] -> getRecords("SELECT member_id FROM guild_members WHERE guild_id = $gid AND priv >= 2");
-	$str = $_SESSION['nickname'].' 请求加入您的家族，请速去处理吧！';
-	
-	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 
-	foreach($guild as $v){
-		$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES({$v['member_id']},'$str')");
-		$uidstr .= ','.$v['member_id'];
+
+	if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = $gid WHERE uid = $uid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('申请加入家族失败！');
 	}
-	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
-	
-	$s=new socketmsg();
-	$rs=$s->sendMsg('an|'.iconv('gbk','utf-8',$str),array(substr($uidstr,1)));
-	$rs=$s->sendMsg(iconv('gbk','utf-8','SYSN|information-->'),array(substr($uidstr,1)));
+	//发请求给族长和长老（写入）
+	$guild = $_pm['mysql'] -> getRecords("SELECT member_id FROM guild_members WHERE guild_id = $gid AND priv >= 2 FOR UPDATE");
+	$str = $_SESSION['nickname'].' 请求加入您的家族，请速去处理吧！';
+	$strSql = $_pm['mysql']->escape($str);
+	$uidstr = '';
+
+	if (is_array($guild)) {
+		foreach($guild as $v){
+			$notifyUid = intval($v['member_id']);
+			if (!$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($notifyUid,'$strSql')")) {
+				$_pm['mysql'] -> query('ROLLBACK');
+				die('申请加入家族失败！');
+			}
+			$uidstr .= ','.$notifyUid;
+		}
+	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('申请加入家族失败！');
+	}
+	if ($uidstr != '') {
+		require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
+		$s=new socketmsg();
+		$rs=$s->sendMsg('an|'.$str,array(substr($uidstr,1)));
+		$rs=$s->sendMsg('SYSN|information-->',array(substr($uidstr,1)));
+	}
+	guildClearUserCache($uid, false);
 	//echo iconv('gbk','utf-8',$rs);
 	die('3');//申请成功，请稍候再来查看！
 }else if($op == 'exit'){
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$uid = intval($uid);
 	if($gid == 0){
 		die('');
 	}
-	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = {$_SESSION['id']} AND guild_id = $gid");
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('退出家族失败！');
+	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = $uid AND guild_id = $gid FOR UPDATE");
 	if(!is_array($guild_check)){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('2');//您尚未加入此家族，不用退出！
 	}
 	if ($guild_check['priv'] == 3){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('4');//您是会长，不能申请退出
 	}
-	$_pm['mysql'] -> query("DELETE FROM guild_members WHERE guild_id = $gid AND member_id = {$_SESSION['id']}");
-	$_pm['mysql'] -> query("UPDATE guild SET number_of_member = number_of_member - 1 WHERE id = $gid");
+	if (!$_pm['mysql'] -> query("DELETE FROM guild_members WHERE guild_id = $gid AND member_id = $uid") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('退出家族失败！');
+	}
+	if (!$_pm['mysql'] -> query("UPDATE guild SET number_of_member = IF(number_of_member > 0, number_of_member - 1, 0) WHERE id = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('退出家族失败！');
+	}
+
+	//发请求给族长和长老（写入）
+	$guild = $_pm['mysql'] -> getRecords("SELECT member_id FROM guild_members WHERE guild_id = $gid AND priv >= 2 FOR UPDATE");
+	$str = $_SESSION['nickname'].' 退出了您的家族，请速去处理吧！';
+	$strSql = $_pm['mysql']->escape($str);
+	$uidstr = '';
+	if (is_array($guild)) {
+		foreach($guild as $v){
+			$notifyUid = intval($v['member_id']);
+			if (!$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES($notifyUid,'$strSql')")) {
+				$_pm['mysql'] -> query('ROLLBACK');
+				die('退出家族失败！');
+			}
+			$uidstr .= ','.$notifyUid;
+		}
+	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('退出家族失败！');
+	}
 	guild_update_mem();
 	//退出后记录退出时间。写内内存
-	$_pm['mem'] -> setns('last_exit_guild_time_'.$_SESSION['id'],time().'');
+	$_pm['mem'] -> setns('last_exit_guild_time_'.$uid,time().'');
+	guildClearUserCache($uid, false);
 
-	
-	//发请求给族长和长老（写入）
-	$guild = $_pm['mysql'] -> getRecords("SELECT member_id FROM guild_members WHERE guild_id = $gid AND priv >= 2");
-	$str = $_SESSION['nickname'].' 退出了您的家族，请速去处理吧！';
-	foreach($guild as $v){
-		$_pm['mysql'] -> query("INSERT INTO information(uid,content) VALUES({$v['member_id']},'$str')");
-		$uidstr .= ','.$v['member_id'];
+	if ($uidstr != '') {
+		require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
+		$s=new socketmsg();
+		$rs=$s->sendMsg('an|'.$str,array(substr($uidstr,1)));
+		$rs=$s->sendMsg('SYSN|information-->',array(substr($uidstr,1)));
 	}
-	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
-
-	$s=new socketmsg();
-	$rs=$s->sendMsg('an|'.iconv('gbk','utf-8',$str),array(substr($uidstr,1)));
-	$rs=$s->sendMsg(iconv('gbk','utf-8','SYSN|information-->'),array(substr($uidstr,1)));
 	die('3');//申请退出成功，请稍候再来查看！
 }else if($op == 'dissolut'){
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$uid = intval($uid);
 	if($gid == 0){
 		die('');
 	}
-	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = {$_SESSION['id']} AND guild_id = $gid");
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('解散家族失败！');
+	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE member_id = $uid AND guild_id = $gid FOR UPDATE");
 	if(!is_array($guild_check) || $guild_check['priv'] != 3){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('2');//您没有权限操作！
 	}
-	$ac = $_GET['ac'];
-	
+	$ac = (isset($_GET['ac']) && !is_array($_GET['ac'])) ? $_GET['ac'] : '';
+
 	if($ac != 'do'){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('tips');//您确定解散此家族
 	}
-	$_pm['mem'] -> setns('last_exit_guild_time_'.$_SESSION['id'],time().'');
-	$_pm['mysql'] -> query("DELETE FROM guild_members WHERE guild_id = $gid");
-	$_pm['mysql']-> query("DELETE FROM guild WHERE id = $gid");
-	$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE guild_request = $gid");
-	$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE challenger_id = $gid OR defenser_id = $gid");
+	$affectedUsers = array();
+	$memberRows = $_pm['mysql']->getRecords("SELECT member_id FROM guild_members WHERE guild_id=$gid FOR UPDATE");
+	if(is_array($memberRows)){
+		foreach($memberRows as $memberRow) $affectedUsers[intval($memberRow['member_id'])] = true;
+	}
+	$applicantRows = $_pm['mysql']->getRecords("SELECT uid FROM player_ext WHERE guild_request=$gid FOR UPDATE");
+	if(is_array($applicantRows)){
+		foreach($applicantRows as $applicantRow) $affectedUsers[intval($applicantRow['uid'])] = true;
+	}
+	if (!$_pm['mysql'] -> query("DELETE FROM guild_members WHERE guild_id = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (!$_pm['mysql'] -> query("DELETE FROM guild_bag WHERE guild_id = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (!$_pm['mysql']-> query("DELETE FROM guild WHERE id = $gid") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE guild_request = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (!$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE challenger_id = $gid OR defenser_id = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	$_pm['mem'] -> setns('last_exit_guild_time_'.$uid,time().'');
+	foreach($affectedUsers as $affectedUid => $unused) guildClearUserCache($affectedUid, false);
 	guild_update_mem();
 	die('ok');
 }else if($op == 'giveProps'){
-	$gid = intval($_GET['gid']);
-	$pname = isset($_GET['pname']) ? $_GET['pname'] : '';
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$pname = (isset($_GET['pname']) && !is_array($_GET['pname'])) ? $_GET['pname'] : '';
 	$pnameSql = $_pm['mysql']->escape($pname);
-	$psum = intval($_GET['psum']);
-	$uid = intval($_SESSION['id']);
+	$psum = (isset($_GET['psum']) && !is_array($_GET['psum'])) ? intval($_GET['psum']) : 0;
+	$uid = intval($uid);
 	if($gid == 0 || $psum <= 0 || empty($pname)){
 		die('');
 	}
-	
-	$ugc = $_pm['mysql'] -> getOneRecord("SELECT contribution FROM guild_members WHERE member_id = $uid AND guild_id = $gid");
-	if (!is_array($ugc)) {
-		die('1');//不在此家族，不能捐献！
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('家族捐献失败！');
+	$member = $_pm['mysql']->getOneRecord("SELECT contribution FROM guild_members
+		WHERE member_id=$uid AND guild_id=$gid FOR UPDATE");
+	if(!is_array($member)) guildTransactionDie('1');
+
+	$guildConfig = $_pm['mysql']->getOneRecord("SELECT guild_settings.need_props
+		FROM guild INNER JOIN guild_settings ON guild_settings.level=guild.level
+		WHERE guild.id=$gid FOR UPDATE");
+	if(!is_array($guildConfig) || !isset($guildConfig['need_props'])) guildTransactionDie('3');
+
+	$requirements = array();
+	foreach(explode(',', $guildConfig['need_props']) as $requirement)
+	{
+		$parts = explode('|', trim($requirement));
+		if(count($parts) < 3) continue;
+		$requiredPid = intval($parts[0]);
+		$requiredSum = intval($parts[1]);
+		$rewardContribution = intval($parts[2]);
+		if($requiredPid > 0 && $requiredSum > 0 && $rewardContribution >= 0)
+		{
+			$requirements[$requiredPid] = array($requiredSum, $rewardContribution);
+		}
 	}
-	
-	$pcheck = $_pm['mysql'] -> getOneRecord("SELECT id FROM props WHERE name = '$pnameSql'");
-	if (!is_array($pcheck)) {
-		die('2');//没有这个物品，请检查您的输入是否有误！
+	if(count($requirements) < 1) guildTransactionDie('3');
+
+	$nameRows = $_pm['mysql']->getRecords("SELECT id FROM props WHERE name='$pnameSql' ORDER BY id FOR UPDATE");
+	if(!is_array($nameRows) || count($nameRows) < 1) guildTransactionDie('2');
+	$pid = 0;
+	foreach($nameRows as $nameRow)
+	{
+		$candidatePid = intval($nameRow['id']);
+		if(isset($requirements[$candidatePid]))
+		{
+			$pid = $candidatePid;
+			break;
+		}
 	}
-	
-	$guild_check = $_pm['mysql'] -> getOneRecord("SELECT guild_settings.need_props FROM guild_settings,guild WHERE guild.id = $gid AND guild_settings.level = guild.level");//echo "SELECT guild_settings.need_props FROM guild_settings,guild WHERE guild.id = $gid AND guild_settings.level = guild.level";exit;2496|5|10
-	if (is_array($guild_check)) {
-		$arr = explode(',',$guild_check['need_props']);
-		$flag = 0;
-		if (is_array($arr)) {
-			foreach($arr as $v){
-				$narr = explode('|',$v);//print_r($pcheck['id']);exit;
-				if ($narr[0] == $pcheck['id']) {
-					$need_sum = $narr[1];//echo __LINE__."<br>";
-					$give_honor = $narr[2];
-					$flag = 1;
-					break;
-				}
-			}
-		}//exit;
-		if ($flag != 1) {
-			die('3');//升到下一级不需要您捐献这个物品！
-		}
-		
-		$guild_bag = $_pm['mysql'] -> getOneRecord("SELECT sums FROM guild_bag WHERE guild_id = $gid AND pid = {$pcheck['id']}");
-		if (is_array($guild_bag)) {
-			$sums = $guild_bag['sums'];
-		}else $sums = 0;
-		
-		if ($sums >= $need_sum) {
-			die('4');//您要捐赠的物品已经足够了！
-		}
-		
-		$csums = $need_sum - $sums;
-		if ($csums > $psum) {
-			$csums = $psum;
-		}
-		$_pm['mysql'] -> query("UPDATE userbag SET sums = sums - $csums WHERE uid = $uid AND pid = {$pcheck['id']} AND sums >= $csums");
-		if (mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
-			die('5');//您没有足够的数量
-		}else{
-			//加荣誉
-			$honor = $give_honor * $csums;
-			$_pm['mysql'] -> query("UPDATE guild_members SET contribution = contribution + $honor WHERE member_id = $uid AND guild_id = $gid");
-			//加入到家族包裹
-			if (is_array($guild_bag)) {
-				$_pm['mysql'] -> query("UPDATE guild_bag SET sums = sums + $csums WHERE pid = {$pcheck['id']} AND guild_id = $gid");
-			}else{
-				$_pm['mysql'] -> query("INSERT INTO guild_bag(pid,sums,guild_id) VALUES({$pcheck['id']},$csums,$gid)");
-			}
-			die('10');
-		}
-	}else {
-		die('3');
+	if($pid < 1) guildTransactionDie('3');
+	$needSum = intval($requirements[$pid][0]);
+	$giveContribution = intval($requirements[$pid][1]);
+
+	$guildBagRows = $_pm['mysql']->getRecords("SELECT id,sums FROM guild_bag
+		WHERE guild_id=$gid AND pid=$pid ORDER BY id FOR UPDATE");
+	if(!is_array($guildBagRows)) $guildBagRows = array();
+	$currentSum = 0;
+	foreach($guildBagRows as $guildBagRow) $currentSum += max(0, intval($guildBagRow['sums']));
+	if($currentSum >= $needSum) guildTransactionDie('4');
+	$consumeSum = min($psum, $needSum - $currentSum);
+	if($consumeSum < 1) guildTransactionDie('4');
+
+	$bagRows = $_pm['mysql']->getRecords("SELECT id,sums FROM userbag
+		WHERE uid=$uid AND pid=$pid AND zbing=0 AND sums>0
+		AND (cantrade IS NULL OR cantrade<>3) ORDER BY sums DESC,id ASC FOR UPDATE");
+	if(!is_array($bagRows)) $bagRows = array();
+	$total = 0;
+	foreach($bagRows as $bagRow) $total += max(0, intval($bagRow['sums']));
+	if($total < $consumeSum) guildTransactionDie('5');
+
+	$remaining = $consumeSum;
+	foreach($bagRows as $bagRow)
+	{
+		if($remaining < 1) break;
+		$bagId = intval($bagRow['id']);
+		$take = min(max(0, intval($bagRow['sums'])), $remaining);
+		if($bagId < 1 || $take < 1) continue;
+		$used = $_pm['mysql']->query("UPDATE userbag SET sums=sums-$take
+			WHERE id=$bagId AND uid=$uid AND pid=$pid AND sums>=$take AND zbing=0
+			AND (cantrade IS NULL OR cantrade<>3)");
+		if(!$used || mysql_affected_rows($_pm['mysql']->getConn()) != 1) guildTransactionDie('家族捐献失败！');
+		if(!$_pm['mysql']->query("DELETE FROM userbag WHERE id=$bagId AND uid=$uid
+			AND sums<=0 AND bsum<=0 AND psum<=0 AND pyb=0 AND zbing=0
+			AND (cantrade IS NULL OR cantrade<>3)")) guildTransactionDie('家族捐献失败！');
+		$remaining -= $take;
 	}
+	if($remaining > 0) guildTransactionDie('家族捐献失败！');
+
+	$contributionGain = kdjlSafePositiveProduct($giveContribution, $consumeSum);
+	if($contributionGain === false) guildTransactionDie('家族捐献失败！');
+	$memberUpdated = $_pm['mysql']->query("UPDATE guild_members
+		SET contribution=COALESCE(contribution,0)+$contributionGain
+		WHERE member_id=$uid AND guild_id=$gid");
+	if(!$memberUpdated || mysql_affected_rows($_pm['mysql']->getConn()) != 1) guildTransactionDie('家族捐献失败！');
+
+	if(count($guildBagRows) > 0)
+	{
+		$guildBagId = intval($guildBagRows[0]['id']);
+		$stored = $_pm['mysql']->query("UPDATE guild_bag SET sums=COALESCE(sums,0)+$consumeSum
+			WHERE id=$guildBagId AND guild_id=$gid AND pid=$pid AND COALESCE(sums,0)<=255-$consumeSum");
+		if(!$stored || mysql_affected_rows($_pm['mysql']->getConn()) != 1) guildTransactionDie('家族捐献失败！');
+	}
+	else
+	{
+		$stored = $_pm['mysql']->query("INSERT INTO guild_bag(pid,sums,guild_id) VALUES($pid,$consumeSum,$gid)");
+		if(!$stored || mysql_affected_rows($_pm['mysql']->getConn()) != 1) guildTransactionDie('家族捐献失败！');
+	}
+	if(!$_pm['mysql']->query('COMMIT')) guildTransactionDie('家族捐献失败！');
+	guildClearUserCache($uid, true);
+	die('10');
 }else if ($op == 'guild_welfare') {
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$uid = intval($uid);
 	if ($gid == 0) {
 		die('');
 	}
 	require_once('../sec/dblock_fun.php');
-	$a = getLock($_SESSION['id']);
+	$a = getLock($uid);
 	if(!is_array($a)){
-		realseLock();
 		die('服务器繁忙，请稍候再试！');
 	}
-	
+
 	//判断时间 一天只能领取一次
-	$user = $_pm['mysql'] -> getOneRecord("SELECT get_welfare_time FROM player_ext WHERE uid = {$_SESSION['id']} FOR UPDATE");
+	if(!$_pm['mysql'] -> query("INSERT INTO player_ext(uid,bbshow) VALUES($uid,5) ON DUPLICATE KEY UPDATE uid=uid")){
+		$_pm['mysql']->query('ROLLBACK');
+		realseLock();
+		die('2');
+	}
+	$user = $_pm['mysql'] -> getOneRecord("SELECT get_welfare_time FROM player_ext WHERE uid = $uid FOR UPDATE");
 	if(!is_array($user)){
+		$_pm['mysql']->query('ROLLBACK');
 		realseLock();
 		die('2');
 	}
 	if ($user['get_welfare_time'] > 0) {
 		$yes = date('Ymd',time()-24*3600);
 		if ($user['get_welfare_time'] > $yes) {
+			$_pm['mysql']->query('ROLLBACK');
 			realseLock();
 			die('3');//已经领过了，今天不能再领
 		}
 	}
-	
-	
-	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE guild_id = $gid AND member_id = {$_SESSION['id']}");
+
+
+	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE guild_id = $gid AND member_id = $uid");
 	if (!is_array($check)) {
+		$_pm['mysql']->query('ROLLBACK');
 		realseLock();
 		die('1');//您不在此家族，不能领取这个家族的家族福利!
 	}
-	
+
 	$guild = $_pm['mysql'] -> getOneRecord("SELECT welfare FROM guild_settings,guild WHERE guild_settings.level = guild.level AND guild.id = $gid");
 	if (!is_array($guild) || $guild['welfare'] == '') {
+		$_pm['mysql']->query('ROLLBACK');
 		realseLock();
 		die('2');//数据读取有误!
 	}
-	$propslist = explode(',', $guild['welfare']);	
+	$propslist = explode(',', $guild['welfare']);
 	$retstr = '';
 	if (is_array($propslist))
 	{
-		$user = $_pm['user']->getUserById($_SESSION['id']);
 		foreach ($propslist as $k => $v)
 		{
 			$inarr = explode(':', $v);		//	0=> ID, 2=> rand number, 1=> sum props
-			
-			
-			if(is_array($inarr))
-			{
-				//foreach($inarr as $inarrs)
-				//{
-				$task = new task();
-				if (rand(1, intval($inarr[1])) == 1){
-					$giveResult = $task->saveGetPropsMore($inarr[0],$inarr[2]);//1424:100:1,747:10:2,95:1:1
-					if($giveResult !== true){
-						$_pm['mysql']->query('ROLLBACK');
-						die($giveResult === '200' ? '背包空间不足，请整理后再领取！' : '家族福利发放失败，请稍候再试！');
-					}
-					$prs = $_pm['mysql']->getOneRecord("SELECT name FROM props WHERE id={$inarr[0]}");
-					if(empty($retstr))
-					{
-						$retstr = '获得道具 '.$prs['name'].'&nbsp;'.$inarr[2].' 个';
-					}
-					else
-					{
-						$retstr .= ",".$prs['name'].'&nbsp;'.$inarr[2].' 个';
-					}
+			if(count($inarr) < 3){
+				$_pm['mysql']->query('ROLLBACK');
+				realseLock();
+				die('家族福利配置错误！');
+			}
+			$pid = intval($inarr[0]);
+			$rate = intval($inarr[1]);
+			$num = intval($inarr[2]);
+			if($pid <= 0 || $rate <= 0 || $num <= 0){
+				$_pm['mysql']->query('ROLLBACK');
+				realseLock();
+				die('家族福利配置错误！');
+			}
+			$task = new task();
+			if (rand(1, $rate) == 1){
+				$giveResult = $task->saveGetPropsMore($pid,$num);//1424:100:1,747:10:2,95:1:1
+				if($giveResult !== true){
+					$_pm['mysql']->query('ROLLBACK');
+					realseLock();
+					die($giveResult === '200' ? '背包空间不足，请整理后再领取！' : '家族福利发放失败，请稍候再试！');
+				}
+				$prs = $_pm['mysql']->getOneRecord("SELECT name FROM props WHERE id=$pid");
+				$pname = guildHtml(is_array($prs) ? $prs['name'] : $pid);
+				if(empty($retstr))
+				{
+					$retstr = '获得道具 '.$pname.'&nbsp;'.$num.' 个';
+				}
+				else
+				{
+					$retstr .= ",".$pname.'&nbsp;'.$num.' 个';
 				}
 			}
 		} // end foreach
 		// del props current bag.
 		$time = date('Ymd');
-		if(!$_pm['mysql'] -> query("UPDATE player_ext SET get_welfare_time = '$time' WHERE uid = {$_SESSION['id']} AND (get_welfare_time IS NULL OR get_welfare_time <> '$time')") || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
+		if(!$_pm['mysql'] -> query("UPDATE player_ext SET get_welfare_time = '$time' WHERE uid = $uid AND (get_welfare_time IS NULL OR get_welfare_time <> '$time')") || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
 			$_pm['mysql']->query('ROLLBACK');
+			realseLock();
 			die('家族福利状态保存失败，请稍候再试！');
 		}
+		if(!$_pm['mysql']->query('COMMIT')){
+			$_pm['mysql']->query('ROLLBACK');
+			realseLock();
+			die('家族福利状态保存失败，请稍候再试！');
+		}
+		if(defined('MEM_USERBAG_KEY')) $_pm['mem']->del(MEM_USERBAG_KEY);
 		realseLock();
 		echo $retstr;
 		exit;
 	}
 }else if ($op == 'next_level'){
-	$gid = intval($_GET['gid']);
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$uid = intval($uid);
 	if ($gid == 0) {
 		die('');
 	}
-	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = {$_SESSION['id']}");
+
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('4');
+	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = $uid FOR UPDATE");
 	if (!is_array($check) || $check['priv'] != 3) {
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('1');//您没有权限升级家族
 	}
-	
-	$guild = $_pm['mysql'] -> getOneRecord("SELECT need_honor,need_props,need_member_number,number_of_member,honor FROM guild,guild_settings WHERE guild.level = guild_settings.level AND guild.id = $gid");//print_r($guild);exit;
+
+	$guild = $_pm['mysql'] -> getOneRecord("SELECT guild.level,need_honor,need_props,need_member_number,number_of_member,honor FROM guild,guild_settings WHERE guild.level = guild_settings.level AND guild.id = $gid FOR UPDATE");//print_r($guild);exit;
+	if (!is_array($guild)) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('4');
+	}
+	$currentGuildLevel = intval($guild['level']);
+	$nextLevelConfig = $_pm['mysql']->getOneRecord('SELECT id FROM guild_settings WHERE level='.($currentGuildLevel+1).' ORDER BY id LIMIT 1 FOR UPDATE');
+	if(!is_array($nextLevelConfig)) {
+		$_pm['mysql']->query('ROLLBACK');
+		die('6');//已经达到最高可配置等级
+	}
 	if ($guild['number_of_member'] < $guild['need_member_number']) {
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('2');//家族成员不够!
 	}
 	if ($guild['need_honor'] > $guild['honor']) {
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('3');//家族荣誉不够!
 	}
 
@@ -726,203 +1065,305 @@ if($op == 'show'){
 		$arr = explode(',',$guild['need_props']);
 		foreach ($arr as $v){
 			$nv = explode('|',$v);
-			$pcheck = $_pm['mysql'] -> getOneRecord("SELECT sums FROM guild_bag WHERE pid = {$nv['0']} AND guild_id = $gid");
-			if (!is_array($pcheck) || $pcheck['sums'] < $nv[1]) {
+			$pid = isset($nv[0]) ? intval($nv[0]) : 0;
+			$needSum = isset($nv[1]) ? intval($nv[1]) : 0;
+			if ($pid <= 0 || $needSum < 0) {
+				$_pm['mysql'] -> query('ROLLBACK');
 				die('4');//物品不够!
+			}
+			if ($needSum == 0) {
+				continue;
+			}
+			$pchecks = $_pm['mysql'] -> getRecords("SELECT id,sums FROM guild_bag WHERE pid = $pid AND guild_id = $gid AND sums > 0 ORDER BY sums DESC,id ASC FOR UPDATE");
+			$total = 0;
+			if (is_array($pchecks)) {
+				foreach ($pchecks as $pcheck) $total += intval($pcheck['sums']);
+			}
+			if ($total < $needSum) {
+				$_pm['mysql'] -> query('ROLLBACK');
+				die('4');//物品不够!
+			}
+			$remaining = $needSum;
+			foreach ($pchecks as $pcheck) {
+				if ($remaining <= 0) break;
+				$take = min(intval($pcheck['sums']), $remaining);
+				$bagId = intval($pcheck['id']);
+				if (!$_pm['mysql'] -> query("UPDATE guild_bag SET sums = sums - $take WHERE id = $bagId AND guild_id = $gid AND pid = $pid AND sums >= $take") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+					$_pm['mysql'] -> query('ROLLBACK');
+					die('4');//物品不够!
+				}
+				$remaining -= $take;
 			}
 		}
 	}
-	
+
 	//升级
-	$_pm['mysql'] -> query("DELETE FROM guild_bag WHERE guild_id = $gid");
-	$_pm['mysql'] -> query("UPDATE guild SET level = level+1 WHERE id = $gid");
+	$level = $currentGuildLevel;
+	if (!$_pm['mysql'] -> query("UPDATE guild SET level = level+1 WHERE id = $gid AND level = $level") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('4');
+	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('4');
+	}
 	die('5');
 }else if ($op == 'permissions'){
-	$gid = intval($_GET['gid']);
-	$num = intval($_GET['num']);
-	$uid = intval($_GET['qxuid']);
-	if ($gid == 0 || $num == 0 || $uid == 0) {
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$num = (isset($_GET['num']) && !is_array($_GET['num'])) ? intval($_GET['num']) : 0;
+	$targetUid = (isset($_GET['qxuid']) && !is_array($_GET['qxuid'])) ? intval($_GET['qxuid']) : 0;
+	$selfUid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+	if ($gid == 0 || $num < 1 || $num > 3 || $targetUid == 0 || $selfUid == 0) {
 		die('');
 	}
-	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = {$_SESSION['id']}");
+
+	if(!$_pm['mysql'] -> query('START TRANSACTION')) die('1');
+	$check = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = $selfUid FOR UPDATE");
 	if (!is_array($check) || $check['priv'] < 2) {
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('1');//您没有权限操作
 	}
-	if ($uid == $_SESSION['id']) {
+	if ($targetUid == $selfUid) {
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('5');//不能操作自己
 	}
-	
-	$checkt = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = $uid");
+
+	$flag = 0;
+	$targetPriv = 0;
+	$checkt = $_pm['mysql'] -> getOneRecord("SELECT priv FROM guild_members WHERE guild_id = $gid AND member_id = $targetUid FOR UPDATE");
 	if (!is_array($checkt)) {
-		$checkt = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = $uid");
+		$checkt = $_pm['mysql'] -> getOneRecord("SELECT guild_request FROM player_ext WHERE uid = $targetUid FOR UPDATE");
 		//print_r($checkt);echo "SELECT guild_request FROM player_ext WHERE uid = $uid";exit;
-		if ($checkt['guild_request'] != $gid) {
+		if (!is_array($checkt) || intval($checkt['guild_request']) != $gid) {
+			$_pm['mysql'] -> query('ROLLBACK');
 			die('2');//该用户不在您的家族
 		}
 		$flag =1;
+	}else{
+		$targetPriv = intval($checkt['priv']);
 	}
-	$guild = $_pm['mysql'] -> getOneRecord("SELECT level,number_of_member FROM guild WHERE id = $gid");
-	$settings = $_pm['mysql'] -> getOneRecord("SELECT max_member_number FROM guild_settings WHERE level = {$guild['level']}");
-	if ($settings['max_member_number'] <= $guild['number_of_member'] && $flag == 1) {
-		$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $uid");
+	$guild = $_pm['mysql'] -> getOneRecord("SELECT guild.level,number_of_member,max_member_number FROM guild,guild_settings WHERE guild.level = guild_settings.level AND guild.id = $gid FOR UPDATE");
+	if (!is_array($guild)) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('2');
+	}
+	$memberCount = intval($guild['number_of_member']);
+	$maxMember = intval($guild['max_member_number']);
+	if ($flag == 1 && $maxMember <= $memberCount) {
+		if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $targetUid AND guild_request = $gid") ||
+			mysql_affected_rows($_pm['mysql'] -> getConn()) != 1 ||
+			!$_pm['mysql'] -> query('COMMIT'))
+		{
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('1');
+		}
+		guildClearUserCache($targetUid, false);
 		die('3');//人数已满，不能再加入
 	}//echo __LINE__."<br>";
 	if ($num >= 2 && $check['priv'] != 3) {//echo __LINE__."<br>";
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('1');
 	}
-	if($checkt['priv'] >= $check['priv']){
+	if($flag != 1 && $targetPriv >= intval($check['priv'])){
+		$_pm['mysql'] -> query('ROLLBACK');
 		die('1');
 	}
 	//exit;
 	if ($num == 2) {
-		$c = $_pm['mysql'] -> getOneRecord("SELECT count(member_id) as sums FROM guild_members WHERE priv =2 AND guild_id = $gid");
-		if ($c['sums'] >= 2) {
+		$elderRows = $_pm['mysql'] -> getRecords("SELECT member_id FROM guild_members WHERE priv =2 AND guild_id = $gid FOR UPDATE");
+		$elderCount = is_array($elderRows) ? count($elderRows) : 0;
+		if ($targetPriv != 2 && $elderCount >= 2) {
+			$_pm['mysql'] -> query('ROLLBACK');
 			die('4');//最多只有两个会长
 		}
 	}
 	if ($num == 3) {
-		$_pm['mysql'] -> query("UPDATE guild_members SET priv = 1 WHERE member_id = {$_SESSION['id']} AND guild_id = $gid");
-		$_pm['mysql'] -> query("UPDATE guild SET president_id = $uid WHERE id = $gid");
+		if (!$_pm['mysql'] -> query("UPDATE guild_members SET priv = 1 WHERE member_id = $selfUid AND guild_id = $gid") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('1');
+		}
+		if (!$_pm['mysql'] -> query("UPDATE guild SET president_id = $targetUid WHERE id = $gid")) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('1');
+		}
 	}
 	$time = time();
 	if ($flag == 1) {//echo "UPDATE guild SET number_of_member = number_of_member + 1 WHERE id = $gid";exit;
-		$_pm['mysql'] -> query("INSERT INTO guild_members(member_id,guild_id,join_time,priv) VALUES($uid,$gid,$time,$num)");
-		$_pm['mysql'] -> query("UPDATE guild SET number_of_member = number_of_member + 1 WHERE id = $gid");
-		$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $uid");
+		if (!$_pm['mysql'] -> query("INSERT INTO guild_members(member_id,guild_id,join_time,priv) VALUES($targetUid,$gid,$time,$num)") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('2');
+		}
+		if (!$_pm['mysql'] -> query("UPDATE guild SET number_of_member = number_of_member + 1 WHERE id = $gid AND number_of_member = $memberCount") || mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('3');
+		}
+		if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = 0 WHERE uid = $targetUid AND guild_request = $gid") ||
+			mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('2');
+		}
 	}else {
-		$_pm['mysql'] -> query("UPDATE guild_members SET priv = $num WHERE member_id = $uid AND guild_id = $gid");
+		if (!$_pm['mysql'] -> query("UPDATE guild_members SET priv = $num WHERE member_id = $targetUid AND guild_id = $gid")) {
+			$_pm['mysql'] -> query('ROLLBACK');
+			die('1');
+		}
 	}
+	if (!$_pm['mysql'] -> query('COMMIT')) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('1');
+	}
+	if($flag == 1) guildClearUserCache($targetUid, false);
 	guild_update_mem();
 	die('10');
 }else if($op == 'battle'){
-	$gid = intval($_GET['id']);
+	$gid = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
 	if($gid == 0){
 		die('数据错误');
 	}
-	
+
 	//判断时间是否可下战书（战斗中不能下战书）
-	$today = date("Y-m-d",time());
-														 
-	// 战场开放时间开关。
 	$week = date("N", time());
 	$hourM= date("Hi", time());
-	
-	$battletimearr = unserialize($_pm['mem']->get(MEM_TIME_KEY));
-	
+	$battletimearr = kdjlSafeMemValue($_pm['mem']->get(MEM_TIME_KEY), array());
+	if(!is_array($battletimearr)) $battletimearr = array();
 	foreach($battletimearr as $bv){
-		if($bv['titles'] != "guild_battle")
+		if(!is_array($bv) || !isset($bv['titles']) || $bv['titles'] != "guild_battle")
 		{
 			continue;
 		}
-		if(isWeeklyDayTimeActive($bv['days'], $bv['starttime'], $bv['endtime'], $week, $hourM, false)){//战场已经开始
+		if(isWeeklyDayTimeActive(isset($bv['days']) ? $bv['days'] : '', isset($bv['starttime']) ? $bv['starttime'] : '', isset($bv['endtime']) ? $bv['endtime'] : '', $week, $hourM, false)){//战场已经开始
 			die('1');//已经开始不能再下战书
 		}
 	}
-	
-	//判断是否有权限下战书
-	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE member_id = {$_SESSION['id']}");
+
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存家族战书失败！');
+	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE member_id = $uid FOR UPDATE");
 	if(!is_array($check) || $check['priv'] < 2){
-		die('2');//您没有权限操作
+		guildTransactionDie('2');//您没有权限操作
 	}
-	if($check['guild_id'] == $gid){
-		die('您不能给自己的家族下战书！');
+	$selfGuildId = intval($check['guild_id']);
+	if($selfGuildId < 1 || $selfGuildId == $gid){
+		guildTransactionDie('您不能给自己的家族下战书！');
 	}
-	$arc = $_pm['mysql'] -> getOneRecord("SELECT id FROM guild_challenges WHERE (challenger_id = $gid or defenser_id = $gid or challenger_id = {$check['guild_id']} or defenser_id = {$check['guild_id']}) AND flags = 1");
-	if(is_array($arc)){
-		die('您的家族或者对方家族已经接受战书，不能再下战书了！');
+
+	$guildRows = $_pm['mysql']->getRecords("SELECT id,level FROM guild WHERE id IN ($selfGuildId,$gid) ORDER BY id FOR UPDATE");
+	if(!is_array($guildRows) || count($guildRows) != 2) guildTransactionDie('数据错误2');
+	$guildLevels = array();
+	foreach($guildRows as $guildRow)
+	{
+		$guildLevels[intval($guildRow['id'])] = intval($guildRow['level']);
 	}
-	//控制数量：判断是否已经下了三个或者以上的战书
-	$sumcheck = $_pm['mysql'] -> getOneRecord("SELECT count(id) as sums FROM guild_challenges WHERE challenger_id = {$check['guild_id']}");
-	if($sumcheck['sums'] >= 3){
-		die('3');//您的家族当前已经发出3份战书，不能再发了！
+	if(!isset($guildLevels[$selfGuildId], $guildLevels[$gid])) guildTransactionDie('数据错误2');
+
+	$challengeRows = $_pm['mysql']->getRecords("SELECT id,challenger_id,defenser_id,flags
+		FROM guild_challenges
+		WHERE challenger_id IN ($selfGuildId,$gid) OR defenser_id IN ($selfGuildId,$gid)
+		ORDER BY id FOR UPDATE");
+	if(!is_array($challengeRows)) guildTransactionDie('保存家族战书失败！');
+	$outgoingCount = 0;
+	$incomingCount = 0;
+	$duplicate = false;
+	foreach($challengeRows as $challengeRow)
+	{
+		$challengerId = intval($challengeRow['challenger_id']);
+		$defenserId = intval($challengeRow['defenser_id']);
+		if(intval($challengeRow['flags']) == 1)
+		{
+			guildTransactionDie('您的家族或者对方家族已经接受战书，不能再下战书了！');
+		}
+		if($challengerId == $selfGuildId) $outgoingCount++;
+		if($defenserId == $gid) $incomingCount++;
+		if($challengerId == $selfGuildId && $defenserId == $gid) $duplicate = true;
 	}
-	
-	//控制被下方是否已经有三个
-	$sumcheck1 = $_pm['mysql'] -> getOneRecord("SELECT count(id) as sums FROM guild_challenges WHERE defenser_id = $gid");
-	if($sumcheck1['sums'] >= 3){
-		die('4');//该家族已经收到三份战书，不能再下了，试试别的吧
-	}
-	//判断你是否已经对该家族下了战书
-	$sumcheck2 = $_pm['mysql'] -> getOneRecord("SELECT id FROM guild_challenges WHERE challenger_id = {$check['guild_id']} AND defenser_id = $gid");
-	if($sumcheck2['id'] > 0){
-		die('6');//您的家族已经对此家族下了战书
-	}
-	
-	//检查等级是否在五级以内
-	$yougild = $_pm['mysql'] -> getOneRecord("SELECT level FROM guild WHERE id = $gid");
-	if(!is_array($yougild)){
-		die('数据错误2');
-	}
-	$myguild = $_pm['mysql'] -> getOneRecord("SELECT a.level-b.level lvldiff FROM guild a,guild b WHERE a.id= {$check['guild_id']} and b.id = $gid");
-	if($myguild['lvldiff'] < -5 ||  $myguild['lvldiff'] >= 5){
-		die('5');//您只能对等级相差为5的家族下战书
-	}
+	if($outgoingCount >= 3) guildTransactionDie('3');//您的家族当前已经发出3份战书，不能再发了！
+	if($incomingCount >= 3) guildTransactionDie('4');//该家族已经收到三份战书，不能再下了，试试别的吧
+	if($duplicate) guildTransactionDie('6');//您的家族已经对此家族下了战书
+	$levelDiff = $guildLevels[$selfGuildId] - $guildLevels[$gid];
+	if(abs($levelDiff) > $guildBattleMaxLevelGap) guildTransactionDie('5');//家族等级最多相差9级
+
 	$time = time();
-	$_pm['mysql'] -> query("INSERT INTO guild_challenges (challenger_id,defenser_id,create_time) VALUES({$check['guild_id']},$gid,$time)");
+	if(!$_pm['mysql'] -> query("INSERT INTO guild_challenges (challenger_id,defenser_id,create_time,flags) VALUES($selfGuildId,$gid,$time,0)") ||
+		mysql_affected_rows($_pm['mysql']->getConn()) != 1 ||
+		!$_pm['mysql']->query('COMMIT')) guildTransactionDie('保存家族战书失败！');
 	die('10');
 }else if($op == 'accept'){
-	$gid = intval($_GET['id']);
+	$gid = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
 	if($gid == 0){
 		die('数据错误');
 	}
-	
+
 	//判断时间是否可下战书（战斗中不能下战书）
-	$today = date("Y-m-d",time());
-														 
-	// 战场开放时间开关。
 	$week = date("N", time());
 	$hourM= date("Hi", time());
-	
-	$battletimearr = unserialize($_pm['mem']->get(MEM_TIME_KEY));
-	
+	$battletimearr = kdjlSafeMemValue($_pm['mem']->get(MEM_TIME_KEY), array());
+	if(!is_array($battletimearr)) $battletimearr = array();
 	foreach($battletimearr as $bv){
-		if($bv['titles'] != "guild_battle")
+		if(!is_array($bv) || !isset($bv['titles']) || $bv['titles'] != "guild_battle")
 		{
 			continue;
 		}
-		if(isWeeklyDayTimeActive($bv['days'], $bv['starttime'], $bv['endtime'], $week, $hourM, false)){//战场已经开始
+		if(isWeeklyDayTimeActive(isset($bv['days']) ? $bv['days'] : '', isset($bv['starttime']) ? $bv['starttime'] : '', isset($bv['endtime']) ? $bv['endtime'] : '', $week, $hourM, false)){//战场已经开始
 			die('1');//已经开始不能再接受
 		}
 	}
-	
-	//判断是否有权限接受战书
-	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE member_id = {$_SESSION['id']}");
+
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存家族战书失败！');
+	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE member_id = $uid FOR UPDATE");
 	if(!is_array($check) || $check['priv'] < 2){
-		die('2');//您没有权限操作
+		guildTransactionDie('2');//您没有权限操作
 	}
-	if($check['guild_id'] == $gid){
-		die('操作有误！');
+	$selfGuildId = intval($check['guild_id']);
+	if($selfGuildId < 1 || $selfGuildId == $gid){
+		guildTransactionDie('操作有误！');
 	}
-	$arc = $_pm['mysql'] -> getOneRecord("SELECT id FROM guild_challenges WHERE (challenger_id = $gid or defenser_id = $gid or challenger_id = {$check['guild_id']} or defenser_id = {$check['guild_id']}) AND flags = 1");
-	if(is_array($arc)){
-		die('3');//您的家族或者对方家族已经接受战书，不能再接受了！
+
+	$guildRows = $_pm['mysql']->getRecords("SELECT id,level FROM guild WHERE id IN ($selfGuildId,$gid) ORDER BY id FOR UPDATE");
+	if(!is_array($guildRows) || count($guildRows) != 2) guildTransactionDie('数据错误2');
+	$guildLevels = array();
+	foreach($guildRows as $guildRow)
+	{
+		$guildLevels[intval($guildRow['id'])] = intval($guildRow['level']);
 	}
-	
-	
-	//检查等级是否在五级以内
-	$yougild = $_pm['mysql'] -> getOneRecord("SELECT level FROM guild WHERE id = $gid");
-	if(!is_array($yougild)){
-		die('数据错误2');
+	if(!isset($guildLevels[$selfGuildId], $guildLevels[$gid])) guildTransactionDie('数据错误2');
+
+	$challengeRows = $_pm['mysql']->getRecords("SELECT id,challenger_id,defenser_id,flags
+		FROM guild_challenges
+		WHERE challenger_id IN ($selfGuildId,$gid) OR defenser_id IN ($selfGuildId,$gid)
+		ORDER BY id FOR UPDATE");
+	if(!is_array($challengeRows)) guildTransactionDie('保存家族战书失败！');
+	$targetChallengeIds = array();
+	foreach($challengeRows as $challengeRow)
+	{
+		$challengerId = intval($challengeRow['challenger_id']);
+		$defenserId = intval($challengeRow['defenser_id']);
+		$flags = intval($challengeRow['flags']);
+		if($flags == 1) guildTransactionDie('3');//您的家族或者对方家族已经接受战书，不能再接受了！
+		if($flags == 0 && $challengerId == $gid && $defenserId == $selfGuildId)
+		{
+			$targetChallengeIds[] = intval($challengeRow['id']);
+		}
 	}
-	$myguild = $_pm['mysql'] -> getOneRecord("SELECT a.level-b.level lvldiff FROM guild a,guild b WHERE a.id= {$check['guild_id']} and b.id = $gid");
-	if($myguild['lvldiff'] < -5 ||  $myguild['lvldiff'] >= 5){
-		die('5');//您接受的战书请求等级相差最多为5
-	}
-	$time = time();
-	$_pm['mysql'] -> query("UPDATE guild_challenges SET flags = 1 WHERE challenger_id = $gid AND defenser_id = {$check['guild_id']}");
-	$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE (challenger_id = $gid OR defenser_id = $gid) AND flags = 0");
-	$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE (challenger_id = {$check['guild_id']} OR defenser_id = {$check['guild_id']}) AND flags = 0");
+	if(count($targetChallengeIds) != 1) guildTransactionDie('家族战书不存在！');
+	$levelDiff = $guildLevels[$selfGuildId] - $guildLevels[$gid];
+	if(abs($levelDiff) > $guildBattleMaxLevelGap) guildTransactionDie('5');//家族等级最多相差9级
+
+	$challengeId = $targetChallengeIds[0];
+	if(!$_pm['mysql'] -> query("UPDATE guild_challenges SET flags = 1 WHERE id = $challengeId AND challenger_id = $gid AND defenser_id = $selfGuildId AND flags = 0") ||
+		mysql_affected_rows($_pm['mysql'] -> getConn()) != 1) guildTransactionDie('家族战书不存在！');
+	if(!$_pm['mysql'] -> query("DELETE FROM guild_challenges WHERE flags = 0 AND (challenger_id IN ($selfGuildId,$gid) OR defenser_id IN ($selfGuildId,$gid))") ||
+		!$_pm['mysql']->query('COMMIT')) guildTransactionDie('保存家族战书失败！');
 	die('10');
 }else if($op == 'select_guild'){
-	$ar = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = {$_SESSION['id']}");
-	die($ar['guild_id']);
+	$ar = $_pm['mysql'] -> getOneRecord("SELECT guild_id FROM guild_members WHERE member_id = $uid");
+	if(!is_array($ar) || !isset($ar['guild_id'])) die('0');
+	die(strval(intval($ar['guild_id'])));
 }
 
 
 
 
 function getUserBagByIds($id,$pidarr,&$mysql)
-{	
+{
 	$id = intval($id);
 	foreach($pidarr as $v)
 	{
@@ -957,7 +1398,7 @@ function getUserBagByIds($id,$pidarr,&$mysql)
 									  p.propslock as propslock,
 									  p.prestige as prestige
 								 FROM userbag as b,props as p
-								WHERE 
+								WHERE
 								b.pid={$v} and
 								p.id = b.pid and b.uid={$id} and b.sums>0
 								ORDER BY b.id DESC limit 1");

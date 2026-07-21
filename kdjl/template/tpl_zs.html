@@ -21,7 +21,7 @@ a {
 -->
 </style>
 <script>
-var bball = [#bballid#];
+var bball = [#zsbballid#];
 </script>
 </head>
 <!--[if IE 6]>
@@ -99,10 +99,10 @@ var bball = [#bballid#];
         <td><img src="../images/ui/compose/hc04.gif" width="134" height="35"></td>
       </tr>
       <tr>
-        <td align="center"><select name="zsapets" style="margin-top:3px;" onchange="zsmoneysum();">
+        <td align="center"><select name="zsapets" id="zsapets" style="margin-top:3px;" onchange="zsmoneysum();">
           <option value=''>请选择主宠物</option>
           
-			#apetslist#
+			#zsapetslist#
 		
         </select></td>
       </tr>
@@ -118,10 +118,10 @@ var bball = [#bballid#];
         <td><img src="../images/ui/compose/hc05.gif" width="134" height="35"></td>
       </tr>
       <tr>
-        <td align="center"><select name="zsbpets" style="margin-top:3px;" onchange="zsmoneysum();">
+        <td align="center"><select name="zsbpets" id="zsbpets" style="margin-top:3px;" onchange="zsmoneysum();">
           <option value=''>请选择副宠物</option>
           
-			#bpetslist#
+			#zsbpetslist#
 		
         </select></td>
       </tr>
@@ -198,18 +198,22 @@ function zsPcompose(n,id)
 		return false;
 	}
 	var ap = $('zsapets').options[$('zsapets').selectedIndex].value;
-	var bp = $('zs').options[$('zs').selectedIndex].value;
+	var bp = $('zsbpets').options[$('zsbpets').selectedIndex].value;
 	var zs = $('zs').options[$('zs').selectedIndex].value;
 	var p1 = $('zswp1').options[$('zswp1').selectedIndex].value;
+	var p2 = 0;
 
-    if (typeof ap=='undefined' || typeof bp =='undefined') return false;
+	if (!ap || !bp || !zs) {
+		window.parent.Alert('请选择主宠、副宠和涅槃兽！');
+		return false;
+	}
 	if (p1 == '' || typeof p1=='undefined') p1 = 0;
 	if (p2 == '' || typeof p2=='undefined') p2 = 0;
 	$('snb').disabled=true;
 	var opt = {
      	method: 'get',
 		onSuccess: function(t) {
-					var v = t.responseText;alert(v);
+					var v = parseInt(t.responseText,10);
 					switch(v)
 					{
 						case 0: window.parent.Alert('转生失败！！');break;
@@ -229,18 +233,17 @@ function zsPcompose(n,id)
     		 	},
      	asynchronous:true        
 	}
-	alert('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs);return;
-	var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&zs='+zs, opt);
+	var ajax=new Ajax.Request('../function/zsGate.php?ap='+ap+'&bp='+bp+'&p1='+p1+'&p2='+p2+'&zs='+zs, opt);
 }
 
 function zsmoneysum()
 {
 	var ap = $('zsapets').options[$('zsapets').selectedIndex].text.split('-')[1];
-	var bp = $('zs').options[$('zs').selectedIndex].text.split('-')[1];
+	var bp = $('zsbpets').options[$('zsbpets').selectedIndex].text.split('-')[1];
     var apid = $('zsapets').options[$('zsapets').selectedIndex].value;
-	var bpid = $('zs').options[$('zs').selectedIndex].value;
+	var bpid = $('zsbpets').options[$('zsbpets').selectedIndex].value;
 
-    if(typeof apid != 'undefined' || apid!='')
+    if(typeof apid != 'undefined' && apid!='')
 	{
 		for(var i=0;i<bball.length;i++)
 		{
@@ -252,7 +255,7 @@ function zsmoneysum()
 			}
 		}
 	}
-	if(typeof bpid != 'undefined' || bpid!='')
+	if(typeof bpid != 'undefined' && bpid!='')
 	{
 		for(var i=0;i<bball.length;i++)
 		{
@@ -266,7 +269,7 @@ function zsmoneysum()
 	}
     
 	var p1 = $('zswp1').options[$('zswp1').selectedIndex].text.split('-')[1];
-	var p2 = $('wp2').options[$('wp2').selectedIndex].text.split('-')[1];
+	var p2 = 0;
 	if (typeof ap=='undefined' || typeof bp =='undefined') return false;
 	if (p1 == '' || typeof p1=='undefined') p1 = 0;
 	if (p2 == '' || typeof p2=='undefined') p2 = 0;

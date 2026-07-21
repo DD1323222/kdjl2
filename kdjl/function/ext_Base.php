@@ -11,15 +11,28 @@
 */
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
-$action = $_REQUEST['action'];
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die("0");
+$loginKey = 'login'.$uid;
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) die("0");
+$action = (isset($_REQUEST['action']) && !is_array($_REQUEST['action'])) ? $_REQUEST['action'] : '';
+function extPasswordValue($key)
+{
+	global $_pm;
+	$value = (isset($_REQUEST[$key]) && !is_array($_REQUEST[$key])) ? $_REQUEST[$key] : '';
+	$link = (isset($_pm['mysql']) && is_object($_pm['mysql'])) ? $_pm['mysql']->getConn() : null;
+	if (is_resource($link)) $value = mysql_real_escape_string($value, $link);
+	else $value = addslashes($value);
+	return htmlspecialchars($value);
+}
 //给仓库加密
 if($action == "reg")
 {
-	$pwd = htmlspecialchars(mysql_escape_string($_REQUEST['pwd']));
-	$repwd = htmlspecialchars(mysql_escape_string($_REQUEST['repwd']));
+	$pwd = extPasswordValue('pwd');
+	$repwd = extPasswordValue('repwd');
 	$err = "";
-	if(!empty($user['ckpwd']) && empty($_SESSION['login'.$_SESSION['id']]))
+	if(!empty($user['ckpwd']) && empty($_SESSION[$loginKey]))
 	{
 		die("3");//您的仓库已加密！如要修改，请先输入旧密码！
 	}
@@ -45,25 +58,27 @@ if($action == "reg")
 //设置密码，更新到数据库
 else if($action == "do")
 {
-	if($_SESSION['login'.$_SESSION['id']] != 1)
+	if(!isset($_SESSION[$loginKey]) || $_SESSION[$loginKey] != 1)
 	{
-		$r = $_pm['mysql']->getOneRecord("SELECT ckpwd FROM player WHERE id = {$_SESSION['id']}");
+		$r = $_pm['mysql']->getOneRecord("SELECT ckpwd FROM player WHERE id = {$uid}");
 		if(isset($r['ckpwd']) && !empty($r['ckpwd']))
 		{
 			die("请先登录");
 		}
 	}
 	$err = "";
-	$pwd = htmlspecialchars(mysql_escape_string($_REQUEST['pwd']));
+	$pwd = extPasswordValue('pwd');
 	$pwd = abs(crc32(md5($pwd)));
 	if(empty($pwd))
 	{
 		die("0");//信息有误！
 	}
-	$sql = "UPDATE player 
+	$sql = "UPDATE player
 			SET ckpwd = $pwd
-			WHERE id = {$_SESSION['id']}";
-	$_pm['mysql'] -> query($sql);
+			WHERE id = {$uid}";
+	if(!$_pm['mysql']->query($sql)) die('0');
+	if(defined('MEM_USER_KEY')) $_pm['mem']->del(MEM_USER_KEY);
+	$_SESSION[$loginKey] = '1';
 	$err = 10;
 	echo $err;
 }
@@ -75,7 +90,7 @@ else if($action == "login")
 	{
 		die("2");//您还没有设置仓库密码！
 	}
-	$pwd = htmlspecialchars(mysql_escape_string($_REQUEST['pwd']));
+	$pwd = extPasswordValue('pwd');
 	if(empty($pwd))
 	{
 		die("0");//请输入密码！
@@ -88,7 +103,7 @@ else if($action == "login")
 	else
 	{
 		$err = 10;
-		$_SESSION['login'.$_SESSION['id']] = "1";//已经登陆
+		$_SESSION[$loginKey] = "1";//已经登陆
 	}
 	echo $err;
 }

@@ -6,16 +6,25 @@
 <title>无标题文档</title>
 
 <script language="javascript">
+var selid = 0;
+var pid = 0;
 function sel(obj)
 {
-	selid=obj;
 	if(selid!=0) selid.style.backgroundColor='#FEFAE1';
+	selid=obj;
 	obj.style.backgroundColor='#DFD496';
 }
 function getP()
 {
 	var jg= parseInt($('junum').value);
-	if (jg<1 || jg>99) window.parent.Alert('错误的兑换数量！');
+	if (pid < 1) {
+		window.parent.Alert('请先选择要兑换的物品！');
+		return false;
+	}
+	if (isNaN(jg) || jg<1 || jg>99) {
+		window.parent.Alert('错误的兑换数量！');
+		return false;
+	}
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
@@ -29,20 +38,21 @@ function getP()
     		 	asynchronous:true 
 			}
 	var ajax=new Ajax.Request('../function/ext_Battle.php?t=6&p='+pid+'&s='+jg, opt);
+	return false;
 }
 var equipInfos = {};
 var LastKey = "";
 if(!document.all){
 	var Event;
-	window.onmousemove = function(){
-							Event = event;
+	window.onmousemove = function(e){
+							Event = e;
 					}
 }
 function showTip(id)
 {
 	if(!document.all){
-		var x=Event.x;
-		var y=Event.y;
+		var x=Event ? Event.clientX : 0;
+		var y=Event ? Event.clientY : 0;
 	}else{
 		var x=event.x;
 		var y=event.y;
@@ -114,16 +124,16 @@ height:26px;}
 <body>
 <div class="zcdhbox">
 	<div class="box_left">
-    	<div class="fhzc"><img src="../images/ui/fhzc.gif" />
+		<div class="fhzc"><img src="../images/ui/fhzc.gif" onclick="window.parent.$('gw').src='./function/BattleComein_Mod.php';" style="cursor:pointer;" />
         </div>
     </div>
     <div class="box_right">
     	<div class="zcdh_zi1">
             <div class="zcdh_zi1a">
-                 当前军工：
+                 当前军功：
             #userjg#</div>
             <div class="zcdh_zi1a">
-                 当前军工：
+                 当前名次：
             #usertop#</div>
         </div>
       <div class="zcdh_zi2">

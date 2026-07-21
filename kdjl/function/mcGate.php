@@ -12,32 +12,103 @@
 require_once('../config/config.game.php');
 require_once('../sec/dblock_fun.php');
 
-$from = isset($_REQUEST['from']) ? intval($_REQUEST['from']) : 0;
+$from = (isset($_REQUEST['from']) && !is_array($_REQUEST['from'])) ? intval($_REQUEST['from']) : 0;
 if ($from != 1)
 {
 	secStart($_pm['mem']);
 }
 
+$mcTransactionActive = false;
+$mcLockHeld = false;
+
+function mcShutdown()
+{
+	global $_pm, $mcTransactionActive, $mcLockHeld;
+	$error = error_get_last();
+	if(!is_array($error) || !in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR), true))
+	{
+		return;
+	}
+	if($mcTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$mcTransactionActive = false;
+	}
+	if($mcLockHeld && function_exists('realseLock'))
+	{
+		realseLock();
+		$mcLockHeld = false;
+	}
+}
+register_shutdown_function('mcShutdown');
+
 function mcStop($message)
 {
-	global $_pm;
-	$_pm['mysql']->query('ROLLBACK');
+	global $_pm, $mcTransactionActive, $mcLockHeld;
+	if($mcTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$mcTransactionActive = false;
+	}
+	if($mcLockHeld && function_exists('realseLock'))
+	{
+		realseLock();
+		$mcLockHeld = false;
+	}
 	die($message);
 }
 
 function mcCommit()
 {
-	global $_pm;
+	global $_pm, $mcTransactionActive, $mcLockHeld;
 	if (!$_pm['mysql']->query('COMMIT'))
 	{
 		$_pm['mysql']->query('ROLLBACK');
+		$mcTransactionActive = false;
+		if($mcLockHeld && function_exists('realseLock')) realseLock();
+		$mcLockHeld = false;
 		die('操作提交失败，请重试！');
 	}
+	$mcTransactionActive = false;
+	$_pm['mem']->del(MEM_USER_KEY);
+	$_pm['mem']->del(MEM_USERBB_KEY);
+	$_pm['mem']->del(MEM_USERSK_KEY);
+	$_pm['mem']->del(MEM_USERBAG_KEY);
+	if($mcLockHeld && function_exists('realseLock')) realseLock();
+	$mcLockHeld = false;
+}
+function mcPasswordValue($key)
+{
+	$value = (isset($_REQUEST[$key]) && !is_array($_REQUEST[$key])) ? $_REQUEST[$key] : '';
+	if (function_exists('get_magic_quotes_gpc') && @get_magic_quotes_gpc())
+	{
+		$value = stripslashes($value);
+	}
+	return (string)$value;
 }
 
-$uid = intval($_SESSION['id']);
-$id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
-$op = isset($_REQUEST['op']) ? strval($_REQUEST['op']) : '';
+function mcPasswordHash($value)
+{
+	return abs(crc32(md5((string)$value)));
+}
+
+function mcLegacyPasswordHash($value)
+{
+	global $_pm;
+	$link = (isset($_pm['mysql']) && is_object($_pm['mysql'])) ? $_pm['mysql']->getConn() : null;
+	if (is_resource($link)) $value = mysql_real_escape_string($value, $link);
+	else $value = addslashes($value);
+	return mcPasswordHash(htmlspecialchars($value));
+}
+
+function mcPasswordMatches($value, $storedHash)
+{
+	return mcPasswordHash($value) == $storedHash || mcLegacyPasswordHash($value) == $storedHash;
+}
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$id = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0;
+$op = (isset($_REQUEST['op']) && !is_array($_REQUEST['op'])) ? strval($_REQUEST['op']) : '';
 $validOps = array('z', 'change', 's', 'g', 'd');
 
 if ($uid < 1 || $id < 1 || !in_array($op, $validOps, true))
@@ -45,7 +116,13 @@ if ($uid < 1 || $id < 1 || !in_array($op, $validOps, true))
 	die('数据错误1！');
 }
 
-getLock($uid);
+$a = getLock($uid);
+if(!is_array($a))
+{
+	die('服务器繁忙，请稍候再试！');
+}
+$mcLockHeld = true;
+$mcTransactionActive = true;
 $db = $_pm['mysql'];
 $user = $db->getOneRecord('SELECT * FROM player WHERE id='.$uid.' FOR UPDATE');
 $userbb = $db->getRecords('SELECT * FROM userbb WHERE uid='.$uid.' ORDER BY level DESC FOR UPDATE');
@@ -203,19 +280,25 @@ if (intval($user['money']) < 10000)
 	mcStop('您没有足够多的金币哦！');
 }
 
-$pwd = isset($_REQUEST['pwd']) ? htmlspecialchars(mysql_escape_string($_REQUEST['pwd'])) : '';
+$pwd = mcPasswordValue('pwd');
 if ($pwd === '' && !empty($user['fieldpwd']))
 {
 	mcStop('请输入密码！');
 }
-$pwd = abs(crc32(md5($pwd)));
-if (!empty($user['fieldpwd']) && $pwd != $user['fieldpwd'])
+if (!empty($user['fieldpwd']) && !mcPasswordMatches($pwd, $user['fieldpwd']))
 {
 	mcStop('1');
 }
+if (!empty($user['fieldpwd']) && mcPasswordHash($pwd) != $user['fieldpwd'])
+{
+	if (!$db->query('UPDATE player SET fieldpwd='.mcPasswordHash($pwd).' WHERE id='.$uid))
+	{
+		mcStop('密码升级失败，请重试！');
+	}
+}
 
 $equipment = $db->getRecords(
-	'SELECT pid FROM userbag WHERE uid='.$uid.' AND zbpets='.$id.' FOR UPDATE'
+	'SELECT pid FROM userbag WHERE uid='.$uid.' AND zbpets='.$id.' AND sums>0 FOR UPDATE'
 );
 $equipmentText = '';
 if (is_array($equipment) && count($equipment) > 0)
@@ -249,6 +332,8 @@ if (!$db->query('DELETE FROM userbb WHERE uid='.$uid.' AND id='.$id) ||
 }
 
 mcCommit();
+$_pm['mem']->del('format_user_zhuangbei_'.$id);
+$_pm['mem']->del('User_bb_equip_changed_'.$id.'_'.$uid);
 $db->query(
 	'INSERT INTO gamelog (ptime,seller,buyer,pnote,vary) VALUES ('.time().','.$uid.','.$uid.','.
 	$db->quote($logText).',16)'

@@ -55,7 +55,7 @@ body {color:#693600; background:none}
 .self_l {position:relative; width:290px; height:319px; background:url(../new_images/index/myinfobgleft.jpg)}
 .self_name{ padding:23px 0 0 32px;}
 .self_role{padding:8px 25px 0 0; text-align:center; height:280px;}
-.self_role img {max-heght:246px; _height:expression(this.width>246?246:true)}
+.self_role img {max-height:246px; _height:expression(this.width>246?246:true)}
 .self_r {position:relative; width:498px; height:319px; background:url(../new_images/index/myinfobgright.jpg)}
 .ms_box{ background:url(../new_images/index/ms_task_box.jpg) no-repeat; width:225px; height:258px; padding:1px; margin:5px 0 0 15px; float:left;}
 .ms_box h2{ line-height:30px; padding:3px 0 0 10px; font-weight:bold;}

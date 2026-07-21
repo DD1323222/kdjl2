@@ -180,7 +180,7 @@ var prestige=0;
 		<!-- right option.-->
 		<!-- right option end.-->
       </div>
-	  <div id="tag" style="position:absolute; left:426px; top:17px; z-index:1; width: 288px;"><img src="../images/ui/shop/gm12.gif" />元宝：#yb# <img src="../images/ui/shop/gm11.gif" />威望： #prestige#</div></td>
+	  <div id="tag" style="position:absolute; left:426px; top:17px; z-index:1; width: 288px;"><img src="../images/ui/shop/gm12.gif" />元宝：#yb# <img src="../images/ui/shop/gm11.gif" />威望： <span id="prestigeNum">#prestige#</span></div></td>
   </tr>
 </table>
 
@@ -194,6 +194,18 @@ var prestige=0;
 function copyWord(words)
 {
 	window.parent.$('baike_input').value=words;
+}
+function setShopBuyNumDefault()
+{
+	if($('prenum')) $('prenum').value = 1;
+}
+function updateNumberText(id, delta)
+{
+	var obj = $(id);
+	if(!obj) return;
+	var val = parseInt(obj.innerHTML, 10);
+	if(isNaN(val)) val = 0;
+	obj.innerHTML = val + delta;
 }
 function sel(obj)
 {
@@ -210,6 +222,7 @@ function sel(obj)
 	}
 	catch(e)
 	{
+		setShopBuyNumDefault();
 	}
 }
 function prebuy(){
@@ -222,7 +235,7 @@ function prebuy(){
 	}
 	else if(nums != 1){window.parent.Alert('装备一次只能买一个！');return;}
 	else{
-		var sump = prestige*parseInt($('num').value);
+		var sump = prestige*parseInt($('prenum').value);
 		if (sump==0) window.parent.Alert('数据错误！');
 		if(confirm('你确定购买选中的物品吗? 总共将花费您 '+sump+' 威望！'))
 		{
@@ -231,7 +244,7 @@ function prebuy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('您的威望不够！');
-					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');window.location.reload();}
+					else if(n==0) {ajaxfun();window.parent.Alert('购买物品成功,记得多照顾我噢！');updateNumberText('prestigeNum',-sump);}
 					else if(n==3) {window.parent.Alert('请选择要购买的装备!');}
 					else if(n==4) {window.parent.Alert('包裹空间不足，购买失败!');}
     		 	},

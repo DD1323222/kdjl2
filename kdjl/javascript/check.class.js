@@ -22,11 +22,5 @@ function goToIndex()
 
 function validInt(sDouble)
 {
-  var re = /^[0-9]+.?[0-9]*$/;
-   var check = sDouble.indexOf('0');
-  if(check == 0)
-  {
-	  return false;
-	}
-  return re.test(sDouble)
+	return /^[1-9][0-9]*$/.test(String(sDouble));
 }

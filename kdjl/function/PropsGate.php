@@ -16,15 +16,23 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 $err = 0;
 
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$bags		= $_pm['user']->getUserBagById($_SESSION['id']);
-
-$bid = intval($_REQUEST['bid']); // table: props => id
-$n	 = intval($_REQUEST['n']); 
-
-if($n <= 0)
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid <= 0)
 {
-	unLockItem($bid);
+	die('2');
+}
+$user		= $_pm['user']->getUserById($uid);
+$bags		= $_pm['user']->getUserBagById($uid);
+if(!is_array($user)) die('2');
+if(!is_array($bags)) $bags = array();
+if(!isset($user['maxbag'])) $user['maxbag'] = 0;
+if(!isset($user['money'])) $user['money'] = 0;
+
+$bid = (isset($_REQUEST['bid']) && !is_array($_REQUEST['bid'])) ? intval($_REQUEST['bid']) : 0; // table: props => id
+$n	 = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
+
+if($bid <= 0 || $n <= 0)
+{
 	die('2');
 }
 
@@ -33,18 +41,28 @@ if(lockItem($bid) === false)
 	die('已经在处理了！');
 }
 
-if ($_pm['user']->check(array('int' => $bid, 'int' => $n)) === false || $n>100){
+if ($_pm['user']->check(array('int' => array($bid, $n))) === false || $n>100){
 	unLockItem($bid);
 	die('2');
 }
-$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
+$mempropsid = kdjlSafeMemValue($_pm['mem']->get('db_propsid'), array());
 $wp = is_array($mempropsid) && isset($mempropsid[$bid]) ? $mempropsid[$bid] : false;
+if(is_array($wp))
+{
+	if(!isset($wp['id'])) $wp['id'] = 0;
+	if(!isset($wp['vary'])) $wp['vary'] = 0;
+	if(!isset($wp['varyname'])) $wp['varyname'] = 0;
+	if(!isset($wp['sell'])) $wp['sell'] = 0;
+	if(!isset($wp['buy'])) $wp['buy'] = 0;
+	if(!isset($wp['yb'])) $wp['yb'] = 0;
+	if(!isset($wp['prestige'])) $wp['prestige'] = 0;
+}
 if(!is_array($wp) || $wp['sell'] < 0 || $wp['buy'] < 0 || $wp['yb'] != 0 || $wp['prestige'] != 0)
 {
 	unLockItem($bid);
 	die('3');
 }
-/*$wp= $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY, 
+/*$wp= $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY,
 					   'v' => "if(\$rs['id'] == '{$bid}' && \$rs['buy']>0 && \$rs['yb']==0 && \$rs['prestige']==0) \$ret=\$rs;"
 				 ));*/
 if (!is_array($wp)) {
@@ -52,42 +70,59 @@ if (!is_array($wp)) {
 	die("3");
 }
 
-if ($wp['buy']==0 || 
-	$wp['id']==0 || 
-	$wp['varyname']==9 || 
+if ($wp['buy']==0 ||
+	$wp['id']==0 ||
+	$wp['varyname']==9 ||
 	intval($wp['yb'])>0 ||
 	intval($wp['prestige'])>0) {
 	unLockItem($bid);
 	die("2");
 }
+if(intval($wp['vary']) != 1 && intval($wp['vary']) != 2)
+{
+	unLockItem($bid);
+	die('3');
+}
 
 // Get current bag props num.
 $bagnum = 0;
+$hasStackItem = false;
 if (is_array($bags))
 {
 	foreach ($bags as $k => $v)
 	{
+		if(!is_array($v)) continue;
+		if(!isset($v['sums'])) $v['sums'] = 0;
+		if(!isset($v['zbing'])) $v['zbing'] = 0;
+		if(!isset($v['pid'])) $v['pid'] = 0;
+		if(!isset($v['vary'])) $v['vary'] = 0;
+		if(!isset($v['cantrade'])) $v['cantrade'] = 0;
 		if ($v['sums']>0 && $v['zbing']==0) $bagnum++;
+		if ($v['sums']>0 && $v['zbing']==0 && intval($v['vary']) == 1 && $v['pid']==$bid && intval($v['cantrade']) != 3) $hasStackItem = true;
 	}
 	unset($bags);
 }
 
-if( ($wp['vary']==2 && ($n+$bagnum)>$user['maxbag']) || 
-	(($bagnum+1) > $user['maxbag']) ) $err= 4;
+$needBagSlot = ($wp['vary']==2) ? $n : ($hasStackItem ? 0 : 1);
+if(($bagnum+$needBagSlot) > $user['maxbag']) $err= 4;
 else
 {
-	$price = $wp['buy']*$n;
-	if ($price > $user['money'])
+	$price = kdjlSafePositiveProduct($wp['buy'], $n);
+	if ($price === false)
+	{
+		$err = 3;
+	}
+	else if ($price > $user['money'])
 	{
 		$err= 10; // Money too less.
 	}
 	else
-	{   
-		$_pm['mysql']->query('START TRANSACTION');
-		$_pm['mysql']->query("UPDATE player
+	{
+		if(!$_pm['mysql']->query('START TRANSACTION')) { unLockItem($bid); $_pm['mem']->memClose(); die('3'); }
+		$moneyPaid = $_pm['mysql']->query("UPDATE player
 						   SET money=money-{$price}
-						 WHERE id={$_SESSION['id']} and money >= {$price}");
-		if (mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+						 WHERE id={$uid} and money >= {$price}");
+		if (!$moneyPaid || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 		{
 			$_pm['mysql']->query('ROLLBACK');
 			$err = 10;
@@ -100,7 +135,7 @@ else
 			    //$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
 				if ($_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
-								   {$user['id']},
+								   {$uid},
 								   {$bid},
 								   {$wp['sell']},
 								   {$wp['vary']},
@@ -108,9 +143,9 @@ else
 								   unix_timestamp()
 								  );
 						  ") === false) $purchaseOk = false;
+				if($purchaseOk && mysql_affected_rows($_pm['mysql']->getConn()) != 1) $purchaseOk = false;
 			}
-			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
-			else
+			if (!$purchaseOk || !$_pm['mysql']->query('COMMIT'))
 			{
 				$_pm['mysql']->query('ROLLBACK');
 				$err = 3;
@@ -118,34 +153,35 @@ else
 		}
 		else
 		{
-			$ret = $_pm['mysql']->getOneRecord("SELECT id 
+			$ret = $_pm['mysql']->getOneRecord("SELECT id
 										FROM userbag
-									   WHERE uid={$_SESSION['id']} and pid={$bid}
-									   LIMIT 0,1
+									   WHERE uid={$uid} and pid={$bid} and vary=1 and zbing=0 and (cantrade IS NULL OR cantrade<>3)
+									   LIMIT 0,1 FOR UPDATE
 									");
 			if (is_array($ret))
 			{
-				$purchaseOk = $_pm['mysql']->query("UPDATE userbag 
-							   SET sums=sums+{$n} 
-							 WHERE uid={$_SESSION['id']} and id={$ret['id']} and sums+{$n}>0
+				$purchaseOk = $_pm['mysql']->query("UPDATE userbag
+							   SET sums=COALESCE(sums,0)+{$n}
+							 WHERE uid={$uid} and id={$ret['id']} and vary=1 and COALESCE(sums,0) <= 2147483647-{$n} and zbing=0 and (cantrade IS NULL OR cantrade<>3)
 						  ") !== false;
+				if($purchaseOk && mysql_affected_rows($_pm['mysql']->getConn()) != 1) $purchaseOk = false;
 			}
 			else //create new data
 			{
 				//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'userbag');
 				$purchaseOk = $_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
 							VALUES(
-								   {$user['id']},
+								   {$uid},
 								   {$bid},
 								   {$wp['sell']},
 								   {$wp['vary']},
 								   {$n},
 								   ".time()."
 								  );
-						  ") !== false;					
+						  ") !== false;
+				if($purchaseOk && mysql_affected_rows($_pm['mysql']->getConn()) != 1) $purchaseOk = false;
 			}
-			if ($purchaseOk) $_pm['mysql']->query('COMMIT');
-			else
+			if (!$purchaseOk || !$_pm['mysql']->query('COMMIT'))
 			{
 				$_pm['mysql']->query('ROLLBACK');
 				$err = 3;

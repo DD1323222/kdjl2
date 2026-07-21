@@ -6,34 +6,27 @@ require_once("../config/config.game.php");
 //secStart($_pm['mem']);
 header('Content-Type:text/html;charset=utf-8');
 @session_start();
-if(!isset($_REQUEST['username']) || !isset($_REQUEST['nickname']))
+if(!isset($_REQUEST['username']) || !isset($_REQUEST['nickname']) || is_array($_REQUEST['username']) || is_array($_REQUEST['nickname']))
 {
 	die("0");
 }
-preg_match("/[^A-Za-z0-9]/", $_REQUEST['username'], $matches);
-if(count($matches) > 0)
+$usernameRaw = trim($_REQUEST['username']);
+$nicknameRaw = trim($_REQUEST['nickname']);
+if(!kdjlValidAccountName($usernameRaw))
 {
 	die("0");
 }
-if($_REQUEST['username'])
-{
-	$_REQUEST['username'] =$_REQUEST['username'];
-}
-if($_REQUEST['nickname'])
-{
-	$_REQUEST['nickname'] = $_REQUEST['nickname'];
-}
+if(!kdjlValidNickname($nicknameRaw)) die('3');
 $db = new mysql();
-$username = mysql_real_escape_string($_REQUEST['username']);
-$nickname = mysql_real_escape_string($_REQUEST['nickname']);
-if (strlen(trim($nickname))<4 || strlen(trim($nickname))>14){ $err="3";echo $err;exit();}
-$rs = $db->getOneRecord("SELECT * FROM player WHERE name = '{$username}'");
-if($rs)
+$username = $db->escape($usernameRaw);
+$nickname = $db->escape($nicknameRaw);
+$rs = $db->getOneRecord("SELECT id FROM player WHERE name = '{$username}' LIMIT 1");
+if(is_array($rs))
 {
 	die("1");
 }
-$rs = $db->getOneRecord("SELECT * FROM player WHERE nickname = '{$nickname}'");
-if($rs)
+$rs = $db->getOneRecord("SELECT id FROM player WHERE nickname = '{$nickname}' LIMIT 1");
+if(is_array($rs))
 {
 	die("2");
 }

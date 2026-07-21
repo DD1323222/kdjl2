@@ -63,7 +63,8 @@ if($user['bot_map_id'] != 0)
 		$gall -= $ghurt;
 		if($gall <= 0)
 		{
-			$fight_times = intval($fight_times*$myall/$rs['srchp']);
+			$maxHp = isset($rs['srchp']) ? max(1, intval($rs['srchp'])) : 1;
+			$fight_times = intval($fight_times*$myall/$maxHp);
 			break;
 		}
 		$myall -= $myhurt;

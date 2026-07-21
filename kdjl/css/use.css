@@ -77,7 +77,7 @@ H1 {
 	
 }
 #secTable TD {
-	FONT-SIZE: 12px; COLOR: #000000; LINE-HEIGHT: 25px; FONT-FAMILY: "ו"
+	FONT-SIZE: 12px; COLOR: #000000; LINE-HEIGHT: 25px; FONT-FAMILY: "宋体"
 }
 .sec1 {
 	BORDER-RIGHT: #ffffff 3px solid; BORDER-TOP: #ffffff 3px solid; BORDER-LEFT: #ffffff 3px solid; BORDER-BOTTOM: #ffffff 3px solid; HEIGHT: 25px
@@ -128,7 +128,7 @@ H1 {
 	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px
 }
 #button INPUT {
-	BORDER-RIGHT: #cccccc 1px solid; PADDING-RIGHT: 0px; BORDER-TOP: #cccccc 1px solid; MARGIN-TOP: 11px; PADDING-LEFT: 3px; FONT-SIZE: 12px; PADDING-BOTTOM: 0px; MARGIN-LEFT: 5px; BORDER-LEFT: #cccccc 1px solid; COLOR: #000000; PADDING-TOP: 3px; BORDER-BOTTOM: #cccccc 1px solid; FONT-FAMILY: "ו"; BACKGROUND-COLOR: #eeeeee
+	BORDER-RIGHT: #cccccc 1px solid; PADDING-RIGHT: 0px; BORDER-TOP: #cccccc 1px solid; MARGIN-TOP: 11px; PADDING-LEFT: 3px; FONT-SIZE: 12px; PADDING-BOTTOM: 0px; MARGIN-LEFT: 5px; BORDER-LEFT: #cccccc 1px solid; COLOR: #000000; PADDING-TOP: 3px; BORDER-BOTTOM: #cccccc 1px solid; FONT-FAMILY: "宋体"; BACKGROUND-COLOR: #eeeeee
 }
 .msg_box1 {
 	BORDER-RIGHT: #ccccee 1px solid; BORDER-TOP: #ccccee 1px solid; PADDING-LEFT: 22px; BACKGROUND: url(/images/ico_info.gif) #eef5ff no-repeat 4px 4px; BORDER-LEFT: #ccccee 1px solid; COLOR: black; LINE-HEIGHT: 20px; PADDING-TOP: 3px; BORDER-BOTTOM: #ccccee 1px solid; HEIGHT: 20px; TEXT-ALIGN: left

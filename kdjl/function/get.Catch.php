@@ -13,8 +13,10 @@
 */
 
 require_once('../config/config.game.php');
-if(empty($_SESSION['id'])) die('0');
-define('MEM_FIGHT_KEY', $_SESSION['id'] . 'fight');
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('0');
+$_SESSION['id'] = $uid;
+define('MEM_FIGHT_KEY', $uid . 'fight');
 
 $arrobj = new arrays();
 secStart($_pm['mem']);
@@ -24,44 +26,77 @@ $bid = isset($_REQUEST['pid']) && !is_array($_REQUEST['pid']) ? intval($_REQUEST
 if($bid < 1) die('0');
 
 require_once('../sec/dblock_fun.php');
-$a = getLock(intval($_SESSION['id']));
+$catchUserLocked = false;
+$catchTransactionActive = false;
+function catchShutdown()
+{
+	global $_pm,$catchUserLocked,$catchTransactionActive;
+	if($catchTransactionActive)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$catchTransactionActive = false;
+	}
+	if($catchUserLocked && function_exists('realseLock'))
+	{
+		realseLock();
+		$catchUserLocked = false;
+	}
+}
+$a = getLock($uid);
 if(!is_array($a)){
 	realseLock();
 	die('服务器繁忙，请稍候再试！');
 }
-
+$catchUserLocked = true;
+$catchTransactionActive = true;
+register_shutdown_function('catchShutdown');
 function catchUseBall($bid)
 {
-	global $_pm;
-	$uid = intval($_SESSION['id']);
+	global $_pm,$uid;
 	$bid = intval($bid);
-	$sql = "UPDATE userbag SET sums=sums-1 WHERE id=$bid AND uid=$uid AND sums>0";
+	$sql = "UPDATE userbag SET sums=sums-1 WHERE id=$bid AND uid=$uid AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)";
 	if(!$_pm['mysql']->query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
-		$_pm['mysql']->query('ROLLBACK');
-		die('20');
+		catchAbort('20');
+	}
+	if(!$_pm['mysql']->query("DELETE FROM userbag WHERE id=$bid AND uid=$uid AND sums<=0 AND bsum<=0 AND psum<=0 AND pyb=0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3)")){
+		catchAbort('20');
 	}
 }
 
 function catchAbort($message)
 {
-	global $_pm;
+	global $_pm,$catchTransactionActive;
 	$_pm['mysql']->query('ROLLBACK');
+	$catchTransactionActive = false;
+	catchShutdown();
 	die($message);
 }
 
 function catchCommit($gid)
 {
-	global $_pm;
+	global $_pm,$catchTransactionActive;
 	if(!$_pm['mysql']->query('COMMIT')){
 		$_pm['mysql']->query('ROLLBACK');
+		$catchTransactionActive = false;
+		catchShutdown();
 		die('服务器繁忙，请稍候再试！');
 	}
+	$catchTransactionActive = false;
+	if(defined('MEM_USERBAG_KEY')) $_pm['mem']->del(MEM_USERBAG_KEY);
+	if(defined('MEM_USERBB_KEY')) $_pm['mem']->del(MEM_USERBB_KEY);
+	if(defined('MEM_USERSK_KEY')) $_pm['mem']->del(MEM_USERSK_KEY);
 	$_SESSION['catch_gw_info'] = intval($gid);
+	catchShutdown();
 }
 
-function catchFinish($gid,$message)
+function catchFinish($gid,$message,$announcement='')
 {
 	catchCommit($gid);
+	if($announcement !== '')
+	{
+		$task = new task();
+		$task->saveGword($announcement);
+	}
 	die($message);
 }
 
@@ -73,19 +108,45 @@ function catchChanceHit($chance)
 	return rand(1,10000) <= intval(round($chance*10000));
 }
 
-$user	 = $_pm['user']->getUserById($_SESSION['id']);//用户信息
-$sp	     = $_pm['user']->getUserItemById($_SESSION['id'],$bid);//用户包裹信息
-$allbb   = $_pm['user']->getUserPetById($_SESSION['id']);//用户宠物信息
-$memgpcid = unserialize($_pm['mem']->get('db_gpcid'));
-$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
+function catchPositiveIdList($value)
+{
+	$result = array();
+	foreach(explode('|', strval($value)) as $id)
+	{
+		$id = trim($id);
+		if($id !== '' && ctype_digit($id) && intval($id) > 0) $result[] = intval($id);
+	}
+	return array_values(array_unique($result));
+}
 
-$lockedBall = $_pm['mysql']->getOneRecord("SELECT id,pid,sums FROM userbag WHERE id=$bid AND uid=".intval($_SESSION['id'])." AND sums>0 FOR UPDATE");
+function catchMemArray($key)
+{
+	global $_pm;
+	$value = $_pm['mem']->get($key);
+	if(is_array($value)) return $value;
+	if(is_string($value))
+	{
+		$value = @unserialize($value);
+		if(is_array($value)) return $value;
+	}
+	return array();
+}
+
+$user	 = $_pm['user']->getUserById($uid);//用户信息
+$sp	     = $_pm['user']->getUserItemById($uid,$bid);//用户包裹信息
+$allbb   = $_pm['user']->getUserPetById($uid);//用户宠物信息
+$memgpcid = catchMemArray('db_gpcid');
+$mempropsid = catchMemArray('db_propsid');
+if(!is_array($user)) catchAbort('0');
+if(!is_array($allbb)) $allbb = array();
+
+$lockedBall = $_pm['mysql']->getOneRecord("SELECT id,pid,sums FROM userbag WHERE id=$bid AND uid=$uid AND sums>0 AND zbing=0 AND (cantrade IS NULL OR cantrade<>3) FOR UPDATE");
 if(!is_array($sp) || !is_array($lockedBall) || intval($sp['pid']) != intval($lockedBall['pid'])){
 	catchAbort('20');
 }
 $sp['sums'] = intval($lockedBall['sums']);
 
-$fightKey = 'fight'.$_SESSION['id'];
+$fightKey = 'fight'.$uid;
 $test = isset($_SESSION[$fightKey]) ? $_SESSION[$fightKey] : false;
 if(!is_array($test) || !isset($test['gid']) || intval($test['gid']) < 1){
 	catchAbort('-1');
@@ -94,23 +155,38 @@ $fightGid = intval($test['gid']);
 
 if(isset($_SESSION['catch_gw_info']) && intval($_SESSION['catch_gw_info']) == $fightGid)
 {
-	realseLock();
+	$_pm['mysql']->query('ROLLBACK');
+	$catchTransactionActive = false;
+	catchShutdown();
 	stopUser2(52);//,true
 	die('0');
 }
 
 $gs = is_array($memgpcid) && isset($memgpcid[$fightGid]) ? $memgpcid[$fightGid] : false;
 /*$gs = $_pm['mem']->dataGet(array('k'	=>	MEM_GPC_KEY,
-			 		    'v'	=>  "if(\$rs['id'] == '{$test['gid']}') \$ret=\$rs;"
-				 ));*/
-				 //当前所打的怪物数据
+				'v'	=>  "if(\$rs['id'] == '{$test['gid']}') \$ret=\$rs;"
+			));*/
+//当前所打的怪物数据
 $bb = $test;
 if (!is_array($bb) || !is_array($gs)) catchAbort('-1');
 else
 {
+	$gpcDefaults = array(
+		'id' => $fightGid,
+		'name' => '',
+		'hp' => 1,
+		'catchv' => 0,
+		'catchid' => 0,
+		'wx' => 0
+	);
+	foreach($gpcDefaults as $key => $value)
+	{
+		if(!isset($gs[$key]) || $gs[$key] === '') $gs[$key] = $value;
+	}
+	if(!isset($bb['hp']) || $bb['hp'] === '') $bb['hp'] = 0;
 	$bbrs = $arrobj->dataGet(array('k'	=>	MEM_BB_KEY,
-			 		    	  'v'	=>  "if(\$rs['uid'] == '{$_SESSION['id']}' && \$rs['id']=='{$bb['bid']}') \$ret=\$rs;"
-					 			),//当前所打怪的宠物数据
+				'v'	=>  "if(\$rs['uid'] == '{$uid}' && \$rs['id']=='{$bb['bid']}') \$ret=\$rs;"
+			),//当前所打怪的宠物数据
 							$allbb
 						   );
 	if (!is_array($bbrs)) $bbrs['level']=0;
@@ -118,13 +194,13 @@ else
 
 if (is_array($sp))
 {
-	
+
 	$prs = $sp;//包裹信息。
-	
+
 	// 捕捉道具 和要被捕捉的怪物信息都正确，开始计算。
 	if (is_array($prs) && is_array($gs))
 	{
-	
+
 		if($prs['sums'] < 1)
 		{
 			catchAbort("20");
@@ -135,62 +211,59 @@ if (is_array($sp))
 		}
 		// Start count...
 		// 实际捕捉率=[怪物捕捉值/（100－玩家宠物与怪物等级之差）]*（1－怪物当前HP值/怪物最大HP值）*100%+捕捉道具附加捕捉率
-		
-		//实际捕捉率＝（怪物捕捉值/100）*（1－怪物当前HP值/怪物最大HP值）*100%+捕捉道具附加捕捉率 
-		
+
+		//实际捕捉率＝（怪物捕捉值/100）*（1－怪物当前HP值/怪物最大HP值）*100%+捕捉道具附加捕捉率
+
 		// 结果格式：
 
-		$pv = explode(':', $prs['effect']);
-		
+		$pv = explode(':', isset($prs['effect']) ? $prs['effect'] : '');
+
 		if(strtolower($pv[0])=='getitems')//获取装备
 		{
-			$params = explode(",",$pv[1]);
-			$theGPCs = explode("|",$params[0]);
-			/*if(!in_array($_SESSION['fight'.$_SESSION['id']]['gid'],$theGPCs))
-			{
-				die("12");
-			}*/
-			
-			
-			
-			
+			if(count($pv) < 2 || $pv[1] == '') catchAbort('12');
+			$params = explode(",",$pv[1],2);
+			if(count($params) != 2 || trim($params[0]) === '' || trim($params[1]) === '') catchAbort('12');
+			$theGPCs = catchPositiveIdList(isset($params[0]) ? $params[0] : '');
+			if(!in_array($fightGid, $theGPCs, true)) catchAbort('12');
+
+
+
+
 			$monsterMaxHp = max(1,floatval($gs['hp']));
 			$monsterHp = max(0,min(floatval($bb['hp']),$monsterMaxHp));
 			$pzl = max(0,min(1,($gs['catchv']/100)*(1-$monsterHp/$monsterMaxHp)));
-			
+
 			if(catchChanceHit($pzl))
 			{
 				$msg = "";
-				$strarr = explode(",",$prs['effect']);
-				$items = explode("|",$strarr[1]);
+				$items = explode("|",$params[1]);
 				foreach($items as $v)
 				{
 					$proparr = explode(":",$v);
-					if(count($proparr) < 3 || intval($proparr[0]) < 1 || intval($proparr[1]) < 1 || intval($proparr[2]) < 1) continue;
+					if(count($proparr) < 3 || !ctype_digit($proparr[0]) || !ctype_digit($proparr[1]) || !ctype_digit($proparr[2])
+						|| intval($proparr[0]) < 1 || intval($proparr[1]) < 1 || intval($proparr[2]) < 1) catchAbort('捕捉奖励配置错误！');
 					$randnum = rand(1,$proparr[1]);
 					if($randnum == 1)
 					{
-						
+
+						if(!is_array($mempropsid) || !isset($mempropsid[$proparr[0]]) || !is_array($mempropsid[$proparr[0]])) catchAbort('捕捉奖励配置错误！');
 						$prs = $mempropsid[$proparr[0]];
-						/*$prs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY, 
+						/*$prs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY,
 													 'v' => "if(\$rs['id'] == '{$proparr[0]}') \$ret=\$rs;"
 										  ));*/
-										 
-						
-						
+
+
+
 						$task = new task();
 						$giveResult = $task->saveGetPropsMore($proparr[0],$proparr[2]);
 						if($giveResult !== true){
-							$_pm['mysql']->query('ROLLBACK');
-							die($giveResult === '200' ? '背包空间不足！' : '捕捉奖励发放失败！');
+							catchAbort($giveResult === '200' ? '背包空间不足！' : '捕捉奖励发放失败！');
 						}
 						catchUseBall($bid);
-						if(isset($proparr[3]) && $proparr[3] == "2")
-						{
-							$task->saveGword("在 {$gs['name']} 身上成功的发现了 {$prs['name']} {$proparr[2]} 个。");
-						}
+						$announcement = (isset($proparr[3]) && $proparr[3] == "2")
+							? "在 {$gs['name']} 身上成功的发现了 {$prs['name']} {$proparr[2]} 个。" : '';
 						$newstr = "恭喜您得到 {$prs['name']} {$proparr[2]} 个。";
-						catchFinish($test['gid'],$newstr);
+						catchFinish($test['gid'],$newstr,$announcement);
 						break;
 					}
 				}
@@ -204,18 +277,19 @@ if (is_array($sp))
 		}
 		else if(strtolower($pv[0])=='get')//获取装备
 		{
-			$theGPCs = explode("|",$pv[1]);			
-			
-			if(!in_array($_SESSION['fight'.$_SESSION['id']]['gid'],$theGPCs))
+			if(count($pv) < 5 || $pv[1] == '' || $pv[2] == '') catchAbort('12');
+			$theGPCs = catchPositiveIdList($pv[1]);
+
+			if(!in_array($fightGid,$theGPCs,true))
 			{
 				catchAbort("12");
 			}
-			
+
 			$pvv = str_replace('%','',$pv[2])/100;
 			$monsterMaxHp = max(1,floatval($gs['hp']));
 			$monsterHp = max(0,min(floatval($bb['hp']),$monsterMaxHp));
 			$pzl = max(0,min(1,($gs['catchv']/100)*(1-$monsterHp/$monsterMaxHp)+$pvv));
-			
+
 			if(catchChanceHit($pzl)) // Catch ok.
 			{
 				//掉落物品获取。格式：道具ID：机率范围。
@@ -227,37 +301,30 @@ if (is_array($sp))
 					$rarr = array($prpid);
 					foreach ($rarr as $k => $v)
 					{
-						
-						/*$prs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY, 
-												 'v' => "if(\$rs['id'] == '{$v}') \$ret=\$rs;"
-									  ));*/
 
-						$prs = $mempropsid[$v];
+						/*$prs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY,
+												 'v' => "if(\$rs['id'] == '{$v}') \$ret=\$rs;"
+						));*/
+
+						$prs = is_array($mempropsid) && isset($mempropsid[$v]) ? $mempropsid[$v] : false;
 						if( is_array($prs) )
 						{
 							$drop .= $prs['name'].',';
 							$okidlist .= $v.',';
-						} 
+						}
 					}// end foreach.
 					$drop = substr($drop, 0, -1);
 					$okidlist = substr($okidlist, 0, -1);
 					$task = new task();
 					$giveResult = $task->saveGetPropsMore($prpid,1);
 					if($giveResult !== true){
-						$_pm['mysql']->query('ROLLBACK');
-						die($giveResult === '200' ? '背包空间不足！' : '捕捉奖励发放失败！');
+						catchAbort($giveResult === '200' ? '背包空间不足！' : '捕捉奖励发放失败！');
 					}
 				}
-				
-				//发公告			
-				if($pv['3'] == 2)
-				{
-					$task = new task();
-					$task->saveGword("成功的获取了: ".$drop."，太爽了！");
-				}
-				
+
 				catchUseBall($bid);
-				catchFinish($test['gid'],'15');
+				$announcement = (isset($pv[3]) && $pv[3] == 2) ? "成功的获取了: ".$drop."，太爽了！" : '';
+				catchFinish($test['gid'],'15',$announcement);
 			}else{
 				catchUseBall($bid);
 				catchFinish($test['gid'],'13');
@@ -265,14 +332,15 @@ if (is_array($sp))
 		}
 		else if(strtolower($pv[0])=='catch')
 		{
+			if(count($pv) < 3 || $pv[1] == '' || $pv[2] == '') catchAbort('7');
 			if ($gs['catchid'] == 0) catchAbort('3'); // 此怪不能捕捉
 			$pvv = str_replace('%','',$pv[2])/100;
-			$gwidarr = explode("|",$pv[1]);
-			if(!in_array($gs['id'],$gwidarr))
+			$gwidarr = catchPositiveIdList($pv[1]);
+			if(!in_array(intval($gs['id']),$gwidarr,true))
 			{
 				catchAbort("7");//不能捕捉此宝宝
 			}
-			$carriedPets = $_pm['mysql']->getRecords("SELECT id FROM userbb WHERE uid=".intval($_SESSION['id'])." AND muchang=0 FOR UPDATE");
+			$carriedPets = $_pm['mysql']->getRecords("SELECT id FROM userbb WHERE uid=$uid AND muchang=0 FOR UPDATE");
 			if($carriedPets === false && mysql_errno($_pm['mysql']->getConn()) != 0){
 				catchAbort('服务器繁忙，请稍候再试！');
 			}
@@ -280,38 +348,37 @@ if (is_array($sp))
 			if($carriedCount >= 3){
 				catchAbort('6');
 			}
-			
-			
-			
+
+
+
 			$monsterMaxHp = max(1,floatval($gs['hp']));
 			$monsterHp = max(0,min(floatval($bb['hp']),$monsterMaxHp));
 			$pzl = max(0,min(1,($gs['catchv']/100)*(1-$monsterHp/$monsterMaxHp)+$pvv));
-			
+
 			if(catchChanceHit($pzl)) // Catch ok.
 			{
 				$newpetsid = intval($gs['catchid']);
 				// Get new bb info.
-						$membbid = unserialize($_pm['mem']->get('db_bbid'));
-						$bb = is_array($membbid) && isset($membbid[$newpetsid]) ? $membbid[$newpetsid] : false;
-						/*$bb = $_pm['mem']->dataGet(array('k'	=>	MEM_BB_KEY,
+				$membbid = catchMemArray('db_bbid');
+				$bb = isset($membbid[$newpetsid]) ? $membbid[$newpetsid] : false;
+				/*$bb = $_pm['mem']->dataGet(array('k'	=>	MEM_BB_KEY,
 						'v'	=>  "if(\$rs['id'] == '{$newpetsid}') \$ret=\$rs;"
 						),
 						$allbb
 				 );*/
-				if (!is_array($bb) || intval($bb['id']) != $newpetsid || trim($bb['name']) == '' || trim($bb['name']) == '0'
-					|| intval($gs['wx']) != intval($bb['wx'])){
-					$_pm['mysql']->query('ROLLBACK');
-					die('2');
+				// catchid is the authoritative pet template. Some maps intentionally
+				// reuse one catchable pet across monsters with different elements.
+				if (!is_array($bb) || intval($bb['id']) != $newpetsid || trim($bb['name']) == '' || trim($bb['name']) == '0'){
+					catchAbort('2');
 				}
 				$czl = getCzl($bb['czl']);
 				if($czl === false || $czl <= 0){
-					$_pm['mysql']->query('ROLLBACK');
-					die('捕捉宠物成长配置错误！');
+					catchAbort('捕捉宠物成长配置错误！');
 				}
-				
+
 				// insert into userbb.
 				//$bbid= $newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbb');
-				
+
 				$uinfo = $user;
 				$petName = $_pm['mysql']->escape($bb['name']);
 				$petUsername = $_pm['mysql']->escape(isset($uinfo['nickname']) ? $uinfo['nickname'] : '');
@@ -319,27 +386,33 @@ if (is_array($sp))
 				$petRemakeLevel = $_pm['mysql']->escape(isset($bb['remakelevel']) ? $bb['remakelevel'] : '');
 				$petRemakeId = $_pm['mysql']->escape(isset($bb['remakeid']) ? $bb['remakeid'] : '');
 				$petRemakePid = $_pm['mysql']->escape(isset($bb['remakepid']) ? $bb['remakepid'] : '');
+				$petNowExp = $_pm['mysql']->escape(isset($bb['nowexp']) ? $bb['nowexp'] : '');
+				$petImgStand = $_pm['mysql']->escape(isset($bb['imgstand']) ? $bb['imgstand'] : '');
+				$petImgAck = $_pm['mysql']->escape(isset($bb['imgack']) ? $bb['imgack'] : '');
+				$petImgDie = $_pm['mysql']->escape(isset($bb['imgdie']) ? $bb['imgdie'] : '');
+				$petKx = $_pm['mysql']->escape(isset($bb['kx']) ? $bb['kx'] : '');
+				$petHeadImg = $_pm['mysql']->escape(isset($bb['headimg']) ? $bb['headimg'] : '');
+				$petCardImg = $_pm['mysql']->escape(isset($bb['cardimg']) ? $bb['cardimg'] : '');
+				$petEffectImg = $_pm['mysql']->escape(isset($bb['effectimg']) ? $bb['effectimg'] : '');
 				$petInserted = $_pm['mysql']->query("INSERT INTO userbb(name,uid,username,level,wx,ac,mc,srchp,hp,srcmp,mp,skillist,stime,nowexp,
-						lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg)
+						lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg,old_bid)
 				VALUES('{$petName}','".intval($uinfo['id'])."','{$petUsername}','1','".intval($bb['wx'])."',
 				   '".floatval($bb['ac'])."','".floatval($bb['mc'])."','".floatval($bb['hp'])."','".floatval($bb['hp'])."','".floatval($bb['mp'])."','".floatval($bb['mp'])."','{$petSkillList}',unix_timestamp(),
-				  '{$bb['nowexp']}','100','{$bb['imgstand']}','{$bb['imgack']}','{$bb['imgdie']}',
-				   '".floatval($bb['hits'])."','".floatval($bb['miss'])."','".floatval($bb['speed'])."','{$bb['kx']}','{$petRemakeLevel}',
-				   '{$petRemakeId}','{$petRemakePid}','".floatval($czl)."','{$bb['headimg']}','{$bb['cardimg']}','{$bb['effectimg']}')
+				  '{$petNowExp}','100','{$petImgStand}','{$petImgAck}','{$petImgDie}',
+				   '".floatval($bb['hits'])."','".floatval($bb['miss'])."','".floatval($bb['speed'])."','{$petKx}','{$petRemakeLevel}',
+				   '{$petRemakeId}','{$petRemakePid}','".floatval($czl)."','{$petHeadImg}','{$petCardImg}','{$petEffectImg}','".intval($bb['id'])."')
 				");
 				if(!$petInserted || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
-					$_pm['mysql']->query('ROLLBACK');
-					die('捕捉宠物保存失败，请稍候再试！');
+					catchAbort('捕捉宠物保存失败，请稍候再试！');
 				}
 				$bbid = intval($_pm['mysql']->last_id());
 				if($bbid < 1){
-					$_pm['mysql']->query('ROLLBACK');
-					die('捕捉宠物保存失败，请稍候再试！');
+					catchAbort('捕捉宠物保存失败，请稍候再试！');
 				}
-				
+
 				//修复只能有一种技能的bug技能，和吸血技能
 				$arr = explode(",", $bb['skillist']);
-				$memskillsysid = unserialize($_pm['mem']->get('db_skillsysid'));
+				$memskillsysid = catchMemArray('db_skillsysid');
 				foreach($arr as $av)
 				{
 					if($av === '' || $av === '0')
@@ -350,16 +423,14 @@ if (is_array($sp))
 					if(count($newarr) != 2 || !ctype_digit($newarr[0]) || !ctype_digit($newarr[1])
 						|| intval($newarr[0]) < 1 || intval($newarr[1]) < 1)
 					{
-						$_pm['mysql']->query('ROLLBACK');
-						die('捕捉宠物技能配置错误！');
+						catchAbort('捕捉宠物技能配置错误！');
 					}
 					$jn = is_array($memskillsysid) && isset($memskillsysid[$newarr[0]]) ? $memskillsysid[$newarr[0]] : false;
 					/*$jn = $_pm['mem']->dataGet(array('k'	=>	MEM_SKILLSYS_KEY,
 						'v'	=>  "if(\$rs['id'] == '{$newarr[0]}') \$ret=\$rs;"
 					));*/
 					if(!is_array($jn)){
-						$_pm['mysql']->query('ROLLBACK');
-						die('捕捉宠物技能配置错误！');
+						catchAbort('捕捉宠物技能配置错误！');
 					}
 					$skillLevel = intval($newarr[1]);
 					$skillIndex = $skillLevel-1;
@@ -369,8 +440,7 @@ if (is_array($sp))
 					$ump  = explode(",", isset($jn['ump']) ? $jn['ump'] : '');
 					$img = explode(",",isset($jn['imgeft']) ? $jn['imgeft'] : '');
 					if(!isset($ack[$skillIndex]) || !isset($uhp[$skillIndex]) || !isset($ump[$skillIndex])){
-						$_pm['mysql']->query('ROLLBACK');
-						die('捕捉宠物技能等级配置错误！');
+						catchAbort('捕捉宠物技能等级配置错误！');
 					}
 					$skillName = $_pm['mysql']->escape(isset($jn['name']) ? $jn['name'] : '');
 					$skillVary = $_pm['mysql']->escape(isset($jn['vary']) ? $jn['vary'] : '');
@@ -381,28 +451,27 @@ if (is_array($sp))
 					VALUES({$bbid}, '{$skillName}','{$skillLevel}','{$skillVary}','".intval($jn['wx'])."','{$skillValue}','{$skillPlus}','{$skillImg}',".intval($uhp[$skillIndex]).",".intval($ump[$skillIndex]).",".intval($jn['id']).")
 					");
 					if(!$skillInserted || mysql_affected_rows($_pm['mysql']->getConn()) != 1){
-						$_pm['mysql']->query('ROLLBACK');
-						die('捕捉宠物技能保存失败，请稍候再试！');
+						catchAbort('捕捉宠物技能保存失败，请稍候再试！');
 					}
 				}
 				// Get jn info.
 				/*$jn = $_pm['mem']->dataGet(array('k'	=>	MEM_SKILLSYS_KEY,
 						'v'	=>  "if(\$rs['id'] == '{$arr[0]}') \$ret=\$rs;"
 				));
-				$ack  = split(",", $jn['ackvalue']);
-				$plus = split(",", $jn['plus']);
-				$uhp  = split(",", $jn['uhp']);
-				$ump  = split(",", $jn['ump']);
+				$ack  = explode(",", $jn['ackvalue']);
+				$plus = explode(",", $jn['plus']);
+				$uhp  = explode(",", $jn['uhp']);
+				$ump  = explode(",", $jn['ump']);
 				获取刚插入宠物ID。
-				$newbb = $_pm['mysql']->getOneRecord("SELECT id 
+				$newbb = $_pm['mysql']->getOneRecord("SELECT id
 							  FROM userbb
 							 WHERE uid={$_SESSION['id']}
 							 ORDER BY stime DESC
-							 LIMIT 0,1			                                         
+							 LIMIT 0,1
 						  ");
 				$bbid = $newbb['id'];
-				
-				// Insert userbb jn.	
+
+				// Insert userbb jn.
 				//$newid = mem_get_autoid($m, MEM_ORDER_KEY,'skill');
 				echo "INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
 				VALUES({$bbid}, '{$jn['name']}','{$arr['1']}','{$jn['vary']}','{$jn['wx']}','{$ack['0']}','{$plus['0']}','{$jn['img']}',{$uhp['0']},{$ump['0']},{$jn['id']})
@@ -426,98 +495,15 @@ if (is_array($sp))
 				catchUseBall($bid);
 				catchFinish($test['gid'],'0');
 				//$_pm['user']->updateMemUserbag($_SESSION['id']);
-			} // 捕捉机率太低。	 
+			} // 捕捉机率太低。
 		}
 	}
 }
 $_pm['mysql']->query('ROLLBACK');
+$catchTransactionActive = false;
+catchShutdown();
 $_pm['mem']->memClose();
 echo "0";
 
 
-/**
-* @Usage: 存储用户得到的道具到用户包裹.
-* @Param: String, format: 1,2,3
-* @Logic: 
-  如果用户包裹有此物品，如果可以折叠，直接累加，否则插入新纪录。
-  >>增加物品说明字段
-*/
-function saveGetProps($idlist)
-{
-	if ($idlist == '' or $idlist == 0) return false;
-	global $_pm,$_bag,$user;
-	$arrobj = new arrays();
-
-	$l=0;
-	if (is_array($_bag))
-	{
-		foreach ($_bag as $x => $y)
-		{
-			if ($y['sums']>0 && $y['zbing']==0) $l++;
-		}
-	}
-	if ($l >= $user['maxbag']) return false;	
-	
-	$arr = split(',', $idlist);
-	foreach ($arr as $k => $v)
-	{
-		$rs = $arrobj->dataGet(array('k' => MEM_USERBAG_KEY, 
-									 'v' => "if(\$rs['uid']=='{$_SESSION['id']}' && \$rs['pid']=='{$v}') \$ret=\$rs;"
-									 ),
-								   $_bag
-							  ); 
-		
-		//$rs = $_pm['mysql']->getOneRecord("SELECT * FROM userbag WHERE uid={$_SESSION['id']} and pid={$v}");
-		if (is_array($rs))
-		{
-			if ($rs['vary'] == 1) // 可折叠道具.
-			{
-				$_pm['mysql']->query("UPDATE userbag
-							   SET sums=sums+1
-							 WHERE id={$rs['id']}
-						  ");
-			}
-			else
-			{
-				//$newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbag');
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-							VALUES(
-								   {$user['id']},
-								   {$v},
-								   {$rs['sell']},
-								   2,
-								   1,
-								   unix_timestamp()
-								  );
-						  ");
-				 $l++;
-			}
-		}
-		else{
-			$mempropsid = unserialize($_pm['mem']->get('db_propsid'));
-			$rs = $mempropsid[$v];
-			/*$rs = $_pm['mem']->dataGet(array('k' => MEM_PROPS_KEY, 
-								    'v' => "if(\$rs['id'] == '{$v}') \$ret=\$rs;"
-								  ));*/
-			if (is_array($rs))
-			{
-				//$newid = mem_get_autoid($m, MEM_ORDER_KEY, 'userbag');
-				$_pm['mysql']->query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime)
-							VALUES(
-								   {$user['id']},
-								   {$v},
-								   {$rs['sell']},
-								   {$rs['vary']},
-								   1,
-								   unix_timestamp()
-								  );
-						  ");
-				 $l++;
-			}	
-		}		
-		unset($rs);
-		// 检测是否超出包裹，
-		if ($l >= $user['maxbag']) return false;
-	}	
-}
 ?>

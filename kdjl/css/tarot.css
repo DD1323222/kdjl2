@@ -12,7 +12,7 @@ abbr,acronym {border:0}
 .clear {clear:both; height:0; overflow:hidden}
 .left {float:left}
 .right {float:right}
-body {font:12px/normal 'ו',sans-serif; color:#000}
+body {font:12px/normal "宋体",sans-serif; color:#000}
 a,a:visited,a:hover {color:#666; text-decoration:none; blr:expression(this.onFocus=this.blur());outline:none;}
 
 .tarot {position:relative; width:788px; height:311px; overflow:hidden}
@@ -32,8 +32,8 @@ a,a:visited,a:hover {color:#666; text-decoration:none; blr:expression(this.onFoc
 
 
 .teams {position:absolute; width:220px; z-index:20; left:13px; top:8px; color:#582500}
-.leader {position:relative; width:220px; height:58px; margin-bottom:6px; background:url(../images/tarot/leader.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/leader.png');}
-.team {position:relative; width:220px; height:54px; margin-bottom:6px; background:url(../images/tarot/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='images/team.png');}
+.leader {position:relative; width:220px; height:58px; margin-bottom:6px; background:url(../images/tarot/leader.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='/images/tarot/leader.png');}
+.team {position:relative; width:220px; height:54px; margin-bottom:6px; background:url(../images/tarot/team.png) no-repeat; _background:none; _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled='true', sizingMethod='image', src='/images/tarot/team.png');}
 .name {position:absolute; left:85px; top:5px; width:102px; height:16px; line-height:16px; text-align:center}
 .avatar {position:absolute; width:48px; height:48px; left:30px; top:2px;}
 .avatar img {position:absolute; width:48px; height:48px; display:block}

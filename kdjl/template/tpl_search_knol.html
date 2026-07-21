@@ -3,13 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>口袋百科</title>
-<script type="text/javascript" src="../javascript/lib/jquery.js"></script>
-<script type='text/javascript' src='../javascript/lib/jquery.bgiframe.min.js'></script>
-<script type='text/javascript' src='../javascript/lib/jquery.ajaxQueue.js'></script>
-<script type='text/javascript' src='../javascript/lib/thickbox-compressed.js'></script>
-<script type='text/javascript' src='../javascript/lib/jquery.autocomplete.js'></script>
-<link rel="stylesheet" type="text/css" href="../javascript/lib/jquery.autocomplete.css" />
-<link rel="stylesheet" type="text/css" href="../javascript/lib/thickbox.css" />
+<script type="text/javascript" src="../javascript/jquery.js"></script>
 <style>
 <!--
 body
@@ -31,7 +25,7 @@ a:active {color:#F00;}
    .bk1_r_b{font-size:12px; color:#000;height:19px;line-height:19px;}
  .bk2{ width:100%; padding:10px;}
  .bk3{ width:100%; padding:10px;}
- 	.bk3_t{}
+	.bk3_t{}
 		.bk3_t_l{ width:36px; height:36px; float:left}
 		.bk3_t_r{float:left;height:16px; margin-top:20px}
 	.bk3_b{ display:none}
@@ -59,7 +53,7 @@ function proofText()
         if (content.length > 100) {
             alert('你输入的内容不能超过100个字!');
             $('#content').focus();
-            return;
+            return false;
         }
         var search_key = $('#search_key').val().trim();
         var search_id  = $('#search_id').val();
@@ -67,7 +61,8 @@ function proofText()
         var player_name   = $('#player_name').val();
         var player_nick   = $('#player_nick').val();
         $.post(window.location.pathname, {knol_title:search_key, knol_id:search_id, knol_content:content, host:location_host, player:player_name, nickname:player_nick}, function(data) { submit_bug(data); });
-        $('#errorsub').attr('disabled', true); 
+        $('#errorsub').attr('disabled', true);
+		return false;
 	}else
 	{
 		alert("报错内容不能为空!");
@@ -76,7 +71,16 @@ function proofText()
 	}
 }
 function submit_bug(data) {
-    var ret = eval('(' + data + ')');
+    var ret = data;
+    if (typeof data == 'string') {
+        try {
+            ret = window.JSON && JSON.parse ? JSON.parse(data) : eval('(' + data + ')');
+        } catch (e) {
+            alert(data);
+            $('#errorsub').attr('disabled', false);
+            return;
+        }
+    }
     if (ret['code']) {
         if (ret['code'] == 1) {
             alert(ret['msg']);
@@ -87,7 +91,7 @@ function submit_bug(data) {
         }
     } else {
         alert(data);
-        $('#errorsub').attr('disabled', false); 
+        $('#errorsub').attr('disabled', false);
     }
 }
 function goto_knol(id) {
@@ -107,7 +111,7 @@ function goto_tag(id) {
   function searchPocketBaike() {
     var searchKey = $.trim($("#baike_input").val());
     if (searchKey) {
-        var url = '../function/search_knol.php?key=' + searchKey;
+        var url = '../function/search_knol.php?key=' + encodeURIComponent(searchKey);
         window.location=url;
     } else {
       alert('请输入有效信息!');
@@ -115,13 +119,13 @@ function goto_tag(id) {
     }
   }
 
-$().ready(function() {
-        $('#baike_input').autocomplete("../function/search_knol.php?acKey=searchTitle", {
-            max:8,
-            highlight:false,
-            croll:true,
-            scrollHeight: 300
-        });
+$(function() {
+    $('#baike_input').keydown(function(event) {
+        if ((event.which || event.keyCode) == 13) {
+            searchPocketBaike();
+            return false;
+        }
+    });
 });
 </script>
 </head>
@@ -135,7 +139,7 @@ $().ready(function() {
         </div>
     </div>
     <div class="bk2">
-       <input type="text" id="baike_input" style="color:#47AE8; height:18px" size="30" maxlength="20" title="请输入你想要查询的口袋词条信息比如:口袋百科" />
+       <input type="text" id="baike_input" style="color:#047AE8; height:18px" size="30" maxlength="20" title="请输入你想要查询的口袋词条信息比如:口袋百科" />
        <input type="button"  value="搜索" title="搜索口袋百科" border="0"  onclick="searchPocketBaike();return false;" />
     </div>
     <div class="bk2">
@@ -145,7 +149,7 @@ $().ready(function() {
 	<div class="bk3_t">
 		<div class="bk3_t_l">
             <!--
-        	<img src="../images/baike/jubao.gif" border="0" />
+		<img src="../images/baike/jubao.gif" border="0" />
             -->
             <img src="../images/help/jubao.gif" border="0" />
         </div>
@@ -162,7 +166,7 @@ $().ready(function() {
               <input type="hidden" id="search_id" name="search_id"  value="#search_id#" />
               <input type="hidden" id="player_name" name="player_name" value="#player_name#" />
               <input type="hidden" id="player_nick" name="player_nick" value="#player_nick#" />
-              <input type="submit" id="errorsub" name="errorsub" value="提交"  class="btn1" onclick="if(!proofText()){return false;textShow();}" />
+              <input type="submit" id="errorsub" name="errorsub" value="提交"  class="btn1" onclick="return proofText();" />
         </form>
     </div>
 </div>

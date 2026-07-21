@@ -22,7 +22,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:90px;display:block;}
@@ -71,14 +71,18 @@ ol,ul {list-style:none}
 	top: 5px;
 }
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 .sx{width:40px; float:left; padding-top:3px; height:17px;}
 </style>
 
 <script type="text/javascript">
 	var equipInfos = {};
 	function setTab(name,cursel,n){
-	for(i=1;i<=n;i++){
+	if(typeof selid != 'undefined' && selid && selid.style) selid.style.backgroundColor='#fff';
+	if(typeof bid != 'undefined') bid=0;
+	if(typeof price != 'undefined') price=0;
+	if(typeof selid != 'undefined') selid=0;
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
 	  menu.className=i==cursel?"on":"";
@@ -130,7 +134,7 @@ function cardpwd(){
 	var cardids = document.getElementById('cardids').value;
 	var pwd = '';
 	pwd = document.getElementById('cardpwd').value;
-	if(cardid == ''){
+	if(cardid == '' || cardids == ''){
 		window.parent.Alert('请填写完整！');
 		return;
 	}
@@ -145,7 +149,7 @@ function cardpwd(){
      	asynchronous:true
 	}
 	//window.status = '../function/getTaskinfo.php?n='+n+'&t='+tid;
-	var ajax=new Ajax.Request('../function/newcard.php?id='+cardid+'&cardid='+cardids+'&pwd='+pwd, opt);
+	var ajax=new Ajax.Request('../function/newcard.php?id='+encodeURIComponent(cardid)+'&cardid='+encodeURIComponent(cardids)+'&pwd='+encodeURIComponent(pwd), opt);
 }
 
 function cardpwd1(){
@@ -549,7 +553,7 @@ function sjbuy(){
 					if(n==10) {window.parent.Alert('你的水晶不足，可在神秘商店购买水晶卡，使用后将获得水晶！');return;}
 					else if(n==4) {window.parent.Alert('您的包裹空间不足！');return;}
 					else if(n==101) {window.parent.Alert('该物品还没上架或者已经下架！');return;}
-					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');return;}//refresh bag.
+					else if(n==0) {window.parent.Alert('买入物品成功!');window.location.reload();return;}
 					else {window.parent.Alert(t.responseText);return;}
     		 	},
     		 	on404: function(t) {
@@ -585,7 +589,7 @@ function vipbuy(){
 					if(n==10) {window.parent.Alert('你的VIP积分不足，不能购买该道具！');return;}
 					else if(n==4) {window.parent.Alert('您的包裹空间不足！');return;}
 					else if(n==101) {window.parent.Alert('该物品还没上架或者已经下架！');return;}
-					else if(n==0) {ajaxfun();window.location.reload();window.parent.Alert('买入物品成功!');return;}//refresh bag.
+					else if(n==0) {window.parent.Alert('买入物品成功!');window.location.reload();return;}
 					else {window.parent.Alert(t.responseText);return;}
     		 	},
     		 	on404: function(t) {

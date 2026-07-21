@@ -5,12 +5,12 @@
      2. 用户通过银行购买元宝后51通知我们，我们的处理
      3. 用户用51币购买元宝后返回看到结果
      4. 用户通过银行购买元宝后点“返回小应用”看到的页面
-	 
+
  也可以说是说是三个功能：3，4处理是一样的
      5. 用户取消返回
 	  */
 
-if(isset($_GET['cancel'])&&$_GET['cancel']==1)die('
+if(isset($_GET['cancel']) && !is_array($_GET['cancel']) && $_GET['cancel']==1)die('
 		<script language="javascript">
 		window.opener.location = "pay_Mod_yb.php";
 		window.close();
@@ -26,18 +26,19 @@ function decode($params, $secret) {
 	$ret = array();
 	foreach ($params as $key => $val) {
 		if (strncmp($key, $prefix, $prefix_len) === 0) {
+			if(is_array($val) || is_object($val)) return false;
 			$ret[substr($key, $prefix_len)] = $val;
 		}
 	}
 	if (empty($ret)) return false;
 
-	
+
 	$str = '';
 	ksort($ret);
 	foreach ($ret as $k=>$v) $str .= "$k=$v";
 	$str .= $secret;
 	//$dbg = '<br/>$str='.$str.'<br/>md5='.md5($str)."<br/>params['51_sig']=".$params['51_sig'];
-	if ($params['51_sig'] != md5($str)) {
+	if (!isset($params['51_sig']) || !is_string($params['51_sig']) || $params['51_sig'] !== md5($str)) {
 		return false;
 	} else {
 		return $ret;
@@ -62,52 +63,92 @@ $notice = decode($_POST, $appsecret);
 require_once('../config/config.game.php');
 
 $db = &$_pm['mysql'];
+$successPayYbTransactionActive = false;
+
+function successPayYbAbort($message)
+{
+	global $db, $successPayYbTransactionActive;
+	if($successPayYbTransactionActive)
+	{
+		$db->query('ROLLBACK');
+		$successPayYbTransactionActive = false;
+	}
+	die($message);
+}
+
+function successPayYbShutdown()
+{
+	global $db, $successPayYbTransactionActive;
+	if($successPayYbTransactionActive && isset($db))
+	{
+		$db->query('ROLLBACK');
+		$successPayYbTransactionActive = false;
+	}
+}
+
+register_shutdown_function('successPayYbShutdown');
 
 if($notice){//支付成功后51post数据过来
-	$price = intval($notice['order_price'])/10;	
-	
+	if(!isset($notice['order_price'])){
+		die('ERR_order_price');
+	}
+	$price = intval($notice['order_price'])/10;
+
 	$return_str = "0";
 	if(isset($notice['order_id']))//51币支付 else 银行支付
 	{
+		if(!isset($notice['time']) || !isset($notice['order_num']) || !isset($notice['app_key'])){
+			die('ERR_args');
+		}
 		$notice['sn_app'] = $notice['order_id'];
 		$notice['time_pay'] = $notice['time'];
-		$notice['sn_platform'] = $notice['session_key']."_".$notice['sandbox'];
+		$notice['sn_platform'] = !empty($notice['sandbox']) ? '51CoinPaySandbox' : '51CoinPay';
 		$params = array('order_code'=>1, 'order_id'=>$notice['order_id'], 'order_price'=>$notice['order_price'], 'order_num'=>$notice['order_num']);
 		$OpenApp_51 = new OpenApp_51($appapikey, $appsecret);
 		$OpenApp_51->api_client->set_encoding("GBK");
 		$return_str = $OpenApp_51->api_client->create_post_string('51_pay', $params);
-		if($notice['app_key']!=$appapikey){
-			die("ERR_app_key");	
+		if(strval($notice['app_key']) !== $appapikey){
+			die("ERR_app_key");
 		}
 	}
+	else
+	{
+		if(!isset($notice['sn_app'])){
+			die('ERR_orderid');
+		}
+		if(!isset($notice['time_pay'])) $notice['time_pay'] = time();
+		if(!isset($notice['sn_platform'])) $notice['sn_platform'] = '51BankPay';
+	}
 	$orderIdSql = $db->escape($notice['sn_app']);
-	$db->query('START TRANSACTION');
+	if(!$db->query('START TRANSACTION')) die('Q_ERROR');
+	$successPayYbTransactionActive = true;
 	$orderInfo = $db->getOneRecord("SELECT Id,getyb,user_id,paytime FROM yb WHERE orderid = '{$orderIdSql}' ORDER BY Id DESC LIMIT 1 FOR UPDATE");
 	if(!$orderInfo){
-		$db->query('ROLLBACK');
-		die("Order not found.");
+		successPayYbAbort("Order not found.");
 	}
 	if(intval($orderInfo['paytime']) > 0){
-		$db->query('ROLLBACK');
-		die($return_str);
+		successPayYbAbort($return_str);
+	}
+	if(intval($orderInfo['getyb']) < 1 || intval($orderInfo['user_id']) < 1){
+		successPayYbAbort('ERR_order');
 	}
 	if(isset($notice['order_num']) && intval($notice['order_num']) != intval($orderInfo['getyb'])){
-		$db->query('ROLLBACK');
-		die('ERR_order_num');
+		successPayYbAbort('ERR_order_num');
 	}
 	$payTime = intval($notice['time_pay']);
 	if($payTime < 1) $payTime = time();
-	$platformSql = $db->escape($notice['sn_platform']);
-	$db->query("update yb set paytime={$payTime},sn_platform='{$platformSql}' where Id=".intval($orderInfo['Id'])." and paytime=0");
-	if(mysql_affected_rows($db->getConn()) != 1){
-		$db->query('ROLLBACK');
-		die($return_str);
+	$platformSql = $db->escape(substr(strval($notice['sn_platform']), 0, 25));
+	if(!$db->query("update yb set paytime={$payTime},sn_platform='{$platformSql}' where Id=".intval($orderInfo['Id'])." and paytime=0") ||
+		mysql_affected_rows($db->getConn()) != 1){
+		successPayYbAbort($return_str);
 	}
-	$db->query("update player set yb=yb+".intval($orderInfo['getyb'])." where id=".intval($orderInfo['user_id']));
-	if(mysql_affected_rows($db->getConn()) != 1 || !$db->query('COMMIT')){
-		$db->query('ROLLBACK');
-		die("Q_ERROR_".intval($orderInfo['user_id'])."_".$price);
+	if(!$db->query("update player set yb=COALESCE(yb,0)+".intval($orderInfo['getyb'])." where id=".intval($orderInfo['user_id'])) ||
+		mysql_affected_rows($db->getConn()) != 1){
+		successPayYbAbort("Q_ERROR_".intval($orderInfo['user_id'])."_".$price);
 	}
+	if(!$db->query('COMMIT')) successPayYbAbort("Q_ERROR_".intval($orderInfo['user_id'])."_".$price);
+	$successPayYbTransactionActive = false;
+	$_pm['mem']->del(intval($orderInfo['user_id']));
 	$_pm['mem']->set(array('k'=>'pany51_'.$notice['sn_app'],'v'=>$notice));
 	die($return_str);
 }
@@ -126,15 +167,17 @@ $u	= $_pm['user'];
 secStart($m);
 $user	= $u->getUserById($_SESSION['id']);
 $bags    = $u->getUserBagById($_SESSION['id']);
-$props = unserialize($m->get(MEM_PROPS_KEY));
+$props = kdjlSafeMemValue($m->get(MEM_PROPS_KEY), array());
 
-$_51orderid = isset($_GET['order_id'])?$_GET['order_id']:(isset($_GET['51_sig_order_id'])?$_GET['51_sig_order_id']:-1);
+$_51orderid = (isset($_GET['order_id']) && !is_array($_GET['order_id'])) ? $_GET['order_id'] : ((isset($_GET['51_sig_order_id']) && !is_array($_GET['51_sig_order_id'])) ? $_GET['51_sig_order_id'] : -1);
+$_51orderid = preg_replace('/[^A-Za-z0-9_\\-]/', '', strval($_51orderid));
+if($_51orderid === '') $_51orderid = '-1';
 
 if($user===FALSE)
 {
 	die("信息错误！");
 }
-	
+
 
 if(!isset($_SESSION['buyyb_info']))
 {
@@ -143,25 +186,29 @@ if(!isset($_SESSION['buyyb_info']))
 	die($msg = "定单：{$_51orderid}不存在！");
 }
 else
-{	
-	$Flag = false;	
-	$notice = unserialize($_pm['mem']->get('pany51_'.$_51orderid));
-	if($notice&&$notice['order_price']>0){//银行支付
-		$_pm['mem']->del('pany51_'.$_51orderid);		
+{
+	$Flag = false;
+	$notice = kdjlSafeMemValue($_pm['mem']->get('pany51_'.$_51orderid), array());
+	if(is_array($notice) && isset($notice['order_price']) && $notice['order_price']>0){//银行支付
+		$_pm['mem']->del('pany51_'.$_51orderid);
 		$Flag = true;
 	}
-	else 
-	{		
+	else
+	{
 		$msg = '支付失败，您没有正确支付。\n如果您支付了，可能由于网络延迟，支付还需要等待几分钟才能完成，请密切关注您的元宝数量。';
 	}
-	
+
 	if($Flag === true){
-		$price = $_SESSION['buyyb_info'][$_51orderid][0];
+		$price = intval($_SESSION['buyyb_info'][$_51orderid][0]);
 		$msg = '支付成功';
+		$logTitle = $db->escape('购买口袋精灵元宝'.$price.'个.');
+		$logNick = $db->escape($_SESSION['username']);
+		$logPname = $db->escape('元宝');
+		$logOrderId = $db->escape($_51orderid);
 		$db->query("insert into yblog(title,nickname,yb,buytime,pname,nums,orderid)
-					values('购买口袋精灵元宝".$_SESSION['buyyb_info'][$_51orderid][0]."个.','{$_SESSION['username']}','{$price}',unix_timestamp(),'元宝',".$_51orderid.",'{$_51orderid}')
-				  ");// save bug yb log.			
-		unset($_SESSION['buyyb_info'][$_51orderid]);		
+					values('{$logTitle}','{$logNick}',{$price},unix_timestamp(),'{$logPname}',{$price},'{$logOrderId}')
+				  ");// save bug yb log.
+		unset($_SESSION['buyyb_info'][$_51orderid]);
 		die('
 		<script language="javascript">
 		alert("'.$msg.'");

@@ -1,4 +1,4 @@
-<?php 
+<?php
 //ini_set('display_errors','on');
 //error_reporting(E_ALL);
 ob_start();
@@ -16,7 +16,7 @@ define('ERROR_AUTH','ERR_AUTH');
 define('ERROR_SECID_STATUS','ERROR_USER_ID');
 define('HTTP_CONTENT_STARTED','<!--~HTTP_CONTENTS_STARTED~-->');
 
-if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['sid'])&&strlen($_GET['sid'])==32)
+if(isset($_GET['qid']) && !is_array($_GET['qid']) && isset($_GET['p']) && isset($_GET['sid']) && !is_array($_GET['p']) && !is_array($_GET['sid']) && intval($_GET['qid'])>0 && $_GET['p']==$pwd && preg_match('/^[a-f0-9]{32}$/i', $_GET['sid']))
 {
 	//为安全检查做准备，保证要转区的用户已经登陆
 	session_id($_GET['sid']);
@@ -26,8 +26,25 @@ if(!headers_sent())
 
 require_once('../config/config.game.php');
 
+$swapDebug = kdjlCurrentUserIsAdmin();
+$currentHttpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $currentHttpHost)) $currentHttpHost = '';
+$currentHttpHostLower = strtolower($currentHttpHost);
+
 //INSERT INTO `timeconfig` (`Id`, `titles`, `days`, `starttime`, `endtime`) VALUES (NULL, 'swapzone', 0, '20090501', '20090601');
 $prizeEndAt = '';
+$swapRenamePendingLogId = 0;
+$swapRenameCommitted = false;
+function swapRenameShutdown()
+{
+	global $conn,$swapRenamePendingLogId,$swapRenameCommitted;
+	if(!$swapRenameCommitted && $swapRenamePendingLogId > 0 && is_resource($conn))
+	{
+		mysql_query("DELETE FROM gamelog WHERE id=".intval($swapRenamePendingLogId)." AND vary=13 AND pnote='ChangeName'", $conn);
+		$swapRenamePendingLogId = 0;
+	}
+}
+register_shutdown_function('swapRenameShutdown');
 
 connect();
 $swapZoneSetting = query('select starttime,endtime from timeconfig where titles= "swapzone"');
@@ -36,7 +53,7 @@ $today = date("Ymd");
 $todayhour = date("YmdH");
 $swapZoneStarted = false;//本区开启转区
 $swapZoneEndTime = 0;
-$fromZone = array(//转区的区				
+$fromZone = array(//转区的区
 );
 
 $aimZone = array(//目标区
@@ -66,30 +83,40 @@ else
 	query("INSERT INTO `timeconfig` (`Id`, `titles`, `days`, `starttime`, `endtime`) VALUES (NULL, 'swapzone', 0, '21090501', '20190502')");
 	query("INSERT INTO `timeconfig` (`Id`, `titles`, `days`, `starttime`, `endtime`) VALUES (NULL, '1308,20;1225,20;1142,5', 0, 'swapzonePrize', 'swapzonePrize')");
 	query("
-		INSERT INTO `timeconfig` 
-		(`Id`, `titles`, `days`, `starttime`, `endtime`) 
-		VALUES 
+		INSERT INTO `timeconfig`
+		(`Id`, `titles`, `days`, `starttime`, `endtime`)
+		VALUES
 		(NULL, 'pm1.webgame.com.cn,一区;pmtest.webgame.com.cn,测试一区', 0, 'SWAP_FROM', 'SWAP_FROM')");
 	query("
-		INSERT INTO `timeconfig` 
-		(`Id`, `titles`, `days`, `starttime`, `endtime`) 
-		VALUES 
+		INSERT INTO `timeconfig`
+		(`Id`, `titles`, `days`, `starttime`, `endtime`)
+		VALUES
 		(NULL, 'pmtest2.webgame.com.cn,测试二区;pm2.webgame.com.cn,二区;pm3.webgame.com.cn,三区;pm4.webgame.com.cn,四区;pm5.webgame.com.cn,五区', 0, 'SWAP_TO', 'SWAP_TO')");
 	echo '<!-- swap zone timeconfig not found, it was inited! -->';
 }
 
-if(isset($_GET['dbg'])){
-	echo '<b>'.__FILE__.'-->'.__LINE__.'</b><br/><pre>=';
-	var_dump(	$swapZoneSetting , $today	,$todayhour , $swapZoneSetting['starttime']<=$today);
-	echo '</pre>';
+if($swapDebug && isset($_GET['dbg'])){
+	echo '<!-- swap zone debug output disabled -->';
+}
+
+function swapZoneHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES);
+}
+
+function swapZoneHostOk($host)
+{
+	return preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', (string)$host);
 }
 
 /********************************************************************************************************************/
 /*********************************           以下是函数程序部分              ****************************************/
 /********************************************************************************************************************/
 function changeNamePriv(){
-	global $changeNamePriv;
-	$rs = query('select yb from yblog where nickname="'.$_SESSION['username'].'" limit 1');
+	global $changeNamePriv,$conn;
+	$username = isset($_SESSION['username']) ? $_SESSION['username'] : '';
+	$username = mysql_real_escape_string($username, $conn);
+	$rs = query('select yb from yblog where nickname="'.$username.'" limit 1');
 	$changeNamePriv = false;
 	if(!empty($rs))
 	{
@@ -99,11 +126,11 @@ function changeNamePriv(){
 
 
 function getSwapZoneSetting($str){
-	$strs = split(";",$str);
+	$strs = explode(";",$str);
 	$tmp = array();
 	foreach($strs as $str)
 	{
-		$t = split(',',$str,2);
+		$t = explode(',',$str,2);
 		if(count($t)==2)
 		{
 			$tmp[$t[0]]=$t[1];
@@ -124,6 +151,8 @@ function socketData($host,$url1,$flag=false){
 	$header = 0;
 	$nobody = 0;
 	$followlocation = 1;
+	$request = '';
+	$cookie_jar = tempnam(sys_get_temp_dir(), 'kdjl_cookie_');
 
 	$ch = curl_init();
 	$options = array(CURLOPT_URL => $url,
@@ -136,39 +165,44 @@ function socketData($host,$url1,$flag=false){
 		CURLOPT_FOLLOWLOCATION => $followlocation,
 		CURLOPT_COOKIEJAR => $cookie_jar,
 		CURLOPT_COOKIEFILE => $cookie_jar,
-		CURLOPT_REFERER => $url
+		CURLOPT_REFERER => $url,
+		CURLOPT_CONNECTTIMEOUT => 2,
+		CURLOPT_TIMEOUT => 3
 	);
 	curl_setopt_array($ch, $options);
 	$result = curl_exec($ch);
 	curl_close($ch);
+	if($cookie_jar && file_exists($cookie_jar)) @unlink($cookie_jar);
 	return $result;
 }
 function connect(){
 	global $conn,$_mysql;
 	$conn = mysql_connect($_mysql['host'],$_mysql['user'],$_mysql['pass']);
-	mysql_select_db($_mysql['db'],$conn);
+	if(!$conn) die('转区数据库连接失败！');
+	if(!mysql_select_db($_mysql['db'],$conn)) die('转区数据库连接失败！');
 	$row = mysql_fetch_row(mysql_query('show tables',$conn));
 	$row = mysql_fetch_row(mysql_query('show create table '.$row[0],$conn));
 
 	if(strpos(strtolower($row[1]),"charset=gbk")!==false){
-		mysql_query("SET NAMES GBK;",$conn); 
-		mysql_query("SET CHARACTER_SET_CLIENT=GBK;",$conn); 
+		mysql_query("SET NAMES GBK;",$conn);
+		mysql_query("SET CHARACTER_SET_CLIENT=GBK;",$conn);
 		mysql_query("SET CHARACTER_SET_RESULTS=GBK;",$conn);
-	}else{			
+	}else{
 		mysql_query("SET NAMES latin1;",$conn);
 	}
 }
 function query($sql,$flag=false){
 	global $conn;
 	if($flag)	echo 'query|'.__FILE__.'->'.__LINE__."<hr>\n";
-	$result = mysql_query($sql,$conn) or die('sql='.$sql.'<br/>'.mysql_error());
+	$result = mysql_query($sql,$conn);
+	if(!$result) die('转区数据读取失败！');
 	$rtn = array();
 	if(is_resource($result)){
 		while ($row = mysql_fetch_assoc($result)) {
 			$rtn[]=$row;
 		}
 	}
-	if($flag)	echo __FILE__.'->'.__LINE__."<hr>\n";	
+	if($flag)	echo __FILE__.'->'.__LINE__."<hr>\n";
 	@mysql_free_result($result);
 	if($flag)	echo __FILE__.'->'.__LINE__."<hr>\n";
 	return $rtn;
@@ -184,12 +218,12 @@ function getPrikey($name)
 			$primaryKey[]=$col['Field'];
 		}
 	}
-	return $primaryKey;	
+	return $primaryKey;
 }
 function formatData($data,$name)
 {
 	$return = $GLOBALS['block'].$name.$GLOBALS['vbcrlf'];
-	$primaryKey = getPrikey($name);	
+	$primaryKey = getPrikey($name);
 
 	foreach($data as $v)
 	{
@@ -198,8 +232,8 @@ function formatData($data,$name)
 		{
 			if(
 				(!in_array($k,$primaryKey) || $name=='userbb')
-				||				
-				(in_array($k,$primaryKey) && $name=='player_ext' && $k='uid')
+				||
+				(in_array($k,$primaryKey) && $name=='player_ext' && $k=='uid')
 			)//userbb必须要保留主键才能正确对应技能
 			{
 				$return .= $con.'`'.$k.'`="'.str_replace('"','\"',$vv).'"';
@@ -214,10 +248,11 @@ function formatData($data,$name)
 function divideData($data)
 {
 	$tmp = array();
-	$data = split('",`',$data);
+	$data = explode('",`',$data);
 	foreach($data as $d)
 	{
-		$t = split('`="',$d);
+		$t = explode('`="',$d);
+		if(count($t) < 2) continue;
 		$t[0] = str_replace("`","",$t[0]);
 		$tmp[$t[0]] = $t[1];
 	}
@@ -240,11 +275,11 @@ function replaceFiled($data,$uid,$field='uid')
 	return $data;
 }
 function getBbOldId($data,$field = 'id')
-{	
+{
 	if(preg_match("/`".$field."`=\"\d+\",/",$data,$out))
 	{
 		$data = array(substr($out[0],strlen($field)+4,-2),str_replace($out[0],"",$data));
-	}	
+	}
 
 	return $data;
 }
@@ -253,7 +288,7 @@ function cancelSwapZone($userid,$cancel_pwd,$host){
 	//return socketData($host,'function/swap_Zone.php?id='.$userid.'&p='.$cancel_pwd.'&cancelSwap=yes');
 	return curlSS('http://'.$host.'/function/swap_Zone.php?id='.$userid.'&p='.$cancel_pwd.'&cancelSwap=yes');
 }
-function getWordCharInt($str) 
+function getWordCharInt($str)
 {
 	$stro=$str;
 	if(strpos($str,'　') !== false){
@@ -265,11 +300,11 @@ function getWordCharInt($str)
 	)
 	{
 		return false;
-	}	
+	}
 
 	$str = $stro;
 
-	$list = array('{','}','gm','日','客服','法轮功','胡锦涛','妈','搞','\?','<','>','管理','系统','公告','颁奖','元宝','出售','提示','kefu','代练','共产党','国民党','商务','5173','销售','淘宝','江泽民','毛泽东');	
+	$list = array('{','}','gm','日','客服','法轮功','胡锦涛','妈','搞','\?','<','>','管理','系统','公告','颁奖','元宝','出售','提示','kefu','代练','共产党','国民党','商务','5173','销售','淘宝','江泽民','毛泽东');
 
 	foreach($list as $v)
 	{
@@ -282,7 +317,7 @@ function getWordCharInt($str)
 }
 function saveData($data,$userid,$server)
 {
-	global $conn;
+	global $conn,$swapDebug;
 	$nUid = NULL;
 
 	$sql = array();
@@ -296,7 +331,7 @@ function saveData($data,$userid,$server)
 			continue;
 		}
 		$tmp = preg_split("/".$GLOBALS['vbcrlf']."/",$d,0,PREG_SPLIT_NO_EMPTY);
-		$primaryKey[$tmp[0]] = getPrikey($tmp[0]);	
+		$primaryKey[$tmp[0]] = getPrikey($tmp[0]);
 		for($i=1;$i<count($tmp);$i++)
 		{
 			$sql[$tmp[0]][] = $tmp[$i];
@@ -308,7 +343,7 @@ function saveData($data,$userid,$server)
 	//die();
 	if(!isset($sql['player'])||!isset($sql['userbag'])||!isset($sql['userbb'])||!isset($sql['skill'])||!isset($sql['tasklog'])||!isset($sql['player_ext']))
 	{
-		die("Data lost(02).<!--接收到的数据库不完整（缺少）-->");
+		die("接收到的数据库不完整（缺少必要数据）！");
 	}
 
 	//player
@@ -319,48 +354,55 @@ function saveData($data,$userid,$server)
 
 	$bbHostNewName = false;
 	if(!empty($player['name'])){
-		$existsUser = query('select id,name,yb,nickname,openmap,money,maxbag,maxbase,vip from player where name="'.$player['name'].'"');
-		$nickLocal = query('select name,nickname from player where nickname like binary "'.$player['nickname'].'"');
+		$playerNameSql = mysql_real_escape_string($player['name'], $conn);
+		$playerNicknameSql = mysql_real_escape_string($player['nickname'], $conn);
+		$existsUser = query('select id,name,yb,nickname,openmap,money,maxbag,maxbase,vip from player where name="'.$playerNameSql.'"');
+		$nickLocal = query('select name,nickname from player where nickname like binary "'.$playerNicknameSql.'"');
 
 		if(!empty($nickLocal)&&$nickLocal[0]['name']!=$player['name'])
 		{
-			if(!isset($_POST['bname']))
+				if(!isset($_POST['bname']) || is_array($_POST['bname']))
 			{
 				$GLOBALS['srMsg'] = '角色名已经存在，请修改你的角色名！';
 				$c = cancelSwapZone($userid,$cancel_pwd,$server);
 				return false;
 			}
-			if(!getWordCharInt($_POST['bname'])){
+			$bname = trim((string)$_POST['bname']);
+			$bnameSql = mysql_real_escape_string($bname, $conn);
+			if(!getWordCharInt($bname)){
 				$GLOBALS['srMsg'] = "角色名有禁止的字符！";
 				$c = cancelSwapZone($userid,$cancel_pwd,$server);
 				return false;
 			}
-			if(strlen($_POST['bname'])<3||strlen($_POST['bname'])>13){
+			if(strlen($bname)<3||strlen($bname)>13){
 				$GLOBALS['srMsg'] = "角色名长度错误！";
 				$c = cancelSwapZone($userid,$cancel_pwd,$server);
 				return false;
 			}
-			$nickLocalNew = query('select name,nickname from player where nickname like binary "'.$_POST['bname'].'"');
+			$nickLocalNew = query('select name,nickname from player where nickname like binary "'.$bnameSql.'"');
 			if(!empty($nickLocalNew))
 			{
 				$GLOBALS['srMsg'] = '角色名已经被其他人抢先使用，请修改你的角色名！';
 				$c = cancelSwapZone($userid,$cancel_pwd,$server);
 				return false;
 			}
-			$sqlPlayer = str_replace('`nickname`="'.$player['nickname'].'"','`nickname`="'.$_POST['bname'].'"',$sqlPlayer);
-			$bbHostNewName = array('`username`="'.$player['nickname'].'"','`username`="'.$_POST['bname'].'"');
+			$sqlPlayer = str_replace('`nickname`="'.$player['nickname'].'"','`nickname`="'.$bnameSql.'"',$sqlPlayer);
+			$bbHostNewName = array('`username`="'.$player['nickname'].'"','`username`="'.$bnameSql.'"');
 		}
 	}
 
 	if($existsUser)
 	{
+		$existsNameSql = mysql_real_escape_string($existsUser[0]['name'], $conn);
+		$importNameSql = mysql_real_escape_string($player['name'], $conn);
+		$existsLogSql = mysql_real_escape_string('用户转区过来修改本区用户：'.print_r($existsUser,1), $conn);
 		$sqlLog = '
-			insert 
-			into 
+			insert
+			into
 			gamelog
-			(ptime,	seller,	buyer,	pnote,	vary) 
+			(ptime,	seller,	buyer,	pnote,	vary)
 			values
-			(unix_timestamp(),"'.$existsUser[0]['name'].'","'.$name.'","用户转区过来修改本区用户：'.print_r($existsUser,1).'",13)
+			(unix_timestamp(),"'.$existsNameSql.'","'.$importNameSql.'","'.$existsLogSql.'",13)
 			';
 
 		query($sqlLog);
@@ -390,7 +432,7 @@ function saveData($data,$userid,$server)
 		//query('delete from player where name="'.$player['name'].'"');
 		//query('ROLLBACK');
 		$c = cancelSwapZone($userid,$cancel_pwd,$server);
-		die("Create user faild(03).".print_r($c,1).'insert into player set '.$sqlPlayer.mysql_error().$nUid);
+		die("创建转区角色失败(03)。");
 	}
 	//echo '$nUid='.$nUid."<br/>\n";
 	//userbb
@@ -399,8 +441,16 @@ function saveData($data,$userid,$server)
 	$bbId = array();
 	//$nBBid = 111;
 	//player_ext
-	$chouqu = explode('chouqu_chongwu`="',$sql['player_ext'][0]);
-	$chouqu = explode('"',$chouqu[1]);
+	$chouquValue = '';
+	if(isset($sql['player_ext'][0]))
+	{
+		$chouqu = explode('chouqu_chongwu`="',$sql['player_ext'][0]);
+		if(isset($chouqu[1]))
+		{
+			$chouqu = explode('"',$chouqu[1]);
+			$chouquValue = isset($chouqu[0]) ? $chouqu[0] : '';
+		}
+	}
 	$sqlplayer_ext = $sql['player_ext'];
 	$sqlplayer_ext = replaceUid($sqlplayer_ext,$nUid);
 
@@ -409,23 +459,24 @@ function saveData($data,$userid,$server)
 		if(strlen($s)<3) continue;
 		query('insert into player_ext set '.$s.'');
 	}
-	query(" UPDATE player_ext SET chouqu_chongwu = '' WHERE uid = {$nUid} ");//clear chourqu	
+	query(" UPDATE player_ext SET chouqu_chongwu = '' WHERE uid = {$nUid} ");//clear chourqu
 	$prizeLimitLevelFlag = false;//奖品领取等级限制
 	foreach($sqlBb as $s)
 	{
 		if(strlen($s)<5) continue;
 		$d = getBbOldId($s);
-		$can_chouqu=strpos($chouqu[0],$d[0]);	
+		$oldBbId = isset($d[0]) ? intval($d[0]) : 0;
+		$can_chouqu = ($oldBbId > 0 && strpos(','.$chouquValue.',', ','.$oldBbId.',') !== false);
 		if($bbHostNewName)
 		{
 			$d[1] = str_replace($bbHostNewName[0],$bbHostNewName[1],$d[1]);
 		}
-	
+
 		query('insert into userbb set '.$d[1].'');
 		$nBBid = mysql_insert_id($conn);//10hour
 		if($can_chouqu)
 		{
-			$bid = mysql_insert_id();
+			$bid = $nBBid;
 			$ext_type = query(" SELECT * FROM player_ext WHERE uid = {$nUid} ");
 			$update_chouqu_data = $ext_type[0]['chouqu_chongwu'];
 			$update_chouqu_data .= ','.$bid.',';
@@ -438,8 +489,8 @@ function saveData($data,$userid,$server)
 		{
 			$prizeLimitLevelFlag = true;
 		}
-		if(isset($_REQUEST['dbg1'])){
-			echo "<script>console.log($nBBid);</script>";	
+		if($swapDebug && isset($_REQUEST['dbg1'])){
+			echo "<script>console.log($nBBid);</script>";
 			//die($d[0]);
 		}
 		$bbId[$d[0]] = $nBBid;
@@ -452,7 +503,7 @@ function saveData($data,$userid,$server)
 	{
 		if(strlen($s)<5) continue;
 		if(preg_match("/`bid`=\"(\d+)\"/",$s,$out))
-		{			
+		{
 			if(isset($bbId[$out[1]]))
 			{
 				$s=str_replace($out[0],"`bid`=\"".$bbId[$out[1]]."\"",$s);
@@ -473,8 +524,8 @@ function saveData($data,$userid,$server)
 		{
 			query('ROLLBACK');
 			$c = cancelSwapZone($userid,$cancel_pwd,$server);
-			die('Save skill failed(04).<!--'.mysql_error().$s.'-->'.print_r($c,1));
-		}		
+			die('保存转区技能失败(04)。');
+		}
 	}
 
 	//userbag
@@ -482,11 +533,11 @@ function saveData($data,$userid,$server)
 	$sqlBag = replaceUid($sqlBag,$nUid);
 	foreach($sqlBag as $s)
 	{
-		if(isset($_REQUEST['dbg1'])){
+		if($swapDebug && isset($_REQUEST['dbg1'])){
 			echo "<script>console.log(11031)</script>";
-			echo "<script>console.log('$s');</script>";	
+			echo "<script>console.log('$s');</script>";
 			echo $s;
-		}	
+		}
 		if(strlen($s)<5) continue;
 		//echo $s."<br\>";
 		foreach($bbIdReplaceSetting as $k=>$v)
@@ -498,10 +549,10 @@ function saveData($data,$userid,$server)
 		//echo $s."<br\>";
 		query('insert into userbag set '.$s.'');
 		//echo 'insert into userbag set '.$s.''."<br/>\n";
-		if(isset($_REQUEST['dbg1'])){
-			echo "<script>console.log('$s');</script>";	
+		if($swapDebug && isset($_REQUEST['dbg1'])){
+			echo "<script>console.log('$s');</script>";
 			echo $s;
-		}		
+		}
 
 	}
 
@@ -518,20 +569,20 @@ function saveData($data,$userid,$server)
 
 	//give prize
 	if($GLOBALS['swapZoneEndTime']>=$GLOBALS['today']&&$prizeLimitLevelFlag)
-	{		
+	{
 		foreach($GLOBALS['prizeForSwap'] as $pid=>$v){
-			$sql = 'INSERT INTO `userbag` 
+			$sql = 'INSERT INTO `userbag`
 				(`id`,`pid`,`uid`, `sell`, `vary`, `sums`, `stime`, `psell`, `pstime`, `petime`, `psum`, `bsum`, `zbing`, `zbpets`, `buycode`, `plus_tms_eft`) VALUES
 				(NULL, '.$pid.','.$nUid.',0, 1, '.$v.', unix_timestamp(), 0, NULL, 0, 0, 0, 0, NULL, 0, NULL)';
 			query($sql);
 		}
 	}
 	query('COMMIT');
-	if(mysql_error())
+	if(mysql_error($conn))
 	{
 		query('ROLLBACK');
 		$c = cancelSwapZone($userid,$cancel_pwd,$server);
-		die(print_r($c,1));
+		die('保存转区背包失败(05)。');
 		return false;
 	}else{
 		if(isset($keyCurUser)) //把本区帐号踢下线
@@ -544,19 +595,22 @@ function saveData($data,$userid,$server)
 /********************************************************************************************************************/
 
 //判断功能是否开放
+$swapZonePhpSelf = (isset($_SERVER['PHP_SELF']) && !is_array($_SERVER['PHP_SELF'])) ? $_SERVER['PHP_SELF'] : '';
 if(!$swapZoneStarted)
 {
-	if(strpos($_SERVER['PHP_SELF'],basename(__FILE__))!==false){
+	if(strpos($swapZonePhpSelf,basename(__FILE__))!==false){
 		die("未开放功能！");
 	}
 }
 //改名
-if(isset($_GET['changename'])&&isset($_POST['nName'])&&$swapZoneStarted)
+if(isset($_GET['changename']) && !is_array($_GET['changename']) && isset($_POST['nName']) && !is_array($_POST['nName']) && $swapZoneStarted)
 {
 	$name = substr(str_replace(array(' ','	','"',"'",';',',',"\\"),"",$_POST['nName']),0,30);
+	$sessionUsername = isset($_SESSION['username']) ? $_SESSION['username'] : '';
+	$sessionUserId = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 	$msg = "操作失败";
 	$flag = false;
-	if($name==$_SESSION['username'])
+	if($name==$sessionUsername)
 	{
 		$msg = "改的登陆名和原来的相同！";
 	}else{
@@ -564,42 +618,57 @@ if(isset($_GET['changename'])&&isset($_POST['nName'])&&$swapZoneStarted)
 		if(strlen($name)>3&&strlen($name)<15)
 		{
 			connect();
-			$rs = query('select * from player where name="'.$name.'"');
+			$nameSql = mysql_real_escape_string($name, $conn);
+			$sessionUsernameSql = mysql_real_escape_string($sessionUsername, $conn);
+			$rs = query('select * from player where name="'.$nameSql.'"');
 			if(empty($rs)){
-				$rs = query('select 
-					date_format(from_unixtime(ptime),"%Y/%m/%d %H:%i") ptime 
-					from gamelog 
-					where 
-					(buyer="'.$_SESSION['username'].'" or seller="'.$_SESSION['username'].'" )
+				$rs = query('select
+					date_format(from_unixtime(ptime),"%Y/%m/%d %H:%i") ptime
+					from gamelog
+					where
+					(buyer="'.$sessionUsernameSql.'" or seller="'.$sessionUsernameSql.'" )
 					and pnote="ChangeName" and vary=13');
 				if(empty($rs)){
 					query('START TRANSACTION');
-					query('update player set name="'.$name.'" where name="'.$_SESSION['username'].'" and id="'.$_SESSION['id'].'"');
-					$sqlLog = '
-						insert 
-						into 
+					query('update player set name="'.$nameSql.'" where name="'.$sessionUsernameSql.'" and id="'.$sessionUserId.'"');
+					if(mysql_affected_rows($conn) != 1)
+					{
+						query('ROLLBACK');
+						$msg = "角色状态已变化，请重新登陆后再试！";
+					}
+					else
+					{
+						$sqlLog = '
+						insert
+						into
 						gamelog
-						(ptime,	seller,	buyer,	pnote,	vary) 
+						(ptime,	seller,	buyer,	pnote,	vary)
 						values
-						(unix_timestamp(),"'.$_SESSION['username'].'","'.$name.'","ChangeName",13)
+						(unix_timestamp(),"'.$sessionUsernameSql.'","'.$nameSql.'","ChangeName",13)
 						';
 
-					query($sqlLog);
-					if(!mysql_error()){
-						$msg = "操作成功！\\n请关闭浏览器重新登陆！";
-						$flag = true;
-						query('COMMIT');
-						unset($_SESSION['username']);
-						unset($_SESSION['id']);
-						unset($_SESSION['licenseid']);
-						unset($_SESSION);
-						$crc = crc32($_COOKIE['PHPSESSID']);
-						$_pm['mem']->del($crc);						
-					}else{
-						query('ROLLBACK');
+						query($sqlLog);
+						$swapRenamePendingLogId = intval(mysql_insert_id($conn));
+						if($swapRenamePendingLogId > 0 && !mysql_error($conn)){
+							query('COMMIT');
+							$swapRenameCommitted = true;
+							$msg = "操作成功！\\n请关闭浏览器重新登陆！";
+							$flag = true;
+							unset($_SESSION['username']);
+							unset($_SESSION['id']);
+							unset($_SESSION['licenseid']);
+							unset($_SESSION);
+							$sessionCookieValue = (isset($_COOKIE['PHPSESSID']) && !is_array($_COOKIE['PHPSESSID'])) ? $_COOKIE['PHPSESSID'] : '';
+							if(preg_match('/^[A-Za-z0-9,-]{1,128}$/', $sessionCookieValue)){
+								$crc = crc32($sessionCookieValue);
+								$_pm['mem']->del($crc);
+							}
+						}else{
+							query('ROLLBACK');
+						}
 					}
 				}else{
-					$msg = "您已经于".$rs[0]['ptime']."改过用户名！";
+					$msg = "您已经于".(isset($rs[0]['ptime']) ? $rs[0]['ptime'] : '')."改过用户名！";
 				}
 			}else{
 				$msg = "输入的登陆名本区已经存在角色！";
@@ -608,6 +677,7 @@ if(isset($_GET['changename'])&&isset($_POST['nName'])&&$swapZoneStarted)
 			$msg = "输入的登陆名不合法！";
 		}
 	}
+	$msg = addcslashes((string)$msg, "\\\"\n\r");
 	die('
 		<script language="javascript">
 alert("'.$msg.'");
@@ -617,7 +687,7 @@ alert("'.$msg.'");
 }
 
 //在登陆页面显示转区的区列表
-else if(isset($displaySwapZone)&&$displaySwapZone===true&&array_key_exists(strtolower($_SERVER['HTTP_HOST']),$fromZone)&&$swapZoneStarted)
+else if(isset($displaySwapZone)&&$displaySwapZone===true&&array_key_exists($currentHttpHostLower,$fromZone)&&$swapZoneStarted)
 {
 	changeNamePriv();
 	$_box="";
@@ -644,32 +714,32 @@ else if(isset($displaySwapZone)&&$displaySwapZone===true&&array_key_exists(strto
 }
 /* Customize your modal window here, you can add background image too */
 #boxes #dialog {
-  width:375px; 
+  width:375px;
   height:203px;
 }
 </style>
 
 <script type='text/javascript' src='http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.5.1.min.js'></script>
 			<script type='text/javascript'>
-$(document).ready(function() {  
+$(document).ready(function() {
     //select all the a tag with name equal to modal
-        
+
     //if close button is clicked
     $('.window .close').click(function (e) {
         //Cancel the link behavior
         e.preventDefault();
         $('#mask, .window').hide();
-    });     
-     
-          
-     
+    });
+
+
+
 });
 			</script>
 <div id='boxes'>
     <div id='dialog' class='window'>
 	<blockquote>
 现在需要在空白栏中填入一个<font color='red'>新的通行证账号</font>，输入完成后点击确定。（操作完毕后会自动关闭浏览器）
-<br/>然后，使用刚才输入的<font color='red'>新通行证账号</font>登陆本区，直接点击“转入指定大区”即可完成转区程序		
+<br/>然后，使用刚才输入的<font color='red'>新通行证账号</font>登陆本区，直接点击“转入指定大区”即可完成转区程序
 	</blockqupte>
         <a href='#' class='close'>关闭</a>
     </div>
@@ -698,14 +768,14 @@ $(document).ready(function() {
 }
 /* Customize your modal window here, you can add background image too */
 #boxes #dialog {
-  width:375px; 
+  width:375px;
   height:203px;
 }
 </style>
 
 <script type='text/javascript' src='http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.5.1.min.js'></script>
 			<script type='text/javascript'>
-$(document).ready(function() {  
+$(document).ready(function() {
     //select all the a tag with name equal to modal
     (function() {
         var id = '#dialog';
@@ -714,9 +784,9 @@ $(document).ready(function() {
         var maskWidth = $(window).width();
         //Set height and width to mask to fill up the whole screen
         $('#mask').css({'left':0,'top':0,'width':maskWidth,'height':maskHeight});
-        //transition effect     
-        $('#mask').fadeIn(1000);    
-        $('#mask').fadeTo('slow',0.8);  
+        //transition effect
+        $('#mask').fadeIn(1000);
+        $('#mask').fadeTo('slow',0.8);
         //Get the window height and width
         var winH = $(window).height();
         var winW = $(window).width();
@@ -724,14 +794,14 @@ $(document).ready(function() {
         $(id).css('top',  winH/2-$(id).height()/2);
         $(id).css('left', winW/2-$(id).width()/2);
         //transition effect
-        $(id).fadeIn(2000); 
+        $(id).fadeIn(2000);
     })();
     //if close button is clicked
     $('.window .close').click(function (e) {
         //Cancel the link behavior
         e.preventDefault();
         $('#mask, .window').hide();
-    });     
+    });
 });
 			</script>
 <div id='boxes'>
@@ -753,7 +823,7 @@ $(document).ready(function() {
 	$i=0;
 	foreach($aimZone as $k=>$v)
 	{
-		if($k==$_SERVER['HTTP_HOST']) continue;
+		if($k==$currentHttpHost) continue;
 		if($i%2==0) $echo .= '<tr>';
 		$echo .= '<td style="padding-left:6px"><a href="javascript:go(\\\'http://'.$k.'/function/swap_Zone.php?id='.$_SESSION['id'].'\\\')" target="_top">'.$v.'</a></td>';
 		if($i%2==1) $echo .= '</tr>';
@@ -788,9 +858,9 @@ function changeNameTableDh()
 			var maskWidth = $(window).width();
 			//Set height and width to mask to fill up the whole screen
 			$('#mask').css({'left':0,'top':0,'width':maskWidth,'height':maskHeight});
-			//transition effect     
-			$('#mask').fadeIn(1000);    
-			$('#mask').fadeTo('slow',0.8);  
+			//transition effect
+			$('#mask').fadeIn(1000);
+			$('#mask').fadeTo('slow',0.8);
 			//Get the window height and width
 			var winH = $(window).height();
 			var winW = $(window).width();
@@ -798,8 +868,8 @@ function changeNameTableDh()
 			$(id).css('top',  winH/2-$(id).height()/2);
 			$(id).css('left', winW/2-$(id).width()/2);
 			//transition effect
-			$(id).fadeIn(2000); 
-		})(); 
+			$(id).fadeIn(2000);
+		})();
 
 
 		obj.style.display='block';
@@ -809,7 +879,7 @@ function changeNameTableDh()
 	else
 	{
 		obj1.style.display='block';
-		obj.style.display='none';	
+		obj.style.display='none';
 		obj2.style.display='block';
 	}
 }
@@ -818,43 +888,54 @@ function go(url){var f=document.getElementById(\"swapForm\");f.action=url;f.subm
 	");
 }
 //用户请求的是本页面而不是本页面被包含
-else if(strpos($_SERVER['PHP_SELF'],basename(__FILE__))!==false)
+else if(strpos($swapZonePhpSelf,basename(__FILE__))!==false)
 {
 //接受玩家转区到本区
-if(isset($_GET['id'])&&intval($_GET['id'])>0&&isset($_POST['sid'])&&strlen($_POST['sid'])==32)
+if(isset($_GET['id']) && !is_array($_GET['id']) && intval($_GET['id']) > 0 && isset($_POST['sid']) && !is_array($_POST['sid']) && preg_match('/^[a-f0-9]{32}$/i', $_POST['sid']))
 {
-	$userid=intval($_GET['id']);	
-	$rfr=parse_url($_SERVER['HTTP_REFERER']);
+	if(!isset($_GET['id']) || is_array($_GET['id']) || intval($_GET['id']) <= 0 || !isset($_POST['sid']) || is_array($_POST['sid']) || !preg_match('/^[a-f0-9]{32}$/i', $_POST['sid']))
+	{
+		die('请求参数错误！');
+	}
+	$userid=intval($_GET['id']);
+	$referer = (isset($_SERVER['HTTP_REFERER']) && !is_array($_SERVER['HTTP_REFERER'])) ? str_replace(array("\r","\n"), '', $_SERVER['HTTP_REFERER']) : '';
+	$rfr=parse_url($referer);
+	if(!is_array($rfr) || !isset($rfr['host'])) die("参数错误！");
 	$rfr['host'] = strtolower($rfr['host']);
+	if(!swapZoneHostOk($rfr['host'])) die("参数错误！");
 	$html = "";
-	if(!isset($rfr['host'])) die("参数错误！");
 	if(
 		!array_key_exists($rfr['host'],$fromZone)
 		&&
-		!array_key_exists($_SESSION['swapFrom'],$fromZone)
+		(!isset($_SESSION['swapFrom']) || !swapZoneHostOk($_SESSION['swapFrom']) || !array_key_exists($_SESSION['swapFrom'],$fromZone))
 	){
-		die("转区功能未在您的区开放！".$_SESSION['swapFrom']);
+		die("转区功能未在您的区开放！");
 	}
-	if(!array_key_exists(strtolower($_SERVER['HTTP_HOST']),$aimZone)) die("本区不接受转区！");
+	if(!array_key_exists($currentHttpHostLower,$aimZone)) die("本区不接受转区！");
 	if(!isset($_GET['swapMe'])||!isset($_SESSION['swapMe']))
 	{
 		$qData = curlSS('http://'.$rfr['host'].'/function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid']);
 		//$qData = socketData($rfr['host'],'function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid']);	//查询老区数据
 
 
-		if(ERROR_AUTH==$qData) die("未授权的访问(".'function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid'].")！");
+		if(ERROR_AUTH==$qData) die("未授权的访问！");
 		//$qData=preg_split("/".$GLOBALS['block']."/",$qData,0,PREG_SPLIT_NO_EMPTY);
+		if(!is_array($qData) || count($qData) < 2) die("转区服务器连接失败！");
 		$data =preg_split("/".$vbcrlf."/",$qData[1],0,PREG_SPLIT_NO_EMPTY);
+		if(!is_array($data) || count($data) < 2) die("转区数据错误！");
 		$userInfo = divideData($data[1]);
+		if(!isset($userInfo['name']) || !isset($userInfo['nickname'])) die("转区数据错误！");
 		connect();
-		$userLocal = query('select nickname from player where name like binary "'.$userInfo['name'].'"');
+		$userInfoNameSql = mysql_real_escape_string($userInfo['name'], $conn);
+		$userInfoNicknameSql = mysql_real_escape_string($userInfo['nickname'], $conn);
+		$userLocal = query('select nickname from player where name like binary "'.$userInfoNameSql.'"');
 
-		$nickLocal = query('select name,nickname from player where nickname like binary "'.$userInfo['nickname'].'" and name<>"'.$userInfo['name'].'"');
+		$nickLocal = query('select name,nickname from player where nickname like binary "'.$userInfoNicknameSql.'" and name<>"'.$userInfoNameSql.'"');
 
 		$warning = "";
 		if(!empty($userLocal))
 		{
-			$warning = "<font color=#ff0000>重要提示：如果继续您在本区角色名为：".$userLocal[0]['nickname']."的角色,将被删除！</font>&nbsp;&nbsp;";
+			$warning = "<font color=#ff0000>重要提示：如果继续您在本区角色名为：".swapZoneHtml($userLocal[0]['nickname'])."的角色,将被删除！</font>&nbsp;&nbsp;";
 		}
 		if($qData)
 		{
@@ -862,19 +943,19 @@ if(isset($_GET['id'])&&intval($_GET['id'])>0&&isset($_POST['sid'])&&strlen($_POS
 			$_SESSION['swapFrom'] = $rfr['host'];
 
 			$html .= "<div style='width:390px;color:#000000'>转区信息(您有一分钟来完成)：<br/>";
-			$html .= "　　您确定要将您在<u>".$rfr['host']."</u>，
-					角色名为：<u>".$userInfo['nickname']."</u>的角色转入本区么？<br/>
+			$html .= "　　您确定要将您在<u>".swapZoneHtml($rfr['host'])."</u>，
+					角色名为：<u>".swapZoneHtml($userInfo['nickname'])."</u>的角色转入本区么？<br/>
 					".$warning."
 					<form action='?id=".$userid."&swapMe=yes' method=\"post\" id=\"doswapform\">
 					";
 			if(!empty($nickLocal))
 			{
-				$html .= "您的角色名已经存在，请修改:".'<input type="text" id="bname" name="bname" onChange="C();" size=4><span id="cname"></span>'."";				
+				$html .= "您的角色名已经存在，请修改:".'<input type="text" id="bname" name="bname" onChange="C();" size=4><span id="cname"></span>'."";
 			}
-			$html .= "<input type=\"hidden\" name=\"sid\" value=".$_POST['sid'].">
+			$html .= "<input type=\"hidden\" name=\"sid\" value=\"".swapZoneHtml($_POST['sid'])."\">
 					<input type='button' value='确定转入' onclick='subit=true;C();' id='sbbtn123'>&nbsp;&nbsp;<input type='button' onclick='history.back()' value='取消'>
 					<font color='red'>点击<b>确定转入</b>即可完成转区程序</font>
-					</form>					
+					</form>
 					</div>
 			<script language=\"javascript\" src=\"/javascript/prototype.js\"></script>
 <script languge='javascript'>
@@ -907,7 +988,7 @@ function C()
 		},
 			onFailure: function(t) {
 		},
-			asynchronous:true        
+			asynchronous:true
 		}
 		//$(id).innerHTML+='/login/loginCheck.php?'+op;
 		var ajax=new Ajax.Request('/login/loginCheck.php?'+op, opt);
@@ -924,36 +1005,32 @@ function C()
 		}
 		else
 		{
-			if($_SESSION['username']=="leinchu"&&isset($_GET['dbg'])){
-				//echo file_get_contents('http://'.$rfr['host'].'/'.'function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid']);
-				echo curlSS('http://'.$rfr['host'].'/'.'function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid']);
-				echo '<b>'.__FILE__.'-->'.__LINE__.'</b><br/><pre>=';
-				var_dump($rfr['host'],'function/swap_Zone.php?p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid']	);
-				echo '</pre>';
-			}
 			die("连接服务器失败(00)!");
 		}
 	}
 	else if(isset($_SESSION['swapFrom']))
-	{		
+	{
+		if(!swapZoneHostOk($_SESSION['swapFrom']) || !array_key_exists($_SESSION['swapFrom'],$fromZone))
+		{
+			die("转区功能未在您的区开放！");
+		}
 		//$qData = socketData($_SESSION['swapFrom'],'function/swap_Zone.php?swapMe=yes&p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid'].'&swapto='.$_SERVER['HTTP_HOST']);	//查询老区数据
-		$qData = curlSS('http://'.$_SESSION['swapFrom'].'/function/swap_Zone.php?swapMe=yes&p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid'].'&swapto='.$_SERVER['HTTP_HOST']);
+		$qData = curlSS('http://'.$_SESSION['swapFrom'].'/function/swap_Zone.php?swapMe=yes&p='.$pwd.'&qid='.$userid.'&sid='.$_POST['sid'].'&swapto='.urlencode($currentHttpHost));
 		//var_dump($qData);
 		//$qData=preg_split("/".$GLOBALS['block']."/",$qData,0,PREG_SPLIT_NO_EMPTY);
 
 		if(ERROR_AUTH==$qData) die("未授权的访问！");
 		if(ERROR_SECID_STATUS==$qData) die("您已经转区或者您的帐号被冻结！");
-		if(count($qData)!=7){
+		if(!is_array($qData) || count($qData)!=7){
 			die("操作过期，必须在一分钟内完成！<br>请关闭当前浏览器并新开浏览器重试！");
 		}
 		if($qData)
 		{
 			connect();
-			if(isset($_REQUEST['dbg'])){
-				print_r($qData);
-				die();
+			if($swapDebug && isset($_REQUEST['dbg'])){
+				die("转区调试信息已关闭。");
 			}
-			if(saveData($qData,$userid,$_SESSION['swapFrom'])){				
+			if(saveData($qData,$userid,$_SESSION['swapFrom'])){
 				unset($_SESSION);
 				die(
 				'
@@ -981,7 +1058,7 @@ window.history.back(-1);
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=gbk" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>口袋精灵转区</title>
 <style type="text/css">
 <!--
@@ -994,7 +1071,7 @@ body {
 }
 .STYLE1 {
 	color: #00553a;
-	font-size: 12px;    
+	font-size: 12px;
 	line-height: 20px;
 }
 
@@ -1002,7 +1079,7 @@ body {
 #mbm{font-family:sans-serif;font-weight:bold;float:right;padding-bottom:5px;}
 .dialog {display:none}
 
-                  
+
 
 -->
 </style>
@@ -1056,29 +1133,30 @@ body {
 	</script>
 </body>
 </html>
-<?php 
+<?php
 	die();
 }
 
 //取消转区，如果接受转区的服务器处理失败，通过下面程序接受取消转区
-if(isset($_GET['cancelSwap'])&&isset($_GET['id'])&&intval($_GET['id'])>0&&isset($_GET['p'])&&strlen($_GET['p'])==32)
+if(isset($_GET['cancelSwap'])&&isset($_GET['id'])&&!is_array($_GET['id'])&&intval($_GET['id'])>0&&isset($_GET['p'])&&!is_array($_GET['p'])&&strlen($_GET['p'])==32)
 {
+	$cancelUserId = intval($_GET['id']);
 	$mem = new mem($_pm['mem']);
-	$pwd = $mem->{'cancel_pwd_'.intval($_GET['id'])};
+	$pwd = $mem->{'cancel_pwd_'.$cancelUserId};
 
 	if($pwd && $pwd  == $_GET['p'])
 	{
-		unset($mem->{'cancel_pwd_'.intval($_GET['id'])});
-		unset($mem->{'swapMe_'.intval($_GET['id'])});
+		unset($mem->{'cancel_pwd_'.$cancelUserId});
+		unset($mem->{'swapMe_'.$cancelUserId});
 		connect();
-		query('update player set secid=0 where id='.intval($_GET['id']));
+		query('update player set secid=0 where id='.$cancelUserId);
 		echo "还原数据成功！";
 	}
 	die("!");
 }
 
 //接受其它服务器查询本区数据和转区：第一次查询只给用户信息，
-if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['sid'])&&strlen($_GET['sid'])==32)
+if(isset($_GET['qid']) && !is_array($_GET['qid']) && isset($_GET['p']) && isset($_GET['sid']) && !is_array($_GET['p']) && !is_array($_GET['sid']) && intval($_GET['qid'])>0 && $_GET['p']==$pwd && preg_match('/^[a-f0-9]{32}$/i', $_GET['sid']))
 {
 	echo HTTP_CONTENT_STARTED;
 	$userid=intval($_GET['qid']);
@@ -1111,9 +1189,9 @@ if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['s
 	}
 	else
 	{
-		$cancel_pwd = md5(time().$_SERVER['HTTP_HOST']);
+	$cancel_pwd = md5(time().$currentHttpHost);
 		$memHandle->set('cancel_pwd_'.$userid,$cancel_pwd,0,60);
-		$_pm['mem']->set(array('k'=>'cancel_pwd1_'.$userid,'v'=>$cancel_pwd));		
+		$_pm['mem']->set(array('k'=>'cancel_pwd1_'.$userid,'v'=>$cancel_pwd));
 		echo $cancel_pwd.formatData($userInfo,'player');
 	}
 
@@ -1121,9 +1199,9 @@ if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['s
 	$merge=query("select merge,send,request_merge from player_ext WHERE uid ={$userid}");
 	if($merge[0]['merge']>0){
 		query("UPDATE player_ext SET request=0,merge=0,request_merge=0,send='' WHERE uid = {$userid} or uid={$merge[0]['merge']}");
-		$sum_send=query("SELECT id FROM userbag WHERE uid={$userid} and pid=2381 LIMIT 0,1");
+		$sum_send=query("SELECT id FROM userbag WHERE uid={$userid} and pid=2381 and vary=1 and zbing=0 and (cantrade IS NULL OR cantrade<>3) LIMIT 0,1");
 		if(!empty($sum_send[0]['id'])){
-			query("UPDATE userbag SET sums=sums+1  WHERE uid={$userid} and id={$sum_send[0]['id']}");
+			query("UPDATE userbag SET sums=COALESCE(sums,0)+1  WHERE uid={$userid} and id={$sum_send[0]['id']} and vary=1 and zbing=0 and (cantrade IS NULL OR cantrade<>3)");
 		}else{
 			query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES({$userid},2381,1,1,1, ".time()." )");
 		}
@@ -1137,13 +1215,15 @@ if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['s
 		//}
 	}elseif($merge[0]['request_merge']>0){
 		$send1=explode(',',$merge[0]['send']);
-		$bid=$send1[1];
-		$n=$send1[0];
-		$sum_send=query("SELECT id FROM userbag WHERE uid={$userid} and pid={$bid} LIMIT 0,1");
-		if(!empty($sum_send[0]['id'])){
-			query("UPDATE userbag SET sums=sums+{$n}  WHERE uid={$userid} and id={$sum_send[0]['id']}");
-		}else{
-			query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES({$userid},{$bid},1,{$n},1, ".time()." )");
+		$bid=intval($send1[1]);
+		$n=intval($send1[0]);
+		if($bid > 0 && $n > 0){
+			$sum_send=query("SELECT id FROM userbag WHERE uid={$userid} and pid={$bid} and vary=1 and zbing=0 and (cantrade IS NULL OR cantrade<>3) LIMIT 0,1");
+			if(!empty($sum_send[0]['id'])){
+				query("UPDATE userbag SET sums=COALESCE(sums,0)+{$n}  WHERE uid={$userid} and id={$sum_send[0]['id']} and vary=1 and zbing=0 and (cantrade IS NULL OR cantrade<>3)");
+			}else{
+				query("INSERT INTO userbag(uid,pid,sell,vary,sums,stime) VALUES({$userid},{$bid},1,1,{$n}, ".time()." )");
+			}
 		}
 		query("UPDATE player_ext SET request=0,merge=0,request_merge=0,send='' WHERE uid = {$userid}");
 	}
@@ -1171,23 +1251,26 @@ if(isset($_GET['qid'])&&intval($_GET['qid'])>0&&$_GET['p']==$pwd&&isset($_GET['s
 
 	$keyCurUser  = $userid . "chat";
 	if(isset($keyCurUser)) //把本区(转区来自区)帐号踢下线
-		$GLOBALS['_pm']['mem']->del($keyCurUser);	
-	$swapto = $_GET['swapto'];
+		$GLOBALS['_pm']['mem']->del($keyCurUser);
+	$swapto = (isset($_GET['swapto']) && !is_array($_GET['swapto'])) ? $_GET['swapto'] : '';
+	$swaptoSql = mysql_real_escape_string($swapto, $conn);
+	$exportNameSql = mysql_real_escape_string($userInfo[0]['name'], $conn);
+	$exportLogSql = mysql_real_escape_string($swapto.','.print_r($userInfo[0],1), $conn);
 	$sqlLog = '
-		insert 
-		into 
+		insert
+		into
 		gamelog
-		(ptime,	seller,	buyer,	pnote,	vary) 
+		(ptime,	seller,	buyer,	pnote,	vary)
 		values
-		(unix_timestamp(),"'.$userInfo[0]['name'].'","SWAP_ZONE_LOG","'.$swapto.','.print_r($userInfo[0],1).'",13)
+		(unix_timestamp(),"'.$exportNameSql.'","SWAP_ZONE_LOG","'.$exportLogSql.'",13)
 		';
 	query($sqlLog);
-	$sqlPai = 'update userbag 
-		set 
+	$sqlPai = 'update userbag
+		set
 		psell=0,
 		pstime=0,
 		petime=0,
-		sums=sums+psum,
+		sums=COALESCE(sums,0)+COALESCE(psum,0),
 		psum=0,
 		buycode=""
 		where uid='.$userid;
@@ -1207,6 +1290,8 @@ function curlSS($url,$port=80){
 	$header = 0;
 	$nobody = 0;
 	$followlocation = 1;
+	$request = '';
+	$cookie_jar = tempnam(sys_get_temp_dir(), 'kdjl_cookie_');
 
 	$ch = curl_init();
 	$options = array(CURLOPT_URL => $url,
@@ -1219,11 +1304,15 @@ function curlSS($url,$port=80){
 		CURLOPT_FOLLOWLOCATION => $followlocation,
 		CURLOPT_COOKIEJAR => $cookie_jar,
 		CURLOPT_COOKIEFILE => $cookie_jar,
-		CURLOPT_REFERER => $url
+		CURLOPT_REFERER => $url,
+		CURLOPT_CONNECTTIMEOUT => 2,
+		CURLOPT_TIMEOUT => 3
 	);
 	curl_setopt_array($ch, $options);
 	$result = curl_exec($ch);
 	curl_close($ch);
+	if($cookie_jar && file_exists($cookie_jar)) @unlink($cookie_jar);
+	if($result === false) $result = '';
 	$result=preg_split("/".$GLOBALS['block']."/",$result,0,PREG_SPLIT_NO_EMPTY);
 	return $result;
 }

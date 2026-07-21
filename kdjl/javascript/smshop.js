@@ -1,29 +1,27 @@
 // JavaScript Document
 var dtips = document.createElement('DIV');
 
+function setShopBuyNumDefault()
+{
+	var ids = ['num','sjnum','vipnum','limitnum'];
+	for(var i=0;i<ids.length;i++)
+	{
+		if($(ids[i])) $(ids[i]).value = 1;
+	}
+}
+
 function sel(obj)
 {
 	if(selid!=0) selid.style.backgroundColor='#fff';
 	selid=obj;
 	obj.style.backgroundColor='#DFD496';
-	try
-	{
-		var pro = $(obj.id.replace("t","s")).innerHTML;
-		$('num').value= parseInt(pro);
-	}
-	catch(e)
-	{
-		$('num').value = "";
-	}
+	setShopBuyNumDefault();
 }
 function buy(channel){
 	//window.parent.Alert('神秘商店暂时未开门!');
     // return;
 	//
-	var nums = $('num').value;
-	if(nums < 1){
-		nums = $('limitnum').value;
-	}
+	var nums = channel == 'limit' ? $('limitnum').value : $('num').value;
 	if(bid == 0 ){window.parent.window.parent.Alert('请先选择要购买的物品。');return;}
 	else if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;}
 	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
@@ -40,7 +38,7 @@ function buy(channel){
 					if(n==10) {window.parent.Alert('您的元宝不够，可点右下角的游戏充值增加元宝！');return;}
 					else if(n==4) {window.parent.Alert('您的包裹空间不足！');return;}
 					else if(n==101) {window.parent.Alert('该物品还没上架或者已经下架！');return;}
-					else if(n==0) {ajaxfun();window.parent.Alert('买入物品成功!');return;}//refresh bag.
+					else if(n==0) {window.parent.Alert('买入物品成功!');window.location.reload();return;}
 					else {window.parent.Alert(t.responseText);return;}
     		 	},
     		 	on404: function(t) {
@@ -57,24 +55,12 @@ function buy(channel){
 	}
 }
 
-function ajaxfun()
-{
-	var opt = {
-     	method: 'get',
-		onSuccess: function(t) {
-			 		$('mybag').innerHTML=t.responseText;
-    		 	},
-     	asynchronous:true        
-	}
-	var ajax=new Ajax.Request('../function/getBag.php', opt);
-}
-
 function sell(){
 	var nums = $('num').value; 
 	if(bid == 0 ){window.parent.Alert('请先选择要卖出的物品。');return;}
 	else{
 	    if(!validInt(nums)) {window.parent.Alert('数量只能是数字！');return false;}
-		else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
+		else if(nums<1 || nums>100){window.parent.Alert('卖出数量范围是1-100之间的整数！');return;}
 		
 		if (types==2 && nums!=1)
 		{
@@ -88,7 +74,7 @@ function sell(){
     		 	method: 'get',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
-					if(n==0) {ajaxfun();window.parent.Alert('卖出物品成功!');}
+					if(n==0) {window.parent.Alert('卖出物品成功!');window.location.reload();}
 					else if(n==10) window.parent.Alert('您的背包中没有足够的物品可以卖出！');
 					else window.parent.Alert('卖出失败!');
     		 	},

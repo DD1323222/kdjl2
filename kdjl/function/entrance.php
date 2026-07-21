@@ -1,6 +1,6 @@
 <?php
 /**
- * This script is only used to some additional operation 
+ * This script is only used to some additional operation
  * such as sorting paihang ranking
  * It is a tool only used by GM, other users are denied.
  *
@@ -26,15 +26,26 @@ define("SORT_PAIHANG_TIME","20090626 11:00");
 $allowed_hosts = explode(',', ALLOWED_HOSTS);
 $paihang_users = explode(',', PAIHANG_USER);
 $goto_game     = true;
+$remoteAddr = (isset($_SERVER['REMOTE_ADDR']) && !is_array($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : '';
+$selfUrl = (isset($_SERVER['PHP_SELF']) && !is_array($_SERVER['PHP_SELF'])) ? $_SERVER['PHP_SELF'] : '/function/entrance.php';
+$selfUrlJs = addcslashes($selfUrl, "\\'\r\n");
+$requestAction = (isset($_REQUEST['action']) && !is_array($_REQUEST['action'])) ? $_REQUEST['action'] : '';
+$requestOpe = (isset($_REQUEST['ope']) && !is_array($_REQUEST['ope'])) ? $_REQUEST['ope'] : '';
+$postOpe = (isset($_POST['ope']) && !is_array($_POST['ope'])) ? $_POST['ope'] : '';
+
+function entranceJsSingle($value)
+{
+    return str_replace(array('\\', "'", "\r", "\n", '<', '>'), array('\\\\', "\\'", '', '', '\\x3C', '\\x3E'), strval($value));
+}
 
 //var_dump($_SESSION);
-if (!CHECK_HOSTS || in_array($_SERVER['REMOTE_ADDR'], $allowed_hosts)) {
+if (!CHECK_HOSTS || in_array($remoteAddr, $allowed_hosts)) {
     // only the special user from the allowed IP address can access the service
     // if the user is not allowed, redirect to the game entrance.
-    //if (in_array($_SESSION['username'], $paihang_users)) { 
-    if (isset($_REQUEST['action']) && $_REQUEST['action'] == ACTION_PAIHANG) {
+    //if (in_array($_SESSION['username'], $paihang_users)) {
+    if ($requestAction == ACTION_PAIHANG) {
         if (CHECK_USER) {
-            if (in_array($_SESSION['username'], $paihang_users)) { 
+            if (in_array($_SESSION['username'], $paihang_users)) {
                 // user can do operation of paihang
                 $action = ACTION_PAIHANG;
             }
@@ -54,22 +65,22 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
     if (isset($action)) {
         switch ($action) {
         case ACTION_PAIHANG:
-            if (isset($_REQUEST['ope']) ) {
-                if ($_REQUEST['ope'] == 'check') {
+            if ($requestOpe != '') {
+                if ($requestOpe == 'check') {
                     if (is_sorted_paihang()) {
                         echo "{code:1}";
                     } else {
                         echo "{code:2}";
                     }
-                } elseif ($_REQUEST['ope'] == 'show') {
-                    echo get_player_paihang_list(); 
-                }  elseif (isset($_POST['ope']) && $_POST['ope'] == 'sort') {
+                } elseif ($requestOpe == 'show') {
+                    echo get_player_paihang_list();
+                }  elseif ($postOpe == 'sort') {
                     if (sort_player_paihang()) {
                         echo "{code:2}";
                     } else {
                         echo "{code:1}";
                     }
-                } elseif (isset($_POST['ope']) && $_POST['ope'] == 'fsort') {
+                } elseif ($postOpe == 'fsort') {
                     clear_player_paihang();
                     if (sort_player_paihang()) {
                         echo "{code:2}";
@@ -97,7 +108,7 @@ if (CHECK_HOSTS && $goto_game) {
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <title>冲击排行</title>
-<script type="text/javascript" src="../javascript/lib/jquery.js"></script>
+<script type="text/javascript" src="../javascript/jquery.js"></script>
 <style>
 <!--
 body
@@ -113,18 +124,18 @@ body
 <!--
 function trigger_paihang_action() {
     $('#content_area').hide();
-    $.get('<?php echo $_SERVER['PHP_SELF']; ?>', {action:'paihang', ope:'check', t:Math.random()}, function(data) {check_paihang(data);});
+    $.get('<?php echo $selfUrlJs; ?>', {action:'paihang', ope:'check', t:Math.random()}, function(data) {check_paihang(data);});
 }
 
 function check_paihang(data) {
     try {
         var ret = eval('(' + data + ')');
-        
+
         if (ret['code']) {
             if (ret['code'] == 1) {
-                alert('已经给排名赋过值了');
-            } else if (ret['code'] == 2) {
-                $.post('<?php echo $_SERVER['PHP_SELF']; ?>', {action:'paihang', ope:'sort'}, function(data) {sort_paihang(data);});
+            alert('已经给排名赋过值了');
+        } else if (ret['code'] == 2) {
+                $.post('<?php echo $selfUrlJs; ?>', {action:'paihang', ope:'sort'}, function(data) {sort_paihang(data);});
             }
         } else {
             alert('返回错误!');
@@ -134,20 +145,20 @@ function check_paihang(data) {
 }
 
 function sort_paihang() {
-    $.post('<?php echo $_SERVER['PHP_SELF']; ?>', {action:'paihang', ope:'sort'}, function(data) {response_sorting(data);});
+    $.post('<?php echo $selfUrlJs; ?>', {action:'paihang', ope:'sort'}, function(data) {response_sorting(data);});
 }
 
 function force_paihang_action() {
     $('#content_area').hide();
     if (confirm('你确认要进行冲级排行操作吗，这会清除已有的冲击排行榜!')) {
-        $.post('<?php echo $_SERVER['PHP_SELF']; ?>', {action:'paihang', ope:'fsort'}, function(data) {response_sorting(data);});
+        $.post('<?php echo $selfUrlJs; ?>', {action:'paihang', ope:'fsort'}, function(data) {response_sorting(data);});
     }
 }
 
 function response_sorting(data) {
     try {
         var ret = eval('(' + data + ')');
-        
+
         if (ret['code']) {
             if (ret['code'] == 1) {
                 alert('排行赋值失败!');
@@ -163,13 +174,13 @@ function response_sorting(data) {
 }
 
 function show_paihang_action() {
-    $.get('<?php echo $_SERVER['PHP_SELF']; ?>', {action:'paihang', ope:'show', t:Math.random()}, function(data) {show_paihang(data);});
+    $.get('<?php echo $selfUrlJs; ?>', {action:'paihang', ope:'show', t:Math.random()}, function(data) {show_paihang(data);});
 }
 
 function show_paihang(data) {
     try {
         var ret = eval('(' + data + ')');
-        
+
         if (ret['code']) {
             if (ret['code'] == 1) {
                 alert('没有记录!');
@@ -298,9 +309,9 @@ function sort_player_paihang()
             }
         }
 
-        $paihang_level = array(1 => $first_paihang, 
-            2 => $second_paihang, 
-            3 => $third_paihang, 
+        $paihang_level = array(1 => $first_paihang,
+            2 => $second_paihang,
+            3 => $third_paihang,
             4 => $fourth_paihang);
         foreach ($paihang_level as $k => $v) {
             if (!empty($v)) {
@@ -320,7 +331,7 @@ function sort_player_paihang()
  *
  * @return string json
  */
-function get_player_paihang_list() 
+function get_player_paihang_list()
 {
     $ret   = "{code:1}";
     $toprs = $GLOBALS['_pm']['mysql']->getRecords("SELECT name, nickname, paihang FROM player WHERE paihang > 0 ORDER BY paihang
@@ -328,7 +339,8 @@ function get_player_paihang_list()
     if (is_array($toprs) && count($toprs) > 0) {
         $html = get_paihang_html_tag($toprs);
         if ($html != "") {
-            $ret = "{code:2, html:'{$html}'}";
+            $htmlJs = entranceJsSingle($html);
+            $ret = "{code:2, html:'{$htmlJs}'}";
         }
     }
 
@@ -351,7 +363,7 @@ function get_paihang_ope_expiration() {
         }
     } else {
         // insert the paihang config items into table timeconfig
-        insert_paihang_config_param(); 
+        insert_paihang_config_param();
     }
 
     return $ret;
@@ -387,10 +399,13 @@ function get_paihang_html_tag($paihang_list)
     $ret = "";
 
     if (count($paihang_list) > 0) {
-        $ret = "<table style=\"border-collapse:collapse;border:solid 1px red;\"><thead style=\"text-align:center;\"><td>名次</td><td>通行证</td><td>玩家</td><td>排行</td></thead><tbody>";
+        $ret = "<table style=\"border-collapse:collapse;border:solid 1px red;\"><thead style=\"text-align:center;\"><tr><td>名次</td><td>通行证</td><td>玩家</td><td>排行</td></tr></thead><tbody>";
         foreach ($paihang_list as $i => $row) {
             $j = $i + 1;
-            $ret .= "<tr ><td style=\"border:solid 1px black;\">{$j}</td><td style=\"border:solid 1px black;\">{$row['name']}</td><td style=\"border:solid 1px black;\">{$row['nickname']}</td><td style=\"border:solid 1px black;\">{$row['paihang']}</td></tr>";
+            $name = htmlspecialchars(isset($row['name']) ? (string)$row['name'] : '', ENT_QUOTES);
+            $nickname = htmlspecialchars(isset($row['nickname']) ? (string)$row['nickname'] : '', ENT_QUOTES);
+            $paihang = isset($row['paihang']) ? intval($row['paihang']) : 0;
+            $ret .= "<tr ><td style=\"border:solid 1px black;\">{$j}</td><td style=\"border:solid 1px black;\">{$name}</td><td style=\"border:solid 1px black;\">{$nickname}</td><td style=\"border:solid 1px black;\">{$paihang}</td></tr>";
         }
         $ret .= "</tbody></table>";
     }

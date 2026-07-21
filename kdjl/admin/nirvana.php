@@ -2,10 +2,11 @@
 require_once(dirname(__FILE__) . '/_bootstrap.php');
 require_once(dirname(__FILE__) . '/_layout.php');
 
-$a = isset($_GET['a']) ? trim($_GET['a']) : '';
-$b = isset($_GET['b']) ? trim($_GET['b']) : '';
-$c = isset($_GET['c']) ? trim($_GET['c']) : '';
-$searched = isset($_GET['search']);
+$a = trim(adminGet('a'));
+$b = trim(adminGet('b'));
+$c = trim(adminGet('c'));
+$godOnly = isset($_GET['god']);
+$searched = isset($_GET['search']) || $godOnly;
 $rows = array();
 if ($searched)
 {
@@ -15,6 +16,7 @@ if ($searched)
 		 LEFT JOIN bb b ON b.id=z.bid
 		 LEFT JOIN bb c ON c.id=z.mid
 			 WHERE 1";
+	if ($godOnly) $sql .= ' AND c.wx=6 AND z.mid<>z.aid';
 	$sql .= adminPetMatchSql($adminDb, 'z.aid', 'a.name', $a);
 	$sql .= adminPetMatchSql($adminDb, 'z.bid', 'b.name', $b);
 	$sql .= adminPetMatchSql($adminDb, 'z.mid', 'c.name', $c);
@@ -30,13 +32,14 @@ adminPageStart('涅槃查询', 'nirvana');
 		<form class="search-form three" method="get">
 			<div class="field"><label>A 主宠</label><input class="input" name="a" value="<?php echo adminH($a); ?>" placeholder="id 或宠物名" /></div>
 			<div class="field"><label>B 副宠</label><input class="input" name="b" value="<?php echo adminH($b); ?>" placeholder="id 或宠物名" /></div>
-			<div class="field"><label>C 产物</label><input class="input" name="c" value="<?php echo adminH($c); ?>" placeholder="id 或宠物名" /></div>
+			<div class="field"><label>C 目标宠物</label><input class="input" name="c" value="<?php echo adminH($c); ?>" placeholder="id 或宠物名" /></div>
 			<button class="btn primary" type="submit" name="search" value="1">开始查询</button>
+			<a class="btn secondary" href="nirvana.php?god=1">列出神系目标路线</a>
 		</form>
 	</section>
 	<?php if ($searched) { ?><section class="band">
 		<?php if (count($rows) === 0) { ?><div class="empty">没有满足条件的涅槃公式</div><?php } else { ?>
-		<div class="table-wrap"><table><thead><tr><th>公式 ID</th><th>A 主宠</th><th>+</th><th>B 副宠</th><th>=</th><th>C 产物</th></tr></thead><tbody>
+		<div class="table-wrap"><table><thead><tr><th>公式 ID</th><th>A 主宠</th><th>+</th><th>B 副宠</th><th>=</th><th>C 目标宠物</th></tr></thead><tbody>
 		<?php foreach ($rows as $row) { ?><tr><td class="code"><?php echo intval($row['formula_id']); ?></td><td><?php adminPetCell($row['aid'], $row['a_name']); ?></td><td>+</td><td><?php adminPetCell($row['bid'], $row['b_name']); ?></td><td>=</td><td><?php adminPetCell($row['mid'], $row['c_name']); ?></td></tr><?php } ?>
 		</tbody></table></div>
 		<?php } ?>

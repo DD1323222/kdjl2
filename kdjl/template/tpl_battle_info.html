@@ -163,7 +163,7 @@ function BattleStart(obj)
 
 function BattleGo()
 {
-	if (bcode=='')
+	if (!bcode)
 	{	window.parent.Alert('请选择一个适合您等级的战场!');
 		return false;
 	}

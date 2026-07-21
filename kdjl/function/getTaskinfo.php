@@ -7,33 +7,40 @@ require_once('../config/config.game.php');
 error_reporting(7);
 secStart($_pm['mem']);
 $m = $_pm['mem'];
-$n = intval($_REQUEST['n']);
+$n = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
 if ($n<1) die('');
 
-$user = $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+$user = $_pm['user']->getUserById($uid);
+if(!is_array($user)) $user = array('task' => 0);
 
-$tid = intval($_REQUEST['t']);
+$tid = (isset($_REQUEST['t']) && !is_array($_REQUEST['t'])) ? intval($_REQUEST['t']) : 0;
 if ($tid>0) $user['task'] = $tid;
-$op = intval($_REQUEST['op']);
+$op = (isset($_REQUEST['op']) && !is_array($_REQUEST['op'])) ? intval($_REQUEST['op']) : 0;
+$ifshow = '';
 $str = taskdiv($tid,$n,$op,$ifshow);
 
 
 
 /* added by Zheng.Ping */
 // handling for paihang
-$battletimearr = unserialize($_pm['mem']->get(MEM_TIME_KEY));
+$battletimearr = $_pm['mem']->get(MEM_TIME_KEY);
+if(!is_array($battletimearr)) $battletimearr = kdjlSafeMemValue($battletimearr, array());
+if(!is_array($battletimearr)) $battletimearr = array();
 foreach($battletimearr as $v)
 {
-	if($v['starttime'] == "paihang")
+	if(isset($v['starttime']) && $v['starttime'] == "paihang" && isset($v['titles']))
 	{
 		define('SORT_PAIHANG_TIME', $v['titles']);
 	}
 }
-if (!defined(SORT_PAIHANG_TIME)) {
+if (!defined('SORT_PAIHANG_TIME')) {
 	define("SORT_PAIHANG_TIME","2022-06-01 10:00:00");
 }
 define('MEM_SORT_PAIHANG', 'sort_paihang');
-$sorted_paihang = unserialize($_pm['mem']->get(MEM_SORT_PAIHANG));
+$sorted_paihang = $_pm['mem']->get(MEM_SORT_PAIHANG);
+if(!is_array($sorted_paihang) && is_string($sorted_paihang)) $sorted_paihang = kdjlSafeMemValue($sorted_paihang, false);
 if (!$sorted_paihang) {
     $now = mktime();
     $sort_time = strtotime(SORT_PAIHANG_TIME);
@@ -43,7 +50,7 @@ if (!$sorted_paihang) {
             $_pm['mem']->set(array('k' => MEM_SORT_PAIHANG, 'v' => true));
         }
     }
-} 
+}
 
 function sort_player_paihang()
 {
@@ -88,9 +95,9 @@ function sort_player_paihang()
             }
         }
 
-        $paihang_level = array(1 => $first_paihang, 
-            2 => $second_paihang, 
-            3 => $third_paihang, 
+        $paihang_level = array(1 => $first_paihang,
+            2 => $second_paihang,
+            3 => $third_paihang,
             4 => $fourth_paihang);
         foreach ($paihang_level as $k => $v) {
             if (!empty($v)) {
@@ -135,7 +142,7 @@ function is_task_need_paihang($task_completion)
     $ret = false;
     $condition = 'paihang';
 
-    if (is_string($task_completion) 
+    if (is_string($task_completion)
         && strpos($task_completion, $condition) !== false) {
         $ret = true;
     }
@@ -172,7 +179,7 @@ function get_paihang_level($task_completion)
 }
 
 /**
- * get the completion information about the task 
+ * get the completion information about the task
  *
  * @param array $taks_list
  * @param integer $task_id

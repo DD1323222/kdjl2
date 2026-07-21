@@ -8,19 +8,36 @@
  * @Note: none
  */
 session_start();
+require_once('../config/config.game.php');
+$sessionUsername = isset($_SESSION['username']) ? $_SESSION['username'] : '';
+$sessionLicenseId = isset($_SESSION['licenseid']) ? $_SESSION['licenseid'] : '';
 $a = '';
-$team = new team($_SESSION['team_id'], $a);
+$sessionTeamId = isset($_SESSION['team_id']) ? $_SESSION['team_id'] : 0;
+$team = new team($sessionTeamId, $a);
 $team->checkMyTeam();
+$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $httpHost)) $httpHost = '';
+$hostWithoutPort = strtolower(preg_replace('/:[0-9]{1,5}$/D', '', $httpHost));
 
 //----------------------------------------------------------
-//loginGate.php和serverGate.php,fcminput.php;里面都有下面这段,保持一致
+// Shared FCM partner check.
 $fcmflag = false;
-$partnerDomain = strtolower(substr($_SERVER['HTTP_HOST'], strpos($_SERVER['HTTP_HOST'], '.') + 1));
+$partnerDomain = '';
+foreach(array('webgame.com.cn', 'qq496.cn', 'my4399.com') as $knownDomain)
+{
+	$domainSuffix = '.'.$knownDomain;
+	if($hostWithoutPort === $knownDomain ||
+		(strlen($hostWithoutPort) > strlen($domainSuffix) && substr($hostWithoutPort, -strlen($domainSuffix)) === $domainSuffix))
+	{
+		$partnerDomain = $knownDomain;
+		break;
+	}
+}
 if (
 	(
 		$partnerDomain == 'webgame.com.cn'
-		&& strpos($_SERVER['HTTP_HOST'], 'pmbd' === false)
-		&& !preg_match("/pm51\d/", $_SERVER['HTTP_HOST'])
+		&& strpos($hostWithoutPort, 'pmbd') === false
+		&& !preg_match("/pm51\d/", $hostWithoutPort)
 	)
 	||
 	$partnerDomain == 'qq496.cn' ||
@@ -42,13 +59,17 @@ switch ($partnerDomain) {
 }
 //----------------------------------------------------------
 
-if ($fcmflag) {//防沉迷
-	$key = '*)(OJI(*77786*(**(8';
 
-	//$urlFCMGame = 'http://61.160.192.12/' . $fcmSysPath . 'query.php?username=' . $_SESSION['username'] . '&host=' . $_SERVER['HTTP_HOST'] . '&sn=' . md5($_SERVER['HTTP_HOST'] . $_SESSION['username'] . date("Ymd") . $key);
-	$urlFCMGame = 'http://47.121.183.254/' . $fcmSysPath . 'query.php?username=' . $_SESSION['username'] . '&host=' . $_SERVER['HTTP_HOST'] . '&sn=' . md5($_SERVER['HTTP_HOST'] . $_SESSION['username'] . date("Ymd") . $key);
-	$rs = curlSN($urlFCMGame);
-	if (strpos($rs, 'ok') === false) {
+if ($fcmflag) {
+	$fcmBaseUrl = kdjlConfiguredServiceBaseUrl('KDJL_FCM_BASE_URL');
+	if($fcmBaseUrl === '')
+	{
+		die('<script type="text/javascript">alert("防沉迷认证服务暂时不可用，请稍后再试。");</script>');
+	}
+	$key = '*)(OJI(*77786*(**(8';
+	$urlFCMGame = $fcmBaseUrl . '/' . $fcmSysPath . 'query.php?username=' . rawurlencode($sessionUsername) . '&host=' . rawurlencode($httpHost) . '&sn=' . md5($httpHost . $sessionUsername . date('Ymd') . $key);
+	$rs = loginFcmRequest($urlFCMGame);
+	if (!is_string($rs) || strncmp(trim($rs), 'ok', 2) !== 0) {
 
 		unset($_SESSION['id']);
 		unset($_SESSION['username']);
@@ -56,32 +77,39 @@ if ($fcmflag) {//防沉迷
 	}
 }
 $LERROR = 0;
-require_once('../config/config.game.php');
 
-$user = $_SESSION['username'];
+$user = $_pm['mysql']->escape($sessionUsername);
 
-$rs = $_pm['mysql']->getOneRecord("SELECT * 
-						  FROM player 
-						 where name='{$user}' 
+$rs = $_pm['mysql']->getOneRecord("SELECT *
+						  FROM player
+						 where name='{$user}'
 						 limit 0,1");
-if (intval($rs['secid']) > 0) {
+if (!is_array($rs)) {
+	$LERROR = 1;
+}
+else if (intval($rs['secid']) > 0) {
 	if ($rs['secid'] == 40) {
 		die('<script type="text/javascript">alert("您的帐号已经转区！");</script>');
 	} else {
 		die('<script type="text/javascript">alert("您的帐号已被冻结,请到论坛反馈！");</script>');
 	}
 }
-
-$trueid = $rs['id'];
-
-if (!is_array($rs)) {
-	$LERROR = 1;
+else
+{
+	$chatLockTime = isset($rs['password']) ? intval($rs['password']) : 0;
+	if($chatLockTime > 0 && $chatLockTime <= time())
+	{
+		$_pm['mysql']->query("UPDATE player SET password=0 WHERE id=".intval($rs['id'])." AND password={$chatLockTime}");
+		$rs['password'] = 0;
+	}
 }
-else {
+
+$trueid = isset($rs['id']) ? $rs['id'] : 0;
+
+if (!$LERROR) {
 	check($rs['id']);
 	// 双倍经验时间自动开启
 	if ($rs['maxdblexptime'] > 0 && $rs['dblexpflag'] > 1) {
-		$rs['maxdblexptime'] = $rs['maxdblexptime'] + $rs['dblstime'] - $rs['lastvtime'];
 		$rs['dblstime'] = time();
 		$rs['maxdblexptime'] = $rs['maxdblexptime'] < 1 ? 0 : $rs['maxdblexptime'];
 		if ($rs['maxdblexptime'] == 0) $rs['dblexpflag'] = 0;
@@ -89,24 +117,26 @@ else {
 
 
 	#########################根据平台不同得到用户元宝############################
-	$www = explode('.', $_SERVER['HTTP_HOST']);
+	$www = explode('.', $httpHost);
 	$website = '';
 	for ($i = 1; $i < count($www); $i++) {
 		$website .= $www[$i] . '.';
 	}
 	if ($website == 'webgame.com.cn.') {
-		if (!preg_match('/pm51\d/is', $_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'pmbd') === false) {
+		if (!preg_match('/pm51\d/is', $httpHost) && strpos($httpHost, 'pmbd') === false) {
 			/********************************************
 			 * 获得用户的元宝数，并更新到内存中。
 			 */
 			######平台加密，解密接口函数包
 			require_once("../login/lib/passport.php");
 
+
 			######平台接口通用接口函数包
 			require_once("../login/lib/nusoap.php");
 
+
 			// 获取玩家剩余元宝。
-			$coinXml = queryCoin($_SESSION['username'], $_SESSION['licenseid']);
+			$coinXml = queryCoin($sessionUsername, $sessionLicenseId);
 			//echo $coinXml;exit();
 			$xmlarr = explode('Response10/Response', str_replace(array("<", ">"), "", $coinXml));
 			$nowCoin = 0;
@@ -139,7 +169,8 @@ else {
 	// Map data start.
 	if ($_pm['mem']->get($rs['id']) === false) {
 		if ($_pm['mem']->get($useritem) !== false) {
-			$existsUser = unserialize($_pm['mem']->get($useritem));
+			$existsUser = kdjlSafeMemValue($_pm['mem']->get($useritem), array());
+			if (!is_array($existsUser)) $existsUser = array();
 			if (array_search($rs['id'], $existsUser) === false) {
 				array_push($existsUser, $rs['id']);
 				$_pm['mem']->set(array('k' => $useritem, 'v' => $existsUser));
@@ -151,7 +182,8 @@ else {
 	} else // Fix userlist id.
 	{
 		if ($_pm['mem']->get($useritem) !== false) {
-			$existsUser = unserialize($_pm['mem']->get($useritem));
+			$existsUser = kdjlSafeMemValue($_pm['mem']->get($useritem), array());
+			if (!is_array($existsUser)) $existsUser = array();
 
 			if (array_search($rs['id'], $existsUser) === false) {
 				array_push($existsUser, $rs['id']);
@@ -166,18 +198,21 @@ else {
 	###########################################################
 	// Add Map key of chat.
 	$key = $rs['id'] . "chat";
-	if ($_REQUEST[PHPSESSID] == '' || empty($_REQUEST[PHPSESSID])) {
-		$_REQUEST[PHPSESSID] = session_id();
+	$requestSessionId = (isset($_REQUEST['PHPSESSID']) && !is_array($_REQUEST['PHPSESSID'])) ? $_REQUEST['PHPSESSID'] : '';
+	if($requestSessionId !== '' && !preg_match('/^[A-Za-z0-9,-]{1,128}$/', $requestSessionId)) $requestSessionId = '';
+	if ($requestSessionId == '') {
+		$requestSessionId = session_id();
+		$_REQUEST['PHPSESSID'] = $requestSessionId;
 	}
 
 
-	$crc = $_REQUEST[PHPSESSID];
+	$crc = crc32($requestSessionId);
 	if ($_pm['mem']->get($key) === false) {
 		$_pm['mem']->add(array('k' => $key, 'v' => $crc));
 	} else {
-		$oldcrc = unserialize($_pm['mem']->get($key));
+		$oldcrc = kdjlSafeMemValue($_pm['mem']->get($key), '');
 		$_pm['mem']->set(array('k' => $key, 'v' => $crc));
-		$_pm['mem']->del($oldcrc);
+		if ($oldcrc !== '' && (is_string($oldcrc) || is_numeric($oldcrc))) $_pm['mem']->del($oldcrc);
 	}
 
 	if ($_pm['mem']->get($crc) === false) {
@@ -189,9 +224,10 @@ else {
 	$_SESSION['id'] = $rs['id'];
 	$_SESSION['nickname'] = $rs['nickname'];
 	$_SESSION['lastvtime'] = $rs['lastvtime'];
-	$_SESSION['password'] = $rs['password'];//告诉socket玩家是否被禁言！
+	$_SESSION['password'] = intval($rs['password']);//告诉socket玩家是否被禁言！
+	$_SESSION['lock_time'] = $_SESSION['password'];
+	$_pm['mem']->set(array('k'=>'chat_lock_'.intval($rs['id']),'v'=>$_SESSION['password']));
 	$_SESSION['vip'] = false;//告诉socket玩家是否是Vip！ ---> 下面查询是否有vip卡
-
 
 	$arr = array("1427", "1474", "1475", "1476", "1477", "1478", "1479", "1480", "1481", "1482", "1483", "1484", "1485");
 	$arrayid = date('n');
@@ -202,6 +238,8 @@ else {
 		$arraycode = array("1427", $arr[$arrayidjian], $arr[$arrayid]);
 	}
 	$u_bags = getUserBagByIds($_SESSION['id'], $arraycode, $_pm['mysql']); /* 口袋精灵VIP卡:1427 */
+	if(!is_array($u_bags)) $u_bags = array();
+
 
 	// $u_bags=getUserBagById($_SESSION['id'], 1427, $_pm['mysql']); /* 口袋精灵VIP卡:1427 */
 	foreach ($u_bags as $v) {
@@ -210,34 +248,58 @@ else {
 			break;
 		}
 	}
+	if(!$_pm['mysql']->query("INSERT INTO player_ext(uid,bbshow) VALUES({$_SESSION['id']},5) ON DUPLICATE KEY UPDATE uid=uid"))
+	{
+		$_pm['mem']->memClose();
+		die('初始化玩家扩展数据失败！');
+	}
 	$sql = "select merge,now_Achievement_title from player_ext where uid = {$_SESSION['id']}";
 	$arr_merge = $_pm['mysql']->getOneRecord($sql);
-	if ($arr_merge['merge'] > 0) {
+	if(!is_array($arr_merge)) $arr_merge = array();
+	if (isset($arr_merge['merge']) && $arr_merge['merge'] > 0) {
 		$_SESSION['vip'] = 3;
 		//$truename = $truename . '<img src="../images/merge.gif" />';
 	}
 	if (isset($arr_merge['now_Achievement_title']) && !empty($arr_merge['now_Achievement_title'])) {
 		$_SESSION['now_Achievement_title'] = $arr_merge['now_Achievement_title'];
-		$sql = " SELECT F_title_Chinese FROM t_card_to_title WHERE F_title_name = '" . $arr_merge['now_Achievement_title'] . "'";
+		$titleNameSql = $_pm['mysql']->escape($arr_merge['now_Achievement_title']);
+		$sql = " SELECT F_title_Chinese FROM T_Card_to_Title WHERE F_title_name = '" . $titleNameSql . "'";
 		$result_title_chinese = $_pm['mysql']->getOneRecord($sql);
-
-		$_SESSION['now_Achievement_title_chinese'] = $result_title_chinese['F_title_Chinese'];
+		if(is_array($result_title_chinese) && isset($result_title_chinese['F_title_Chinese']))
+		{
+			$_SESSION['now_Achievement_title_chinese'] = $result_title_chinese['F_title_Chinese'];
+		}
+		else
+		{
+			$_SESSION['now_Achievement_title_chinese'] = '';
+		}
 	} else {
 		unset($_SESSION['now_Achievement_title']);
 		unset($_SESSION['now_Achievement_title_chinese']);
 	}
 	del_bag_expire();
-	$_pm['mysql']->query("UPDATE player
-				  SET lastvtime=" . time() . ",
+	$loginTime = time();
+	$playerLoginSaved = $_pm['mysql']->query("UPDATE player
+				  SET lastvtime=" . $loginTime . ",
 					  dblstime=" . $rs['dblstime'] . ",
 					  maxdblexptime=" . $rs['maxdblexptime'] . ",
 					  yb='{$rs['yb']}'
 				WHERE id={$rs['id']}
 			 ");
 	$_pm['mysql']->query("UPDATE player_ext
-				  SET last_logintime=" . time() . "
+				  SET last_logintime=" . $loginTime . "
 				WHERE uid={$rs['id']}
 			 ");
+	if($playerLoginSaved)
+	{
+		$rs['lastvtime'] = $loginTime;
+		$_SESSION['lastvtime'] = $loginTime;
+		$_pm['mem']->set(array('k' => intval($rs['id']), 'v' => $rs));
+	}
+	else
+	{
+		$_pm['mem']->del(intval($rs['id']));
+	}
 //	$_pm['mem']->set(array('k'=>MEM_SYSWORD_KEY,
 //				  'v'=>'欢迎'.$rs['sex'].' '.$rs['nickname'].' 回到口袋精灵世界！'));
 	##########################################################
@@ -247,6 +309,7 @@ else {
     $_pm['mem']->del(MEM_USERBB_KEY);
     $_pm['mem']->del(MEM_USERSK_KEY);
     $_pm['mem']->del(MEM_USERBAG_KEY);
+
 
     // 缓存用户数据开始
     $_pm['user']->updateMemUser($rs['id']);
@@ -264,8 +327,8 @@ function check($id)
 {
 	global $_pm;
 	$nowTime = time();
-	$sql = "SELECT password 
-			FROM player 
+	$sql = "SELECT password
+			FROM player
 			WHERE id = {$id}";
 	$row = $_pm['mysql']->getOneRecord($sql);
 	if (!empty($row['password'])) {
@@ -290,7 +353,7 @@ function getCoin()
 	else return intval($ret);
 }
 
-function http_get_result($url, $time_out = "10")
+function http_get_result($url, $time_out = "3")
 {
 	$urlarr = parse_url($url);
 	$errno = "";
@@ -305,8 +368,9 @@ function http_get_result($url, $time_out = "10")
 	}
 	$fp = @fsockopen($transports . $urlarr['host'], $urlarr['port'], $errno, $errstr, $time_out);
 	if (!$fp) {
-		die("ERROR: $errno - $errstr<br />\n");
+		die("登录验证暂时不可用，请稍后再试。");
 	} else {
+		stream_set_timeout($fp, intval($time_out));
 		$out = "GET " . $urlarr["path"] . '?' . $urlarr["query"] . " HTTP/1.1\r\n";
 		$out .= "Accept: */*\r\n";
 		$out .= "Accept-Language: zh-cn\r\n";
@@ -318,11 +382,15 @@ function http_get_result($url, $time_out = "10")
 
 		fwrite($fp, $out);
 
+		$info = array();
 		while (!feof($fp)) {
-			$info[] = @fgets($fp, 4096);
+			$line = @fgets($fp, 4096);
+			if($line === false) break;
+			$info[] = $line;
 		}
 
 		fclose($fp);
+
 
 		//去除返回的HTTP文件头
 		$pos = -1;
@@ -380,7 +448,7 @@ function getUserBagByIds($id, $pidarr, &$mysql)
 									  p.propslock as propslock,
 									  p.prestige as prestige
 								 FROM userbag as b,props as p
-								WHERE 
+								WHERE
 								b.pid={$v} and
 								p.id = b.pid and b.uid={$id} and b.sums>0
 								ORDER BY b.id DESC limit 1");
@@ -388,31 +456,26 @@ function getUserBagByIds($id, $pidarr, &$mysql)
 	return $rs;
 }
 
-function curlSN($url, $port = 80)
+function loginFcmRequest($url)
 {
-	$post = 1;
-	$returntransfer = 1;
-	$header = 0;
-	$nobody = 0;
-	$followlocation = 1;
-
+	if(!function_exists('curl_init')) return false;
 	$ch = curl_init();
-	$options = array(CURLOPT_URL => $url,
-		CURLOPT_HEADER => $header,
-		CURLOPT_NOBODY => $nobody,
-		CURLOPT_PORT => $port,
-		CURLOPT_POST => $post,
-		CURLOPT_POSTFIELDS => $request,
-		CURLOPT_RETURNTRANSFER => $returntransfer,
-		CURLOPT_FOLLOWLOCATION => $followlocation,
-		CURLOPT_COOKIEJAR => $cookie_jar,
-		CURLOPT_COOKIEFILE => $cookie_jar,
-		CURLOPT_REFERER => $url
+	$options = array(
+		CURLOPT_URL => $url,
+		CURLOPT_POST => true,
+		CURLOPT_POSTFIELDS => '',
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_FOLLOWLOCATION => false,
+		CURLOPT_CONNECTTIMEOUT => 2,
+		CURLOPT_TIMEOUT => 3,
+		CURLOPT_SSL_VERIFYPEER => true,
+		CURLOPT_SSL_VERIFYHOST => 2
 	);
 	curl_setopt_array($ch, $options);
 	$result = curl_exec($ch);
+	$status = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
 	curl_close($ch);
-	return $result;
+	return ($result !== false && $status >= 200 && $status < 300) ? $result : false;
 }
 
 ?>

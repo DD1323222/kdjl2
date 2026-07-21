@@ -6,20 +6,29 @@
 // @Load template.
 //###########################
 
-//自动领取奖励
+//鑷姩棰嗗彇濂栧姳
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
-if(isset($_SESSION['team_id']))
+$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+if($teamId > 0)
 {
-	header('location:Team_Mod.php?n='.$_SESSION['team_inmap']);
+	$teamMapId = isset($_SESSION['team_inmap']) ? intval($_SESSION['team_inmap']) : 0;
+	header('Location: Team_Mod.php?n='.$teamMapId);
+	exit;
+}
+else
+{
+	unset($_SESSION['team_id'], $_SESSION['team_inmap'], $_SESSION['team_state']);
 }
 
 $welcome = memContent2Arr("db_welcome",'code');
 
-$word = $welcome['welcome']['contents'];
-$img = $welcome['welimg']['contents'];
-$href = $welcome['href']['contents'];
-$content = $welcome['welcontent']['contents'];
+$word = (is_array($welcome) && isset($welcome['welcome']['contents'])) ? $welcome['welcome']['contents'] : '';
+$img = (is_array($welcome) && isset($welcome['welimg']['contents'])) ? $welcome['welimg']['contents'] : '';
+$href = (is_array($welcome) && isset($welcome['href']['contents'])) ? $welcome['href']['contents'] : '';
+$content = (is_array($welcome) && isset($welcome['welcontent']['contents'])) ? $welcome['welcontent']['contents'] : '';
+$a = '';
+$imgs = '';
 
 $user		= $_pm['user']->getUserById($_SESSION['id']);
 
@@ -33,10 +42,11 @@ else $autosum = 0;
 $_pm['mem']->memClose();
 $_game['template'] = '../template/';
 $tn = $_game['template'] . 'tpl_welcome.html';
+$cet = '';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#welcomeword#',
 				 '#autosum#',
 				 '#welcome#',

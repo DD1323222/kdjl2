@@ -7,7 +7,7 @@ body {color:#693600; background:none}
 .ipet img {max-height:180px; _height:expression(this.width>180?180:true)}
 .tpet {position:absolute; left:30px; top:224px; width:240px}
 .tpet p {position:relative; float:left; width:67px; height:84px; margin-right:13px; background:url(../new_images/index/nopet.jpg); cursor:pointer}
-.tpet p em {position:absolute; padding:8px; line-height:14px; color:#fff}
+.tpet p em {position:absolute; left:5px; top:5px; z-index:1; line-height:14px; color:#fff}
 .pet_r {position:relative; width:497px; height:319px; background:url(../new_images/index/pet_bg_r.jpg)}
 .pettab {margin:2px 0 0 28px; height:27px;}
 .pettab li {float:left; width:87px; height:27px; margin-right:1px; cursor:pointer}
@@ -43,7 +43,8 @@ body {color:#693600; background:none}
 .pet_info li.i11 {left:200px; top:5px}
 .pet_info h2 {position:absolute; left:46px; top:47px; width:232px; height:144px}
 .pet_c1_l h2 {margin-top:10px}
-.pet_c1_l h2 input,.pet_c3_l h3 input.btn,.pet_c3_r input {width:39px; height:17px; margin:0 10px; border:none; background:url(../new_images/index/pet_c1_l_btn.gif); cursor:pointer}
+.pet_c1_l .pet_info h2 {margin-top:0; overflow:hidden; background-size:contain !important}
+.pet_c1_l h2 input,.pet_c3_l h3 input.btn,.pet_c3_r input {width:39px; height:17px; margin:0 10px; padding:0; border:none; background:url(../new_images/index/pet_c1_l_btn.gif); font-family:SimSun,"宋体"; font-size:12px; font-weight:bold; line-height:17px; letter-spacing:0; text-align:center; color:#772200; cursor:pointer}
 .pet_c1_r,.pet_c2_r,.pet_c3_r {width:124px; line-height:24px; padding:5px 0 5px 10px; background:url(../new_images/index/pet_c1_r.jpg) left center no-repeat}
 .pet_c2_r {line-height:20px}
 .pet_c2_l,.pet_c3_l {width:363px; background:url(../new_images/index/pet_2_bg.jpg) center top no-repeat}
@@ -63,7 +64,7 @@ body {color:#693600; background:none}
 .self_l {position:relative; width:290px; height:319px; background:url(../new_images/index/myinfobgleft.jpg)}
 .self_name{ padding:23px 0 0 32px;}
 .self_role{padding:8px 25px 0 0; text-align:center; height:280px;}
-.self_role img {max-heght:246px; _height:expression(this.width>246?246:true)}
+.self_role img {max-height:246px; _height:expression(this.width>246?246:true)}
 .self_r {position:relative; width:498px; height:319px; background:url(../new_images/index/myinfobgright.jpg)}
 .ms_box{ background:url(../new_images/index/ms_task_box.jpg) no-repeat; width:225px; height:258px; padding:1px; margin:5px 0 0 15px; float:left;}
 .ms_box h2{ line-height:30px; padding:3px 0 0 10px; font-weight:bold;}
@@ -74,7 +75,7 @@ body {color:#693600; background:none}
 .mf_box h2{ line-height:26px; padding:1px 0 0 6px;}
 .mf_box_inp{width:225px; padding-top:10px; text-align:center; line-height:26px;}
 .mf_box_inp input.inp{ width:156px; height:17px; border:1px solid #dfb876; padding-top:3px;}
-.mf_box_inp input.btn{ background:url(../new_images/index/ms_f_btn.jpg) no-repeat; width:39px; height:17px; border:0; cursor:pointer; color:#772200}
+.mf_box_inp input.btn{ background:url(../new_images/index/ms_f_btn.jpg) no-repeat; width:39px; height:17px; padding:0; border:0; font-family:SimSun,"宋体"; font-size:12px; font-weight:bold; line-height:17px; letter-spacing:0; text-align:center; cursor:pointer; color:#772200}
 .mi_box{ width:450px; height:260px;padding-left:20px;}
 .mi_box ul.top li{ line-height:22px; color:#693600; width:225px; float:left;}
 .mi_box ul.bot {padding-top:10px}

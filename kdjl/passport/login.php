@@ -3,7 +3,7 @@
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"  />
-	<meta name="viewport" content="user-scalable=no, width=device-width,  initial-scale=0.3/" /> 
+	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=0.3" />
 	
 	<title>口袋精灵2</title>
 	
@@ -113,11 +113,11 @@ window.location = '../login/reg1.php';
 			<legend>Log in</legend>
 			
 			<label for="username"><!--用户名--></label>
-			<input type="text" id="username" onclick="chose(this)" style=" position:absolute; top:-60px; left:120px" name="username" value="请输入用户名"/>
+			<input type="text" id="username" onfocus="chose(this)" style=" position:absolute; top:-60px; left:120px" name="username" value="请输入用户名"/>
 			<div class="clear"></div>
 			
 			<label for="password"><!--密码--></label>
-			<input type="text" id="password1" onfocus="chose(this)"  value="请输入密码" style=" position:absolute; top:-10px; left:120px" name="password"/>
+			<input type="text" id="password1" onfocus="chose(this)" value="请输入密码" style="position:absolute; top:-10px; left:120px"/>
 			<input type="password" id="password"  value="" style="display:none;position:absolute; top:-10px; left:120px" name="password" onkeydown="enterLogin(event)"/>
 			<div class="clear"></div>
 			<br />
@@ -144,9 +144,15 @@ function enterLogin(e){
 function checkUser()
 	{
 		var userName = document.getElementById("username").value;
-		if(userName=="")
+		var password = document.getElementById("password").value;
+		if(userName=="" || userName=="请输入用户名")
 		{
 			alert("用户名不能为空");
+			return false;
+		}
+		if(password=="")
+		{
+			alert("密码不能为空");
 			return false;
 		}
 
@@ -156,8 +162,11 @@ function checkUser()
 
 	function chose(obj)
 	{
-		obj.value = '';
-		obj.onfocus = '';
+		if(obj.id == 'username')
+		{
+			if(obj.value == '请输入用户名') obj.value = '';
+			return;
+		}
 		if(obj.id == 'password1')
 		{
 			//obj.style.display = 'none';
@@ -334,4 +343,3 @@ function checkUser()
 </body>
 
 </html>
-

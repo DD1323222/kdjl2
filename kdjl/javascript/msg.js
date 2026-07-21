@@ -10,7 +10,7 @@ function messageRecive(msg){
 	
 	//hn,n,x,y,d,s
 	this.msgSplit=function(){
-		if(this.svrMsg=='' || typeof this.svrMsg=='undefined') return;
+		if(this.svrMsg == null || this.svrMsg === '') return;
 		if(this.svrMsg.toString().indexOf('#loudspeak#')>0){
 			var lounds = this.svrMsg.toString().split('#loudspeak#');
 			this.svrMsg = lounds[0];
@@ -24,14 +24,14 @@ function messageRecive(msg){
 		}
 		var ar = this.svrMsg.toString().split('#msg#');
 		//save chat msg.
-		if(ar[1]!='' && ar[1]!='undefined') this.chat.msgStr=ar[1];
+		if(ar.length > 1 && typeof ar[1] != 'undefined' && ar[1] != '') this.chat.msgStr=ar[1];
 		this.chat.displayMsg();
-		
+
 		//#team##word# ==> ar[0];
-		var tm=ar[0].split('#word#');
-		if(tm[1]!='' && tm[1]!='undefined') this.displayPlayer(tm[1]);
+		var tm=(ar[0] || '').split('#word#');
+		if(tm.length > 1 && typeof tm[1] != 'undefined' && tm[1] != '') this.displayPlayer(tm[1]);
 		var lt=tm[0].split('#team#');
-		if(lt[0]!=0) {
+		if(lt.length > 1 && lt[0]!=0) {
 			var MSG1 = new CLASS_GAME_MESSAGE("Team",200,120,500,"口袋精灵游戏信息提示：",lt[0]+"邀请您组队!",
 				"您已经加入到队伍中！"); 
 			MSG1.rect(null,null,null,screen.height-50); 
@@ -42,10 +42,11 @@ function messageRecive(msg){
 			addPlayer();
 
 		} // team
-		if(lt[1]!='' && lt[1]!='undefined') adwords(lt[1]);	
+		if(lt.length > 1 && typeof lt[1] != 'undefined' && lt[1] != '') adwords(lt[1]);
 	}
 	
 	this.displayPlayer=function(msg){
+		if(typeof msg != 'string') return;
 		if(msg == 1)
 		{
 			var opt = {
@@ -173,7 +174,7 @@ function Chat(){
 		try{
 			sendToActionScript(newSndMsg);
 		}catch(e){}
-		var ajax=new Ajax.Request('./function/chatGate.php?msg='+newSndMsg.replace('#!',''), opt);
+		var ajax=new Ajax.Request('./function/chatGate.php?msg='+encodeURIComponent(newSndMsg.replace('#!','')), opt);
 		$('cmsg').value='';
 		//$('buttons').value = '发送中…';
 		//$('buttons').disabled= true;
@@ -182,7 +183,8 @@ function Chat(){
 	
 	
 	this.displayMsg=function(){
-		if(this.msgStr.length==this.oldmsg.length) return;
+		if(typeof this.msgStr != 'string' || !$('chatDiv')) return;
+		if(this.msgStr==this.oldmsg) return;
 		
 		
 	
@@ -194,19 +196,26 @@ function Chat(){
 	}
 }
 
+var swfmsgTimer = null;
 function removech(){
-	//setTimeout("document.body.removeChild('"+divid+"')",10000);
-	document.body.removeChild($('swfmsgs'));
-	//$('swfmsgs').style.display="none";
+	if(swfmsgTimer !== null){
+		window.clearTimeout(swfmsgTimer);
+		swfmsgTimer = null;
+	}
+	var swfMessage = $('swfmsgs');
+	if(swfMessage && swfMessage.parentNode) swfMessage.parentNode.removeChild(swfMessage);
 }
 
 function swfshow(swfm){
+			if(typeof swfm != 'string') return;
+			var msgarr = swfm.split('%');
+			if(msgarr.length < 2 || !msgarr[1]) return;
+			removech();
 			var swfmsg = document.createElement('DIV');
 			swfmsg.style.cssText='position:absolute;left:340px;top:392px;z-index:100000;width:320px;height:150px;border:none;background-color:transparent;';
 			swfmsg.align = "center";
 			swfmsg.id='swfmsgs';
 			document.body.appendChild(swfmsg);
-			var msgarr = swfm.split('%');
 			var swftype =  msgarr[1].split('.');
 			var swfstr = '';
 			if(swftype[1] == 'swf'){
@@ -215,7 +224,7 @@ function swfshow(swfm){
 				swfstr=	'<img src="../images/ui/swfmotion/'+msgarr[1]+'"  align="middle"/>';
 			}
 			$('swfmsgs').innerHTML=swfstr;
-			setTimeout("removech()",10000);
+			swfmsgTimer = setTimeout(removech,10000);
 }
 
 // init chat part.
@@ -230,12 +239,15 @@ function addPlayer()
 {
 	var opt = {
     		 method: 'get',
-    		 onSuccess: function(t) {
-				 var curObj=$('gw').src;
+		 onSuccess: function(t) {
+				 var gameFrame=$('gw');
+				 if(!gameFrame) return;
+				 var curObj=gameFrame.src;
 				 if(curObj.toString().indexOf('function/Team_Mod.php')!=-1)
 				 {
-					var dd = document.all('gw').contentWindow.document;
-					dd.getElementById('tmember').innerHTML=t.responseText;
+					var dd = gameFrame.contentWindow.document;
+					var memberList = dd.getElementById('tmember');
+					if(memberList) memberList.innerHTML=t.responseText;
 				 }
 				 else alert('玩家不在对应地图！');
     		 },
@@ -258,7 +270,7 @@ var smi=null;
 
 function recvMsg(msg1)
 {
-	if(msg1 == ''){
+	if(typeof msg1 != 'string' || msg1 == ''){
 		return;
 	}
 	msg1=msg1.replace("http://gimages.webgame.com.cn/poke/","");
@@ -278,10 +290,15 @@ function recvMsg(msg1)
 	}
 	else if(type == 'SM')
 	{
-		document.getElementById('sysstatmsgs').style.display='block';
-		document.getElementById('sysstatmsgs').innerHTML = msg1.substring(3);
+		var statusBox = document.getElementById('sysstatmsgs');
+		if(!statusBox) return;
+		statusBox.style.display='block';
+		statusBox.innerHTML = msg1.substring(3);
 		window.clearTimeout(smi);
-		smi=setTimeout("document.getElementById('sysstatmsgs').style.display='none';",5000);
+		smi=setTimeout(function(){
+			var box = document.getElementById('sysstatmsgs');
+			if(box) box.style.display='none';
+		},5000);
 		return;
 	}
 	
@@ -291,7 +308,7 @@ function recvMsg(msg1)
 	//$('swfdbg').value =msg1+"\r\n"+$('swfdbg').value;
 	
 	//最多显示多少条在这里控制
-	if(len > 50){
+	if(len >= 50){
 		var c = chatDataStr.shift();
 	}
 	chatDataStr.push(msg1);
@@ -335,9 +352,4 @@ function showSpecialMsg(str){
 	talkType = str;
 	showMsg1();
 	$('chatDiv').scrollTop = parseInt($('chatDiv').scrollHeight)<400?400:$('chatDiv').scrollHeight;
-}
-
-
-function loudSpeakVar(msg){
-	loudSpeaksMsg = msg
 }

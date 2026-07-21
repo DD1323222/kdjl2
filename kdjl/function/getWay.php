@@ -1,32 +1,27 @@
 <?php
 /**
-*@Version: %version%
-*@Copyright: %copyright%
-*@Author: 谭炜
-
-*@Write Date: 2008.09.24
-*@Update Date: 
-*@Usage:得到用户自动战斗的方式
-*@Note: NO Add magic props.
-  本模块主要功能：
-  1)得到用户自动战斗的方式
-*/
+ * Get/set auto-fight payment mode.
+ */
 require_once('../config/config.game.php');
 
 secStart($_pm['mem']);
-$way = intval($_REQUEST['way']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('0');
+
+$err = 0;
+$way = (isset($_REQUEST['way']) && !is_array($_REQUEST['way'])) ? intval($_REQUEST['way']) : 0;
 if(empty($way))
 {
-	$_SESSION['way'.$_SESSION['id']] = "money";//默认为金币版
+	$_SESSION['way'.$uid] = "money";
 }
 if($way == 1)
 {
-	$_SESSION['way'.$_SESSION['id']] = "money";//金币版
+	$_SESSION['way'.$uid] = "money";
 	$err = 1;
 }
 else if($way == 2)
 {
-	$_SESSION['way'.$_SESSION['id']] = "yb";//元宝版
+	$_SESSION['way'.$uid] = "yb";
 	$err = 2;
 }
 echo $err;

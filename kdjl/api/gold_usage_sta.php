@@ -1,7 +1,7 @@
 <?php
 /*=============================================================================
 #     FileName: gold_usage_sta.php
-#         Desc:  
+#         Desc:
 #       Author: ifree
 #        Email: zhangyongxiang@webgame.com.cn
 #     HomePage: webgame
@@ -23,22 +23,24 @@ define('SECRET_KEY','99754106633f94d350db34d548d6091a');
 function GoldUsageStat($from,$to)
 {
 	global $_pm;
-	$today=null;
-	$yestoday=null;
+	$startTime=null;
+	$endTime=null;
 	$error=null;
 	if($from&&$to){
-		$today=$to;
-		$yestoday=$from;	
-	}else{	
+		$from = intval($from);
+		$to = intval($to);
+		$startTime = min($from, $to);
+		$endTime = max($from, $to);
+	}else{
 		$now = time();
-		$today=mktime(23,59,59,date("m",$now),date("d",$now),date("Y",$now));
-		$yestoday=mktime(0,0,0,date("m",$now),date("d",$now)-1,date("Y",$now));
+		$startTime=mktime(0,0,0,date("m",$now),date("d",$now)-1,date("Y",$now));
+		$endTime=mktime(23,59,59,date("m",$now),date("d",$now),date("Y",$now));
 	}
 	$sql=<<<EOF
-select p.id,p.name,sum(b.yb) yb,sum(b.nums) nums,p.yb price from props p inner join yblog b 
-on b.pname=p.name and p.yb>0 and b.buytime between %d and %d group by p.name 
+select p.id,p.name,sum(b.yb) yb,sum(b.nums) nums,p.yb price from props p inner join yblog b
+on b.pname=p.name and p.yb>0 and b.buytime between %d and %d group by p.id,p.name,p.yb
 EOF;
-	$result=$_pm['mysql']->getRecords(sprintf($sql,$today,$yestoday));
+	$result=$_pm['mysql']->getRecords(sprintf($sql,$startTime,$endTime));
 
 	if(is_array($result)){
 		$records=count($result);
@@ -46,7 +48,7 @@ EOF;
 		$equips=0;
 		foreach ($result as $key=>$value) {
 
-			$result[$key]['name']=urlencode(iconv('gbk','utf-8',$value['name']));
+			$result[$key]['name']=urlencode(kdjlSafeIconv('gbk','utf-8',$value['name']));
 			$nums+=intval($value['yb']);
 			$equips+=intval($value['nums']);
 		}
@@ -57,7 +59,7 @@ EOF;
 				'moneyPayed'=>$nums,
 				'equipBought'=>$equips,
 				'details'=>($result)
-			)	
+			)
 		);
 	}else{
 		return genOutput(
@@ -66,16 +68,18 @@ EOF;
 				'moneyPayed'=>'0',
 				'equipBought'=>'0',
 				'detail'=>'empty set'
-			)	
+			)
 		);
 	}
 
 }
 
 function validate($date,$time,$flag){
-	if($flag==md5($date+$time+SECRET_KEY))
+	$fixedFlag = md5($date.$time.SECRET_KEY);
+	$legacyFlag = md5($date+$time+SECRET_KEY);
+	if($flag == $fixedFlag || $flag == $legacyFlag)
 		return true;
-	else return false;	
+	else return false;
 }
 
 function genOutput($arr)
@@ -85,12 +89,15 @@ function genOutput($arr)
 
 //process request
 
-if(isset($_GET['date'])&&isset($_GET['time'])&&isset($_GET['flag'])){
+if(isset($_GET['date']) && isset($_GET['time']) && isset($_GET['flag']) && !is_array($_GET['date']) && !is_array($_GET['time']) && !is_array($_GET['flag'])){
 	if(validate($_GET['date'],$_GET['time'],$_GET['flag'])){
-		if(isset($_GET['dbg'])&&$_GET['dbg']=='d'){
-			die(GoldUsageStat($_GET['from'],$_GET['to']));			
+		$dbg = (isset($_GET['dbg']) && !is_array($_GET['dbg'])) ? $_GET['dbg'] : '';
+		if($dbg=='d'){
+			$from = (isset($_GET['from']) && !is_array($_GET['from'])) ? $_GET['from'] : null;
+			$to = (isset($_GET['to']) && !is_array($_GET['to'])) ? $_GET['to'] : null;
+			die(GoldUsageStat($from,$to));
 		}else
-			die(GoldUsageStat(null,null));			
+			die(GoldUsageStat(null,null));
 	}else{
 		die(genOutput(array(
 			'Error'=>-2,

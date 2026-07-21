@@ -9,12 +9,35 @@ secStart($_pm['mem']);
 
 function fieldPasswordValue($key)
 {
-	$value = isset($_REQUEST[$key]) ? $_REQUEST[$key] : '';
-	return htmlspecialchars(mysql_escape_string($value));
+	$value = (isset($_REQUEST[$key]) && !is_array($_REQUEST[$key])) ? $_REQUEST[$key] : '';
+	if (function_exists('get_magic_quotes_gpc') && @get_magic_quotes_gpc())
+	{
+		$value = stripslashes($value);
+	}
+	return (string)$value;
 }
 
-$uid = intval($_SESSION['id']);
-$action = isset($_REQUEST['action']) ? strval($_REQUEST['action']) : '';
+function fieldPasswordHash($value)
+{
+	return abs(crc32(md5((string)$value)));
+}
+
+function fieldLegacyPasswordHash($value)
+{
+	global $_pm;
+	$link = (isset($_pm['mysql']) && is_object($_pm['mysql'])) ? $_pm['mysql']->getConn() : null;
+	if (is_resource($link)) $value = mysql_real_escape_string($value, $link);
+	else $value = addslashes($value);
+	return fieldPasswordHash(htmlspecialchars($value));
+}
+
+function fieldPasswordMatches($value, $storedHash)
+{
+	return fieldPasswordHash($value) == $storedHash || fieldLegacyPasswordHash($value) == $storedHash;
+}
+
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$action = (isset($_REQUEST['action']) && !is_array($_REQUEST['action'])) ? strval($_REQUEST['action']) : '';
 $allowedActions = array('reg', 'do', 'login', 'reset');
 if ($uid < 1 || !in_array($action, $allowedActions, true))
 {
@@ -51,12 +74,13 @@ if ($action == 'do')
 	$pwd = fieldPasswordValue('pwd');
 	if ($pwd === '') die('0');
 	if (strlen($pwd) <= 3 || strlen($pwd) > 10) die('4');
-	$pwdHash = abs(crc32(md5($pwd)));
+	$pwdHash = fieldPasswordHash($pwd);
 	if (empty($pwdHash)) die('0');
 	if (!$_pm['mysql']->query('UPDATE player SET fieldpwd='.$pwdHash.' WHERE id='.$uid))
 	{
 		die('0');
 	}
+	$_pm['mem']->del(MEM_USER_KEY);
 	$_SESSION['loginField'.$uid] = '1';
 	die('10');
 }
@@ -66,8 +90,13 @@ if ($action == 'login')
 	if (empty($user['fieldpwd'])) die('2');
 	$pwd = fieldPasswordValue('pwd');
 	if ($pwd === '') die('0');
-	$pwdHash = abs(crc32(md5($pwd)));
-	if ($pwdHash != $user['fieldpwd']) die('1');
+	$pwdHash = fieldPasswordHash($pwd);
+	if (!fieldPasswordMatches($pwd, $user['fieldpwd'])) die('1');
+	if ($pwdHash != $user['fieldpwd'])
+	{
+		if (!$_pm['mysql']->query('UPDATE player SET fieldpwd='.$pwdHash.' WHERE id='.$uid)) die('0');
+		$_pm['mem']->del(MEM_USER_KEY);
+	}
 	$_SESSION['loginField'.$uid] = '1';
 	die('10');
 }
@@ -77,13 +106,14 @@ $oldPwd = fieldPasswordValue('pwd');
 $newPwd = fieldPasswordValue('repwd');
 if ($oldPwd === '' || $newPwd === '') die('0');
 if (strlen($newPwd) <= 3 || strlen($newPwd) > 10) die('0');
-if (abs(crc32(md5($oldPwd))) != $user['fieldpwd']) die('1');
+if (!fieldPasswordMatches($oldPwd, $user['fieldpwd'])) die('1');
 
-$newHash = abs(crc32(md5($newPwd)));
+$newHash = fieldPasswordHash($newPwd);
 if (empty($newHash) || !$_pm['mysql']->query('UPDATE player SET fieldpwd='.$newHash.' WHERE id='.$uid))
 {
 	die('0');
 }
+$_pm['mem']->del(MEM_USER_KEY);
 $_SESSION['loginField'.$uid] = '1';
 die('10');
 ?>

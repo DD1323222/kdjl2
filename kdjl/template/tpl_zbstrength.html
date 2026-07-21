@@ -175,18 +175,14 @@ function sell(){
 		var opt = {
     		 method: 'get',
 			 onSuccess: function(t) {
-			 	var n=parseInt(t.responseText);
-				if(n==2) 
-				{
-					window.parent.$('gw').src='./function/zbstrength_Mod.php?pids='+pid;//精练道具
-				}
-				else if(n==1) 
+				var n=t.responseText;
+				if(n=='1')
 				{
 					window.parent.Alert('该装备不可强化！');
 				}
-				else if(n == 6)
+				else if(n.length > 0 && n.charAt(0) == '&')
 				{
-					window.parent.$('gw').src='./function/zbstrength_Mod.php?pid='+pid+'&bid='+bid;//装备
+					window.parent.$('gw').src='./function/zbstrength_Mod.php?'+n.substring(1);
 				}
 				else
 				{
@@ -199,7 +195,7 @@ function sell(){
     		 },
     		 asynchronous:true        
 		}
-		var ajax=new Ajax.Request('../function/zbstrengthGate.php?pid='+pid,opt);
+		var ajax=new Ajax.Request('../function/zbstrengthGate.php?pid='+pid+'&bid='+bid,opt);
 	}
 	//else return;
 }
@@ -225,7 +221,7 @@ function showTip(id,id1,id2,type)
 function harden()
 {
 	var hid;//要强化的装备的ID
-	var hids;//辅助道具的ID
+	var hids=0;//辅助道具的ID
 	var bids;//要强化的装备在背包中的ID
 	if($("pid") == null || $("bid") == null)
 	{
@@ -236,7 +232,7 @@ function harden()
 	}
 	if($("pids") == null)
 	{
-		hid = "";
+		hids = 0;
 	}
 	else
 	{
@@ -249,10 +245,6 @@ function harden()
 	{
 		return false;
 	}
-	if(!confirm("确认要开始强化吗？失败后装备将会消失噢！"))
-	{
-		return false;
-	}
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t){
@@ -261,7 +253,7 @@ function harden()
 				 {
 				 	window.parent.Alert("您没有加入要强化的装备！");
 				 }
-				 if(n == 11)
+				 else if(n == 11)
 				 {
 				 	window.parent.Alert("没有到冷却时间，请稍候再试……");
 				 }

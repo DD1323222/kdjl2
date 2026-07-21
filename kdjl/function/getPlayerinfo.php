@@ -6,25 +6,18 @@
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
-$u = isset($_REQUEST['u']) ? $_REQUEST['u'] : '';
-$u = iconv('gbk','iso-8859-2',$u);
-$u = $_pm['mysql']->escape(isset($_REQUEST['u']) ? $_REQUEST['u'] : '');
+$requestUserName = (isset($_REQUEST['u']) && !is_array($_REQUEST['u'])) ? $_REQUEST['u'] : '';
+$u = $_pm['mysql']->escape($requestUserName);
+$uHtml = htmlspecialchars($requestUserName, ENT_QUOTES, 'UTF-8');
 if ($u=='') die('玩家不存在！');
 
-$rs = $_pm['mysql']->getOneRecord("SELECT b.username as username,
-										  b.name as name,
-										  b.level as level,
-										  b.czl as czl,
-										  b.srchp as srchp,
-										  b.srcmp as srcmp,
-										  b.imgstand as effectimg
-									 FROM userbb as b,player
-									WHERE uid=player.id and player.nickname='{$u}' and player.mbid=b.id
-								 ");
+$rs = false;
 $rsU = $_pm['mysql']->getOneRecord("SELECT nickname username,id,mbid from player
 									WHERE nickname='{$u}'
 								 ");
-$rs = 	 $_pm['mysql']->getOneRecord("SELECT username as username,
+if (is_array($rsU))
+{
+	$rs = 	 $_pm['mysql']->getOneRecord("SELECT username as username,
 										  name as name,
 										  level as level,
 										  czl as czl,
@@ -33,9 +26,28 @@ $rs = 	 $_pm['mysql']->getOneRecord("SELECT username as username,
 										  imgstand as effectimg
 									 FROM userbb as b
 									WHERE uid=".intval($rsU['id'])." and ".intval($rsU['mbid'])."=id
-								 ");							 	 
+								 ");
+}
+else
+{
+	$rs = false;
+}
 if (is_array($rs))
 {
+	$effectimg = preg_replace('/[^A-Za-z0-9_.-]/', '', isset($rs['effectimg']) ? $rs['effectimg'] : '');
+	$username = htmlspecialchars(isset($rs['username']) ? $rs['username'] : '', ENT_QUOTES, 'UTF-8');
+	$petname = htmlspecialchars(isset($rs['name']) ? $rs['name'] : '', ENT_QUOTES, 'UTF-8');
+	$level = intval(isset($rs['level']) ? $rs['level'] : 0);
+	$czl = htmlspecialchars(isset($rs['czl']) ? $rs['czl'] : '', ENT_QUOTES, 'UTF-8');
+	$srchp = intval(isset($rs['srchp']) ? $rs['srchp'] : 0);
+	$srcmp = intval(isset($rs['srcmp']) ? $rs['srcmp'] : 0);
+	$rs['effectimg'] = $effectimg;
+	$rs['username'] = $username;
+	$rs['name'] = $petname;
+	$rs['level'] = $level;
+	$rs['czl'] = $czl;
+	$rs['srchp'] = $srchp;
+	$rs['srcmp'] = $srcmp;
 	echo '
 			<table border=0>
 			<tr><td><img src="'.IMAGE_SRC_URL.'/bb/'.$rs['effectimg'].'"></td>
@@ -48,7 +60,8 @@ if (is_array($rs))
 			魔法：'.$rs['srcmp'].'<br/>
 			</td></tr>
 		  </table>';
-}else if($rsU){
+}else if(is_array($rsU)){
+	if(isset($rsU['username'])) $rsU['username'] = htmlspecialchars($rsU['username'], ENT_QUOTES, 'UTF-8');
 	echo '
 			<table border=0>
 			<tr><td></td>
@@ -58,6 +71,6 @@ if (is_array($rs))
 			</td></tr>
 		  </table>';
 }else{
-		echo ''.$u .'不存在！';
+		echo ''.$uHtml .'不存在！';
 }
 ?>

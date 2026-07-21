@@ -3,23 +3,49 @@ require_once('../config/config.game.php');
 secStart($_pm['mem']);
 define("ZS", "db_welcome1");
 require_once('../sec/dblock_fun.php');
-$a = getLock($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+$zsTransactionActive = false;
+$zsItemLocked = false;
+function zsGateShutdown()
+{
+	global $_pm,$zsTransactionActive,$zsItemLocked,$ap;
+	if($zsTransactionActive && isset($_pm['mysql']))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		$zsTransactionActive = false;
+	}
+	if($zsItemLocked && isset($ap))
+	{
+		unLockItem($ap);
+		$zsItemLocked = false;
+	}
+	realseLock();
+}
+$a = getLock($uid);
 if (!is_array($a)) {
     realseLock();
     die('11');
 }
-$ap = intval($_REQUEST['ap']);  // table userbb->id
-$bp = intval($_REQUEST['bp']);  // table userbb->id
-$p1 = intval($_REQUEST['p1']);  // table userbag->id
-$zs = intval($_REQUEST['zs']);  // table userbag->id
+register_shutdown_function('zsGateShutdown');
+$ap = (isset($_REQUEST['ap']) && !is_array($_REQUEST['ap'])) ? intval($_REQUEST['ap']) : 0;  // table userbb->id
+$bp = (isset($_REQUEST['bp']) && !is_array($_REQUEST['bp'])) ? intval($_REQUEST['bp']) : 0;  // table userbb->id
+$p1 = (isset($_REQUEST['p1']) && !is_array($_REQUEST['p1'])) ? intval($_REQUEST['p1']) : 0;  // table userbag->id
+$zs = (isset($_REQUEST['zs']) && !is_array($_REQUEST['zs'])) ? intval($_REQUEST['zs']) : 0;  // table userbag->id
+$type = (isset($_GET['type']) && !is_array($_GET['type'])) ? $_GET['type'] : '';
+$type1 = (isset($_GET['type1']) && !is_array($_GET['type1'])) ? $_GET['type1'] : '';
+$_GET['type'] = $type;
+$_GET['type1'] = $type1;
+$_GET['p2'] = (isset($_GET['p2']) && !is_array($_GET['p2'])) ? $_GET['p2'] : 0;
 $srctime = 10;
-$chouqu_chk_ext = $_pm['mysql']->getRecords("select 1 from userbb where wx=6 and name not like '涅磐兽%' and czl=1 and uid={$_SESSION['id']} and (id=$ap or id=$bp)");
+$chouqu_chk_ext = $_pm['mysql']->getRecords("select 1 from userbb where wx=6 and name not like '涅磐兽%' and czl=1 and uid={$uid} and (id=$ap or id=$bp)");
 if (is_array($chouqu_chk_ext) && count($chouqu_chk_ext) > 0) {
     realseLock();
     die("某个宠物已经抽取过成长,不能进行涅槃!");
 }
 
-$cishu = $_pm['mysql']->getOneRecord("select chouqu_chongwu from player_ext where uid={$_SESSION['id']}");
+$cishu = $_pm['mysql']->getOneRecord("select chouqu_chongwu from player_ext where uid={$uid}");
+if(!is_array($cishu)) $cishu = array('chouqu_chongwu' => '');
+$cishu['chouqu_chongwu'] = isset($cishu['chouqu_chongwu']) ? $cishu['chouqu_chongwu'] : '';
 if (strpos($cishu['chouqu_chongwu'], ',' . $ap . ',') !== false || strpos($cishu['chouqu_chongwu'], ',' . $bp . ',') !== false) {
     realseLock();
     die("某个宠物抽取过成长,不能进行涅槃!");
@@ -30,32 +56,33 @@ if ($ap < 0 || $bp < 0) {
     die();
 }
 #################增加一个间隔时间################
-$time = $_SESSION['time' . $_SESSION['id']];
+$timeKey = 'time' . $uid;
+$time = isset($_SESSION[$timeKey]) ? $_SESSION[$timeKey] : 0;
 if (empty($time)) {
-    $_SESSION['time' . $_SESSION['id']] = time();
+    $_SESSION[$timeKey] = time();
 } else {
     $nowtime = time();
     $ctime = $nowtime - $time;
-    if ($ctime < $srctime && $_GET['type'] != 'do' && $_GET['type1'] != 'check') {
+    if ($ctime < $srctime && $type != 'do' && $type1 != 'check') {
         realseLock();
         die("11");//没有达到间隔时间
     } else {
-        $_SESSION['time' . $_SESSION['id']] = time();
+        $_SESSION[$timeKey] = time();
     }
 }
 
 
 if ($p1 < 0) $p1 = 0;
-$p2 = intval($_GET['p2']);
+$p2 = (isset($_GET['p2']) && !is_array($_GET['p2'])) ? intval($_GET['p2']) : 0;
 if ($p2 < 0) {
     $p2 = 0;
 }
 
 
 #################是否选了护宠仙石结束############
-if ($_GET['type1'] != 'check') //判断一次就够了
+if ($type1 != 'check') //判断一次就够了
 {
-    $sql_props = 'SELECT pid FROM userbag WHERE (id=' . $p1 . ' or id=' . $p2 . ') and uid=' . $_SESSION['id'];
+    $sql_props = 'SELECT pid FROM userbag WHERE (id=' . $p1 . ' or id=' . $p2 . ') and uid=' . $uid . ' and (cantrade IS NULL OR cantrade<>3)';
     $props = $_pm['mysql']->getRecords($sql_props);
     if (is_array($props)) {
         $check_props = 0;
@@ -83,7 +110,7 @@ if ($_GET['type1'] != 'check') //判断一次就够了
     }
 }
 
-$zbcheck = $_pm['mysql']->getRecords("SELECT id FROM userbag WHERE uid={$_SESSION['id']} and (zbpets = $ap or zbpets = $bp or zbpets = $zs)");
+$zbcheck = $_pm['mysql']->getRecords("SELECT id FROM userbag WHERE uid={$uid} and sums>0 and (zbpets = $ap or zbpets = $bp or zbpets = $zs)");
 if (is_array($zbcheck) && count($zbcheck) >= 1) {
     realseLock();
     die('1000');
@@ -104,32 +131,61 @@ if(lockItem($ap) === false)
 	realseLock();
 	die('已经在处理了！');
 }
+$zsItemLocked = true;
 
-$user = $_pm['user']->getUserById($_SESSION['id']);
-$userbb = $_pm['user']->getUserPetById($_SESSION['id']);
-$userbag = $_pm['user']->getUserBagById($_SESSION['id']);
+$user = $_pm['user']->getUserById($uid);
+$userbb = $_pm['mysql']->getRecords('SELECT * FROM userbb WHERE uid='.$uid.' AND id IN ('.$ap.','.$bp.','.$zs.') FOR UPDATE');
+$userbag = $_pm['user']->getUserBagById($uid);
+if(!is_array($user)) $user = array();
+if(!is_array($userbb)) $userbb = array();
+if(!is_array($userbag)) $userbag = array();
+$user['money'] = isset($user['money']) ? intval($user['money']) : 0;
+$user['nickname'] = isset($user['nickname']) ? $user['nickname'] : '';
 $log = '';
 $app = array();
 $bpp = array();
 $zsp = array();
 if (is_array($userbb) && is_array($userbag)) {
-    $membbid = unserialize($_pm['mem']->get('db_bbname'));
+    $membbname = kdjlSafeMemValue($_pm['mem']->get('db_bbname'), array());
+	$membbid = kdjlSafeMemValue($_pm['mem']->get('db_bbid'), array());
+	if(!is_array($membbname)) $membbname = array();
+	if(!is_array($membbid)) $membbid = array();
     foreach ($userbb as $key => $rs) {
-        if ($rs['id'] == $ap && $rs['level'] >= 60) // From bb base find user current bb.
-        {
-            $app = $rs;
-        } else if ($rs['id'] == $bp && $rs['level'] >= 60) {
-            $bpp = $rs;
-        } else if ($rs['id'] == $zs && $rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）" ) && $rs['muchang'] == 0) {
+		$rs['id'] = isset($rs['id']) ? intval($rs['id']) : 0;
+		$rs['level'] = isset($rs['level']) ? intval($rs['level']) : 0;
+		$rs['wx'] = isset($rs['wx']) ? intval($rs['wx']) : 0;
+		$rs['name'] = isset($rs['name']) ? $rs['name'] : '';
+		$rs['muchang'] = isset($rs['muchang']) ? intval($rs['muchang']) : 0;
+		$rs['tgflag'] = isset($rs['tgflag']) ? intval($rs['tgflag']) : 0;
+		$rs['czl'] = isset($rs['czl']) ? floatval($rs['czl']) : 0;
+		$rs['ac'] = isset($rs['ac']) ? intval($rs['ac']) : 0;
+		$rs['mc'] = isset($rs['mc']) ? intval($rs['mc']) : 0;
+		$rs['hits'] = isset($rs['hits']) ? intval($rs['hits']) : 0;
+		$rs['srchp'] = isset($rs['srchp']) ? intval($rs['srchp']) : 0;
+		$rs['srcmp'] = isset($rs['srcmp']) ? intval($rs['srcmp']) : 0;
+		$rs['skillist'] = isset($rs['skillist']) ? $rs['skillist'] : '';
+		$rs['imgstand'] = isset($rs['imgstand']) ? $rs['imgstand'] : '';
+		$rs['imgack'] = isset($rs['imgack']) ? $rs['imgack'] : '';
+		$rs['imgdie'] = isset($rs['imgdie']) ? $rs['imgdie'] : '';
+		$rs['old_bid'] = isset($rs['old_bid']) ? $rs['old_bid'] : 0;
+		$rs['remakelevel'] = isset($rs['remakelevel']) ? $rs['remakelevel'] : '';
+		$rs['remakeid'] = isset($rs['remakeid']) ? $rs['remakeid'] : '';
+		$rs['remakepid'] = isset($rs['remakepid']) ? $rs['remakepid'] : '';
+		if ($rs['id'] == $ap && $rs['level'] >= 60 && $rs['muchang'] == 0 && $rs['tgflag'] == 0) // From bb base find user current bb.
+		{
+			$app = $rs;
+		} else if ($rs['id'] == $bp && $rs['level'] >= 60 && $rs['muchang'] == 0 && $rs['tgflag'] == 0) {
+			$bpp = $rs;
+		} else if ($rs['id'] == $zs && $rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）" ) && $rs['muchang'] == 0 && $rs['tgflag'] == 0) {
             $zsp = $rs;
         }
     }
-	if (!is_array($app) || !is_array($bpp) || ($app['id'] == $bpp['id'])) {
+	if (!isset($app['id']) || !isset($bpp['id']) || ($app['id'] == $bpp['id'])) {
 		unLockItem($ap);
 		realseLock();
 		die('1');
 	}
-	if (!is_array($zsp) || $zsp['id'] == $app['id'] || $zsp['id'] == $bpp['id']) {
+	if (!isset($zsp['id']) || $zsp['id'] == $app['id'] || $zsp['id'] == $bpp['id']) {
 		unLockItem($ap);
 		realseLock();
 		die('7');
@@ -139,24 +195,31 @@ if (is_array($userbb) && is_array($userbag)) {
         realseLock();
         die('五行属于：金、木、水、火、土、神的才可以进行此操作！');
     }
+	if ($app['czl'] <= 0 || $bpp['czl'] <= 0) {
+		unLockItem($ap);
+		realseLock();
+		die('10');
+	}
     unset($rs);
-	if (!is_array($membbid) || !isset($membbid[$app['name']]) || !isset($membbid[$bpp['name']])) {
+	$ars = resolveBasePetForNirvana($app, $membbname, $membbid);
+	$brs = resolveBasePetForNirvana($bpp, $membbname, $membbid);
+	if (!is_array($ars) || !is_array($brs)) {
 		unLockItem($ap);
 		realseLock();
 		die('2');
 	}
-    if (!is_array($app) || !is_array($bpp) || ($app['id'] == $bpp['id'])) {
+    if (!isset($app['id']) || !isset($bpp['id']) || ($app['id'] == $bpp['id'])) {
         unLockItem($ap);
         realseLock();
         die('1'); //没有对应的宠物。
     }
 
-    if (!is_array($zsp)) {
+    if (!isset($zsp['id'])) {
         realseLock();
         unLockItem($ap);
         die("7");//请选择涅磐兽
     }
-  
+
 
     // 检查是否满足公式。
     /*$ars = $_pm['mem']->dataGet(array('k' => MEM_BB_KEY,
@@ -166,10 +229,7 @@ if (is_array($userbb) && is_array($userbag)) {
                                          'v' => "if(\$rs['name'] == '{$bpp['name']}') \$ret=\$rs;"
                               ));*/
 
-    $ars = $membbid[$app['name']];
-    $brs = $membbid[$bpp['name']];
-
-    $cmprs = $_pm['mysql']->getOneRecord("SELECT * 
+    $cmprs = $_pm['mysql']->getOneRecord("SELECT *
 											FROM zs
 										   WHERE aid = {$ars['id']} and bid={$brs['id']}
 										   LIMIT 0,1
@@ -190,6 +250,12 @@ if (is_array($userbb) && is_array($userbag)) {
         die('3');    //	金币不足。
     }
     foreach ($userbag as $k => $rs) {
+		$rs['id'] = isset($rs['id']) ? intval($rs['id']) : 0;
+		$rs['varyname'] = isset($rs['varyname']) ? intval($rs['varyname']) : 0;
+		$rs['effect'] = isset($rs['effect']) ? $rs['effect'] : '';
+		$rs['sums'] = isset($rs['sums']) ? intval($rs['sums']) : 0;
+		$rs['name'] = isset($rs['name']) ? $rs['name'] : '';
+		if (isset($rs['cantrade']) && intval($rs['cantrade']) == 3) continue;
 		if ($rs['varyname'] == 19 && $rs['id'] == $p2) {
             $pp2 = $rs;
             continue;
@@ -251,6 +317,7 @@ if (is_array($userbb) && is_array($userbag)) {
         unLockItem($ap);
         die("10");
     }
+	$zsTransactionActive = true;
     $susnum = rand(1, 10000);
     $a = $sus * 100;
     if ($susnum <= $a) // 合成成功。a,b宠物消失，得到新的宠物。$cmprs=> 得到相关宝宝信息。
@@ -258,13 +325,14 @@ if (is_array($userbb) && is_array($userbag)) {
         // 改变属性地方为:
         $newbid = $cmprs['mid'];
 
-        $brs = $_pm['mysql']->getOneRecord("SELECT * 
+        $brs = $_pm['mysql']->getOneRecord("SELECT *
 											  FROM  bb
 											 WHERE id={$newbid}
 											 LIMIT 0,1
 										  ");
 
         if (!is_array($brs)) {
+			$_pm['mysql']->query('ROLLBACK');
             realseLock();
             unLockItem($ap);
             die('10'); // 数据错误
@@ -274,6 +342,7 @@ if (is_array($userbb) && is_array($userbag)) {
 		if ($newbbid === false) {
 			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($ap);
+			realseLock();
 			die('10');
 		}
         $cstatus = 2;
@@ -282,10 +351,11 @@ if (is_array($userbb) && is_array($userbag)) {
         $cstatus = 1;
     }
 
-	if (!$_pm['mysql']->query("UPDATE player SET money=money-{$money} WHERE id={$_SESSION['id']} and money>={$money}") ||
+	if (!$_pm['mysql']->query("UPDATE player SET money=money-{$money} WHERE id={$uid} and money>={$money}") ||
 		mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
 		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($ap);
+		realseLock();
 		die('3');
 	}
     // 记录日志：
@@ -296,6 +366,7 @@ if (is_array($userbb) && is_array($userbag)) {
 	if (!delProps()) {
 		$_pm['mysql']->query('ROLLBACK');
 		unLockItem($ap);
+		realseLock();
 		die('20');
 	}
     ############# del props end.#####################
@@ -307,49 +378,71 @@ if (is_array($userbb) && is_array($userbag)) {
 			if (!clearBB($zsp)) {
 				$_pm['mysql']->query('ROLLBACK');
 				unLockItem($ap);
+				realseLock();
 				die('10');
 			}
             $log .= 'name:' . $zsp['name'] . 'level:' . $zsp['level'] . 'czl:' . $zsp['czl'] . 'hp:' . $zsp['srchp'] . 'hits:' . $zsp['hits'] . 'ac:' . $zsp['ac'];
         }
-        $log = addslashes($log);
+        $log = $_pm['mysql']->escape($log);
 		if (!$_pm['mysql']->query('COMMIT')) {
 			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($ap);
+			realseLock();
 			die('10');
 		}
+		$zsTransactionActive = false;
+		$_pm['mem']->del(MEM_USER_KEY);
+		$_pm['mem']->del(MEM_USERBB_KEY);
+		$_pm['mem']->del(MEM_USERSK_KEY);
+		$_pm['mem']->del(MEM_USERBAG_KEY);
         // 合成失败记录点：
         $_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','{$log}',10)
+		                      VALUES(unix_timestamp(),'{$uid}','{$uid}','{$log}',10)
 							");
         unLockItem($ap);
         die('6');
     } else if ($cstatus == 2) // 成功。
     {
 		if (!clearBB($app) || !clearBB($bpp) || !clearBB($zsp)) {
-			$_pm['mysql']->query('ROLLBACK');
-			unLockItem($ap);
-			die('10');
-		}
+		$_pm['mysql']->query('ROLLBACK');
+		unLockItem($ap);
+		realseLock();
+		die('10');
+	}
 		if (!$_pm['mysql']->query('COMMIT')) {
 			$_pm['mysql']->query('ROLLBACK');
 			unLockItem($ap);
+			realseLock();
 			die('10');
 		}
+		$zsTransactionActive = false;
+		$_pm['mem']->del(MEM_USER_KEY);
+		$_pm['mem']->del(MEM_USERBB_KEY);
+		$_pm['mem']->del(MEM_USERSK_KEY);
+		$_pm['mem']->del(MEM_USERBAG_KEY);
         $msg_key = 'chatMsgList';
-        $nowMsgList = unserialize($_pm['mem']->get($msg_key));
-        $arr = split('linend', $nowMsgList);
+        $nowMsgList = kdjlSafeMemValue($_pm['mem']->get($msg_key), '');
+        if(!is_string($nowMsgList)) $nowMsgList = '';
+        $arr = explode('linend', $nowMsgList);
         if (count($arr) > 20) // cear old
         {
             $arrt = array_shift($arr);
         }
         $newstr = '<font color=red>[系统公告]恭喜玩家 ' . $user['nickname'] . ' 的宝宝经过圣洁的洗礼，成功的转世成为[' . $brs['name'] . ']!</font>';
-		$newbbarr = $_pm['mysql']->getOneRecord("SELECT level,czl,ac,hits,srchp FROM userbb WHERE id={$newbbid} and uid={$_SESSION['id']} LIMIT 1");
+		$newbbarr = $_pm['mysql']->getOneRecord("SELECT level,czl,ac,hits,srchp FROM userbb WHERE id={$newbbid} and uid={$uid} LIMIT 1");
+		if(!is_array($newbbarr)) $newbbarr = array();
+		$newbbarr['level'] = isset($newbbarr['level']) ? $newbbarr['level'] : 0;
+		$newbbarr['czl'] = isset($newbbarr['czl']) ? $newbbarr['czl'] : 0;
+		$newbbarr['ac'] = isset($newbbarr['ac']) ? $newbbarr['ac'] : 0;
+		$newbbarr['hits'] = isset($newbbarr['hits']) ? $newbbarr['hits'] : 0;
+		$newbbarr['srchp'] = isset($newbbarr['srchp']) ? $newbbarr['srchp'] : 0;
        $str = '新宠物名字：' . $brs['name'] . 'level:' . $newbbarr['level'] . 'czl:' . $newbbarr['czl'] . 'ac:' . $newbbarr['ac'] . 'hits:' . $newbbarr['hits'] . ',使用物品：' . $pp1['name'] . ',涅磐兽：' . $zsp['name'] . 'level:' . $zsp['level'] . 'czl:' . $zsp['czl'] . 'ac:' . $zsp['ac'] . 'hits:' . $zsp['hits'] . ',宠物：' . $app['name'] . 'level:' . $app['level'] . 'czl:' . $app['czl'] . 'ac:' . $app['ac'] . 'hits:' . $app['hits'] . '-' . $bpp['name'] . 'level:' . $bpp['level'] . 'czl:' . $bpp['czl'] . 'ac:' . $bpp['ac'] . 'hits:' . $bpp['hits'];
+		$strSql = $_pm['mysql']->escape($str);
         $_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
-		                      VALUES(unix_timestamp(),'{$_SESSION['id']}','{$_SESSION['id']}','{$str}',11)
+		                      VALUES(unix_timestamp(),'{$uid}','{$uid}','{$strSql}',11)
 							");
         $addczl=$czl-$app["czl"];
-    
+
 		$retstr = '';
 		foreach ($arr as $k => $v) {
             $retstr .= $v . 'linend';
@@ -385,10 +478,23 @@ realseLock();
  */
 function makebb($bb, $czl)
 {
-    global $app, $bpp, $user, $_pm, $zsp, $pp2;
+    global $app, $bpp, $user, $_pm, $zsp, $pp2, $uid;
+	$bb['id'] = isset($bb['id']) ? intval($bb['id']) : 0;
+	$bb['name'] = isset($bb['name']) ? $bb['name'] : '';
+	$bb['wx'] = isset($bb['wx']) ? intval($bb['wx']) : 0;
+	$bb['ac'] = isset($bb['ac']) ? intval($bb['ac']) : 0;
+	$bb['mc'] = isset($bb['mc']) ? intval($bb['mc']) : 0;
+	$bb['hits'] = isset($bb['hits']) ? intval($bb['hits']) : 0;
+	$bb['hp'] = isset($bb['hp']) ? intval($bb['hp']) : 0;
+	$bb['mp'] = isset($bb['mp']) ? intval($bb['mp']) : 0;
+	$bb['skillist'] = isset($bb['skillist']) ? $bb['skillist'] : '';
+	$bb['imgstand'] = isset($bb['imgstand']) ? $bb['imgstand'] : '';
+	$bb['imgack'] = isset($bb['imgack']) ? $bb['imgack'] : '';
+	$bb['imgdie'] = isset($bb['imgdie']) ? $bb['imgdie'] : '';
     //$czl = bbczl($app,$bpp,$pczl,$zsp);
     $pac = $pmc = $phits = $php = 0;
-    if (!empty($pp2)) {
+	if (!empty($pp2)) {
+		$pp2['effect'] = isset($pp2['effect']) ? $pp2['effect'] : '';
         $arr = explode(':', $pp2['effect']);
         switch ($arr[0]) {
             case 'addac':
@@ -411,9 +517,10 @@ function makebb($bb, $czl)
     $bb['hits'] = getPa($bb['hits'], $app['hits'], $bpp['hits'], $phits);
     $bb['miss'] = getPa($bb['miss'], $app['miss'], $bpp['miss'], 0);
     $bb['speed'] = getPa($bb['speed'], $app['speed'], $bpp['speed'], 0);
-    $bb['hp'] = getPa($bb['hp'], $app['hp'], $bpp['hp'], $php);
-    $bb['mp'] = getPa($bb['mp'], $app['mp'], $bpp['mp'], 0);
-    $uinfo = $user;
+	$bb['hp'] = getPa($bb['hp'], $app['srchp'], $bpp['srchp'], $php);
+	$bb['mp'] = getPa($bb['mp'], $app['srcmp'], $bpp['srcmp'], 0);
+	$uinfo = $user;
+	$usernameSql = $_pm['mysql']->quote(isset($uinfo['nickname']) ? $uinfo['nickname'] : '');
     $inserted = $_pm['mysql']->query("INSERT INTO userbb(
 								   name,
 								   uid,
@@ -444,12 +551,13 @@ function makebb($bb, $czl)
 								   czl,
 								   headimg,
 								   cardimg,
-								   effectimg
+								   effectimg,
+								   old_bid
 								  )
 				VALUES(
 					   '{$bb['name']}',
 					   '{$uinfo['id']}',
-					   '{$uinfo['nickname']}',
+					   {$usernameSql},
 					   '1',
 					   '{$bb['wx']}',
 					   '{$bb['ac']}',
@@ -474,9 +582,10 @@ function makebb($bb, $czl)
 					   '{$bb['remakepid']}',
 					   '0',
 					   '{$czl}',
-					   't{$bb['id']}.gif',
-					   'k{$bb['id']}.gif',
-					   'q{$bb['id']}.gif'
+						   't{$bb['id']}.gif',
+						   'k{$bb['id']}.gif',
+						   'q{$bb['id']}.gif',
+						   '{$bb['id']}'
 					   )
 			  ");
 	if (!$inserted) {
@@ -486,36 +595,51 @@ function makebb($bb, $czl)
 	if ($bbid <= 0) {
 		return false;
 	}
-    $jnall = split(",", $bb['skillist']);
-	$memskillsysid = unserialize($_pm['mem']->get('db_skillsysid'));
+    $jnall = explode(",", $bb['skillist']);
+	$memskillsysid = kdjlSafeMemValue($_pm['mem']->get('db_skillsysid'), array());
+	if(!is_array($memskillsysid)) $memskillsysid = array();
     foreach ($jnall as $a => $b) {
-        $arr = split(":", $b);
+        $arr = explode(":", $b);
 		if (!isset($arr[0]) || !isset($arr[1]) || !isset($memskillsysid[$arr[0]])) {
 			return false;
-		}
+        }
         $jn = $memskillsysid[$arr[0]];
+		$jn['ackvalue'] = isset($jn['ackvalue']) ? $jn['ackvalue'] : '';
+		$jn['plus'] = isset($jn['plus']) ? $jn['plus'] : '';
+		$jn['uhp'] = isset($jn['uhp']) ? $jn['uhp'] : '';
+		$jn['ump'] = isset($jn['ump']) ? $jn['ump'] : '';
+		$jn['imgeft'] = isset($jn['imgeft']) ? $jn['imgeft'] : '';
+		$jn['name'] = isset($jn['name']) ? $jn['name'] : '';
+		$jn['vary'] = isset($jn['vary']) ? $jn['vary'] : '';
+		$jn['wx'] = isset($jn['wx']) ? $jn['wx'] : 0;
+		$jn['id'] = isset($jn['id']) ? $jn['id'] : intval($arr[0]);
         // #################################################
     //   if ($jn['ackvalue'] == '') continue; // 增加辅助技能。
         //##################################################
 
-        $ack = split(",", $jn['ackvalue']);
-        $plus = split(",", $jn['plus']);
-        $uhp = split(",", $jn['uhp']);
-        $ump = split(",", $jn['ump']);
-        $img = split(",", $jn['imgeft']);
+        $ack = explode(",", $jn['ackvalue']);
+        $plus = explode(",", $jn['plus']);
+        $uhp = explode(",", $jn['uhp']);
+        $ump = explode(",", $jn['ump']);
+        $img = explode(",", $jn['imgeft']);
+        $skillLevel = intval($arr[1]);
+        $skillIndex = $skillLevel - 1;
+        if (!isset($ack[$skillIndex]) || !isset($uhp[$skillIndex]) || !isset($ump[$skillIndex])) {
+			return false;
+		}
 
         if (!$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump,sid)
 					VALUES(
 						   '{$bbid}',
 						   '{$jn['name']}',
-						   '{$arr['1']}',
+						   '{$skillLevel}',
 						   '{$jn['vary']}',
 						   '{$jn['wx']}',
-						   '{$ack[0]}',
-						   '{$plus[0]}',
-						   '{$img[0]}',
-						   '{$uhp[0]}',
-						   '{$ump[0]}',
+						   '{$ack[$skillIndex]}',
+						   '".(isset($plus[$skillIndex]) ? $plus[$skillIndex] : '')."',
+						   '".(isset($img[$skillIndex]) ? $img[$skillIndex] : '')."',
+						   '".intval($uhp[$skillIndex])."',
+						   '".intval($ump[$skillIndex])."',
 						   '{$jn['id']}'
 						  )
 				  ")) {
@@ -536,7 +660,7 @@ function makebb($bb, $czl)
         ##################################合成成功，给用户设当前宠物为主战宠物#########################################
         ###################################在这里结束##################################################################
     }
-	if (!$_pm['mysql']->query("UPDATE player SET mbid={$bbid} WHERE id={$_SESSION['id']}") ||
+	if (!$_pm['mysql']->query("UPDATE player SET mbid={$bbid},fightbb={$bbid} WHERE id={$uid}") ||
 		mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
 		return false;
 	}
@@ -550,8 +674,9 @@ function makebb($bb, $czl)
  */
 function clearBB($bb)
 {
-    global $_pm, $log;
-    $id = $bb['id'];
+    global $_pm, $log, $uid;
+    $id = isset($bb['id']) ? intval($bb['id']) : 0;
+	if ($id <= 0) return false;
 
     foreach ($bb as $k => $v) {
         $log .= $k . '=>' . $v . '-';
@@ -566,13 +691,13 @@ function clearBB($bb)
 
     // del zb.
     if (!$_pm['mysql']->query("DELETE FROM userbag
-				 WHERE uid={$_SESSION['id']} and zbpets={$id}
+				 WHERE uid={$uid} and zbpets={$id}
 			  ")) {
 		return false;
 	}
     // del bb.
     if (!$_pm['mysql']->query("DELETE FROM userbb
-				 WHERE uid={$_SESSION['id']} and id={$id}
+				 WHERE uid={$uid} and id={$id}
 			  ")) {
 		return false;
 	}
@@ -593,7 +718,21 @@ function bbczl($a, $b, $pp1, $zs, $pp2)
 {
     global $brs;
     global $_pm;
-    $zsarr = unserialize($_pm['mem']->get(ZS));
+    $zsarr = kdjlSafeMemValue($_pm['mem']->get(ZS), array());
+	if(!is_array($zsarr)) $zsarr = array();
+	$zsarr['zs1'] = isset($zsarr['zs1']) ? $zsarr['zs1'] : '';
+	$zsarr['zs2'] = isset($zsarr['zs2']) ? $zsarr['zs2'] : '';
+	$zsarr['zs3'] = isset($zsarr['zs3']) ? $zsarr['zs3'] : '';
+	$zs['name'] = isset($zs['name']) ? $zs['name'] : '';
+	$a['name'] = isset($a['name']) ? $a['name'] : '';
+	$b['name'] = isset($b['name']) ? $b['name'] : '';
+	$a['czl'] = isset($a['czl']) ? floatval($a['czl']) : 0;
+	$b['czl'] = isset($b['czl']) ? floatval($b['czl']) : 0;
+	$a['level'] = isset($a['level']) ? intval($a['level']) : 0;
+	$b['level'] = isset($b['level']) ? intval($b['level']) : 0;
+	$lv = 0;
+	$num1 = 0;
+	$num2 = 0;
     // 资料库中宠物属性。
     if ($zs['name'] == '涅磐兽（卯）') {
         $lv = 0.3;
@@ -686,6 +825,9 @@ function bbczl($a, $b, $pp1, $zs, $pp2)
         }
     }
     //主宠物成长+{[(主宠物等级/主宠物成长./2)+(副宠物等级*副宠物成长/1500)]*(100%+涅盘兽百分比+道具百分比)}
+	if ($a['czl'] <= 0 || $num1 <= 0 || $num2 <= 0) {
+		return 0;
+	}
 	$czl =$a['czl'] + round(((($a['level'] / $a['czl'] / $num1) + ($b['level'] * $b['czl'] / $num2)) * (1 + $lv + $pp1 + $pp2)),1);
 	//echo $a['czl'].'+round(((('.$a['level'].'/'.$a['czl'].'/'.$num1.')+('.$b['level'].'*'.$b['czl'].'/'.$num2.'))*(1+'.$lv.'+'.$pp1.'+'.$pp2.')),1)'.'<br />';
 	return $czl;
@@ -716,22 +858,69 @@ function getPa($old, $a, $b, $p)
  */
 function delProps()
 {
-	global $pp1, $pp2, $_pm;
-    if (is_array($pp1)) {
-        if (!$_pm['mysql']->query("UPDATE userbag
+	global $pp1, $pp2, $_pm, $uid;
+    if (is_array($pp1) && isset($pp1['id'])) {
+		$pp1['id'] = intval($pp1['id']);
+		if ($pp1['id'] <= 0) return false;
+		if (!$_pm['mysql']->query("UPDATE userbag
 								 SET sums=sums-1
-						       WHERE id={$pp1['id']} and uid={$_SESSION['id']} and sums > 0
+						       WHERE id={$pp1['id']} and uid={$uid} and sums > 0 and zbing=0
+						         and (cantrade IS NULL OR cantrade<>3)
 							") || mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
 			return false;
 		}
+		if (!$_pm['mysql']->query("DELETE FROM userbag
+						       WHERE id={$pp1['id']} and uid={$uid}
+						         and sums<=0 and bsum<=0 and psum<=0 and pyb=0 and zbing=0
+						         and (cantrade IS NULL OR cantrade<>3)")) {
+			return false;
+		}
     }
-	if (!empty($pp2)) {
-		if (!$_pm['mysql']->query("UPDATE userbag SET sums=sums-1 WHERE id={$pp2['id']} and uid={$_SESSION['id']} and sums>0") ||
+	if (!empty($pp2) && isset($pp2['id'])) {
+		$pp2['id'] = intval($pp2['id']);
+		if ($pp2['id'] <= 0) return false;
+		if (!$_pm['mysql']->query("UPDATE userbag SET sums=sums-1 WHERE id={$pp2['id']} and uid={$uid} and sums>0 and zbing=0 and (cantrade IS NULL OR cantrade<>3)") ||
 			mysql_affected_rows($_pm['mysql']->getConn()) != 1) {
+			return false;
+		}
+		if (!$_pm['mysql']->query("DELETE FROM userbag
+						       WHERE id={$pp2['id']} and uid={$uid}
+						         and sums<=0 and bsum<=0 and psum<=0 and pyb=0 and zbing=0
+						         and (cantrade IS NULL OR cantrade<>3)")) {
 			return false;
 		}
 	}
 	return true;
 }
 
+function resolveBasePetForNirvana($pet, $byName, $byId)
+{
+	if (isset($pet['old_bid']))
+	{
+		$oldBid = intval($pet['old_bid']);
+		if ($oldBid > 0 && is_array($byId) && isset($byId[$oldBid]) && is_array($byId[$oldBid]))
+		{
+			return $byId[$oldBid];
+		}
+	}
+	if (is_array($byId))
+	{
+		foreach ($byId as $basePet)
+		{
+			if (!is_array($basePet) || !isset($basePet['name'])) continue;
+			if ($basePet['name'] != $pet['name']) continue;
+			if ((string)$basePet['remakelevel'] == (string)$pet['remakelevel'] &&
+				(string)$basePet['remakeid'] == (string)$pet['remakeid'] &&
+				(string)$basePet['remakepid'] == (string)$pet['remakepid'])
+			{
+				return $basePet;
+			}
+		}
+	}
+	if (is_array($byName) && isset($byName[$pet['name']]) && is_array($byName[$pet['name']]))
+	{
+		return $byName[$pet['name']];
+	}
+	return false;
+}
 ?>

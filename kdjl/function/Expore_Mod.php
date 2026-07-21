@@ -11,51 +11,69 @@
 */
 require_once('../config/config.game.php');
 unset($_SESSION['catch_gw_info']);
-$_SESSION['fight'.$_SESSION['id']]['gid'] = 0;
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+if(!isset($_SESSION['fight'.$uid]) || !is_array($_SESSION['fight'.$uid])) $_SESSION['fight'.$uid] = array();
+$_SESSION['fight'.$uid]['gid'] = 0;
 //用于抓进城补血，继续打怪外挂！如果是使用目前的外挂（2009-01-30）则不会访问这个地方，$_SESSION['GoToCity']为一个时间，进入战斗时就可以判断这个玩家使用外挂！
 $_SESSION['GoToCity'] = NULL;
 unset($_SESSION['GoToCity']);
-if($_REQUEST['from'] == 1)
+$from = (isset($_REQUEST['from']) && !is_array($_REQUEST['from'])) ? intval($_REQUEST['from']) : 0;
+if($from == 1)
 {
-	
+
 }
 else
 {
 	secStart($_pm['mem']);
 }
-$user	 = $_pm['user']->getUserById($_SESSION['id']);
+$user	 = $_pm['user']->getUserById($uid);
+if(!is_array($user)) die('');
 
 //副本地图
-$sql = "SELECT * FROM map WHERE gpclist = '0'";
+$sql = "SELECT id FROM map WHERE gpclist = '0'";
 $fuben = $_pm['mysql'] -> getRecords($sql);
+$fbid = array();
+$src = array();
+$des = array();
+$mapsrc = array();
+$mapdes = array();
+$maparr = array();
+$mapret = '';
 //@Load template.
 $tn = $_game['template'] . 'tpl_map.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
-	if(is_array($fuben))
+	if($tpl !== false && is_array($fuben))
 	{
 		foreach($fuben as $ks => $vs)
 		{
+			if(!is_array($vs) || !isset($vs['id'])) continue;
 			$fbid[] = $vs['id'];
 		}
 	}
 	foreach($fbid as $k1 => $v1)
 	{
+		$v1 = intval($v1);
+		if($v1 < 1) continue;
 		$src[$v1] = "#{$v1}#";
 		$des[$v1] = $v1;
 	}
-	
-	$map = $user['openmap'];
-	
+
+	$map = isset($user['openmap']) ? $user['openmap'] : '';
+
 
 	// Fix maybe error.
 	if ($map == '') $map = 1;
 
-	$maparr = split(',', $map);
-	foreach($maparr as $k => $v)
+	$rawMaparr = explode(',', $map);
+	$maparr = array();
+	foreach($rawMaparr as $v)
 	{
+		$v = intval(trim($v));
+		if($v < 1 || in_array((string)$v, $maparr, true)) continue;
+		$maparr[] = (string)$v;
 		$src[$v] = "#{$v}#";
 		$mapsrc[$v] = "#map{$v}#";
 		$des[$v] = $v;
@@ -71,24 +89,33 @@ if (file_exists($tn))
 			$mapdes[$x] = "03";
 		}
 	}
-	$mapret = str_replace($src, $des, $tpl);
-	$mapret = str_replace($mapsrc, $mapdes, $mapret);
+	if($tpl !== false)
+	{
+		$mapret = str_replace($src, $des, $tpl);
+		$mapret = str_replace($mapsrc, $mapdes, $mapret);
+	}
 }
 
 // gzip echo. if maybe.
 ob_start('ob_gzip');
 
-if($_REQUEST['from'] == 1)
+if($from == 1)
 {
 	$sql = "SELECT id,name,level FROM map WHERE gpclist != '0'";
 	$baseMap = $_pm['mysql'] -> getRecords($sql);
+	if(!is_array($baseMap)) $baseMap = array();
 	foreach($baseMap as $key => $info)
 	{
-		$baseMap[$key]['name'] = iconv("gbk","utf-8",$info['name']);
-		$arr = explode(",",$info['level']);
-		$baseMap[$key]['level'] = iconv("gbk","utf-8","怪物等级：").$arr[0].'-'.$arr[1];
+		if(!is_array($info)) continue;
+		$name = isset($info['name']) ? $info['name'] : '';
+		$level = isset($info['level']) ? $info['level'] : '0,0';
+		$baseMap[$key]['name'] = $name;
+		$arr = explode(",",$level);
+		if(!isset($arr[0])) $arr[0] = 0;
+		if(!isset($arr[1])) $arr[1] = 0;
+		$baseMap[$key]['level'] = "怪物等级：".$arr[0].'-'.$arr[1];
 	}
-	$backData = array("myMap"=>$maparr,"mapData"=>$baseMap,"inmap"=>$user['inmap']);
+	$backData = array("myMap"=>$maparr,"mapData"=>$baseMap,"inmap"=>(isset($user['inmap']) ? $user['inmap'] : 0));
 	echo "OK".json_encode($backData);
 }
 else

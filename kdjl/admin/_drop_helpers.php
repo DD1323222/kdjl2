@@ -4,8 +4,14 @@ function adminDropCatalog($db, $fbinfo)
 {
 	$dungeonIds = array();
 	$dungeons = array();
+	if (!is_array($fbinfo)) $fbinfo = array();
 	foreach ($fbinfo as $fb)
 	{
+		if (!is_array($fb)) continue;
+		if (!isset($fb['id'])) continue;
+		if (!isset($fb['name'])) $fb['name'] = '';
+		if (!isset($fb['lv'])) $fb['lv'] = '';
+		if (!isset($fb['gwid'])) $fb['gwid'] = '';
 		$id = intval($fb['id']);
 		$dungeonIds[$id] = true;
 		$dungeons['dungeon-' . $id] = array(
@@ -41,6 +47,7 @@ function adminDropCatalog($db, $fbinfo)
 function adminDropIdList($value)
 {
 	$result = array();
+	if (is_array($value)) return $result;
 	foreach (explode(',', (string)$value) as $id)
 	{
 		$id = intval(trim($id));
@@ -63,6 +70,7 @@ function adminDropSelectedScopes($value, $catalog)
 	if (!is_array($value)) return $result;
 	foreach ($value as $key)
 	{
+		if (is_array($key)) continue;
 		$key = trim((string)$key);
 		if (isset($catalog[$key])) $result[$key] = $key;
 	}
@@ -71,6 +79,7 @@ function adminDropSelectedScopes($value, $catalog)
 
 function adminDropLevelRange($value)
 {
+	if (is_array($value)) return false;
 	$value = trim((string)$value);
 	if (preg_match('/^(\d+)\s*,\s*(\d+)$/', $value, $parts))
 	{
@@ -245,7 +254,7 @@ function adminDropRewrite($current, $propId, $denominator, $remove)
 
 function adminDropColumnLimit($db, $dropField)
 {
-	$fallback = $dropField === 'activedroplist' ? 30 : 255;
+	$fallback = $dropField === 'activedroplist' ? 1024 : 2048;
 	$row = $db->getOneRecord("SHOW COLUMNS FROM gpc LIKE '" . $db->escape($dropField) . "'");
 	if (!is_array($row) || !isset($row['Type'])) return $fallback;
 	$type = strtolower(trim($row['Type']));

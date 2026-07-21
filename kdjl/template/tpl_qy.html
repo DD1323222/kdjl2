@@ -150,7 +150,7 @@ function searchName(){
     		 	},
     		 	asynchronous:true        
 			}
-	var ajax=new Ajax.Request('../api/check_user.php?nickname='+name, opt);
+	var ajax=new Ajax.Request('../api/check_player.php?nickname='+encodeURIComponent(name), opt);
 	}
 }
 
@@ -200,7 +200,7 @@ function giveMl(){
     		 	},
     		 	asynchronous:true        
 			}
-	var ajax=new Ajax.Request('../function/ext_ml.php?uname='+encodeURI(uname)+'&sums='+sums+'&pname='+encodeURI(pname), opt);
+	var ajax=new Ajax.Request('../function/ext_ml.php?uname='+encodeURIComponent(uname)+'&sums='+encodeURIComponent(sums)+'&pname='+encodeURIComponent(pname), opt);
 }
 </script>
 

@@ -9,35 +9,78 @@
 *@Usage: 跨服战场领奖页面
 *请求后台公开接口
 */
-ini_set('display_errors',true);
-error_reporting(E_ALL);
+ini_set('display_errors', false);
+error_reporting(0);
 require_once('../config/config.game.php');
 require_once('../login/curl.php');
-$mem_welcome = unserialize($_pm['mem']->get('db_welcome'));
+require_once('../sec/dblock_fun.php');
+$kfFightBaseUrl = kdjlConfiguredServiceBaseUrl('KDJL_KF_FIGHT_BASE_URL');
+if($kfFightBaseUrl === '') die('跨服战中心未配置');
+$mem_welcome = kdjlSafeMemValue($_pm['mem']->get('db_welcome'), array());
 if(!is_array($mem_welcome))
 {
 	die("内存错误");
 }
-$user = $_pm['user']->getUserById($_SESSION['id']);
-$bag = $_pm['user']->getUserBagById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('登录状态无效！');
+$user = $_pm['user']->getUserById($uid);
+$bag = $_pm['user']->getUserBagById($uid);
+if(!is_array($user)) die('玩家数据错误！');
+$maxbag = isset($user['maxbag']) ? intval($user['maxbag']) : 0;
 $bagNum=0;
 if(is_array($bag))
 {
 	foreach($bag as $x => $y)
 	{
-		if($y['sums']>0 and $y['zbing'] == 0) 
+		$sums = isset($y['sums']) ? intval($y['sums']) : 0;
+		$zbing = isset($y['zbing']) ? intval($y['zbing']) : 0;
+		if($sums>0 and $zbing == 0)
 		{
-			$bagNum++;		
+			$bagNum++;
 		}
 	}
 }
-$snum = $user['maxbag'] - $bagNum;
+$snum = $maxbag - $bagNum;
 if($snum < 3)
 {
 	die('请留至少三个空格子！');
 }
-$interface = "http://pmmg1.webgame.com.cn/interface/kffight_get.php";
-$respone = curl_get($interface."?username=".urlencode($_SESSION['nickname'])."&host=".$_SERVER['HTTP_HOST']);
+function kdjlKfGivePrizeOrFail($task, $idlist, $uid)
+{
+	global $_pm;
+	$uid = intval($uid);
+	$lock = getLock($uid);
+	if(!is_array($lock)) die('服务器繁忙，请稍后再试');
+	$giveResult = $task->saveGetProps($idlist);
+	if($giveResult !== true)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		realseLock();
+		die($giveResult === '200' ? '背包空间不足！' : '发放跨服战奖励失败！');
+	}
+	if(!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		realseLock();
+		die('保存跨服战领奖状态失败！');
+	}
+	realseLock();
+	$_pm['mem']->del($uid.'bag');
+}
+
+$interface = $kfFightBaseUrl.'/kffight_get.php';
+$nickname = isset($_SESSION['nickname']) ? $_SESSION['nickname'] : '';
+$host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $host)) $host = 'localhost';
+$respone = curl_get($interface."?username=".urlencode($nickname)."&host=".urlencode($host));
+if($respone === false || $respone === '')
+{
+	die("战场接口暂时不可用，请稍后再试");
+}
+$respone = trim($respone);
+if(strlen($respone) > 64) die("战场接口返回异常，请稍后再试");
+$prize_arr = array();
+$prize_name = '';
 switch($respone)
 {
 	case 'no_stat' :
@@ -58,23 +101,26 @@ switch($respone)
 	}
 	case '5':
 	{
+		$joinPrize = '';
 		foreach($mem_welcome as $info)
 		{
-			if( $info['code'] == 'kf_join_prize')
-			{		
-				$kf_task = new task;
-				$kf_task->saveGetProps($info['contents']);
-				$prize_name = "参与奖";
+			if(is_array($info) && isset($info['code']) && $info['code'] == 'kf_join_prize')
+			{
+				$joinPrize = isset($info['contents']) ? $info['contents'] : '';
 				break;
 			}
 		}
+		if($joinPrize == '') die('跨服战参与奖配置错误！');
+		$kf_task = new task;
+		kdjlKfGivePrizeOrFail($kf_task, $joinPrize, $uid);
+		die("领奖成功,你获得参与奖品已经发放进您的背包");
 	}
 }
 foreach($mem_welcome as $info)
 {
-	if($info['code'] == 'kf_fight_prize_config')
+	if(is_array($info) && isset($info['code']) && $info['code'] == 'kf_fight_prize_config')
 	{
-		$ts_arr = explode('|',$info['contents']);
+		$ts_arr = explode('|',isset($info['contents']) ? $info['contents'] : '');
 		foreach($ts_arr as $key => $val)
 		{
 			$prize_arr[$key+1] = explode(',',$val);
@@ -82,7 +128,10 @@ foreach($mem_welcome as $info)
 	}
 }
 $respone_info = explode('|',$respone);
-switch($respone_info[0])
+if(count($respone_info) < 2) die('跨服战奖励接口返回错误！');
+$stage = intval($respone_info[0]);
+$rank = intval($respone_info[1]);
+switch($stage)
 {
 	case 1 :
 	{
@@ -97,7 +146,7 @@ switch($respone_info[0])
 		$prize_name = '第三阶段-';break;
 	}
 }
-switch($respone_info[1])
+switch($rank)
 {
 	case 1 :
 	{
@@ -117,6 +166,10 @@ switch($respone_info[1])
 	}
 }
 $kf_task = new task;
-$kf_task->saveGetProps($prize_arr[$respone_info[0]][$respone_info[1]-1]);
+if(!isset($prize_arr[$stage]) || !isset($prize_arr[$stage][$rank-1]) || $prize_arr[$stage][$rank-1] == '')
+{
+	die('跨服战奖励配置错误！');
+}
+kdjlKfGivePrizeOrFail($kf_task, $prize_arr[$stage][$rank-1], $uid);
 die("领奖成功,你获得".$prize_name."奖品已经发放进您的背包");
 ?>

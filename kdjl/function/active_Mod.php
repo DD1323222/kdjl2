@@ -10,20 +10,24 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
-define(MEM_TOP_KEY, "publictop");
+define('MEM_TOP_KEY', "publictop");
 
 
 secStart($_pm['mem']);
 
-$user = $_pm['user']->getUserById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) exit;
+$user = $_pm['user']->getUserById($uid);
+if(!is_array($user)) $user = array('task' => 0);
 //task check.
-$taskword= taskcheck(intval($user['task'])==0?1:$user['task'],8);
+$taskId = isset($user['task']) ? intval($user['task']) : 0;
+$taskword= taskcheck($taskId==0?1:$taskId,8);
 
-/*define(MEM_TOP_ACTIVE, "db_public");
+/*define('MEM_TOP_ACTIVE', "db_public");
 $welcome = unserialize($_pm['mem']->get(MEM_TOP_ACTIVE));*/
 
 $welcome = memContent2Arr("db_welcome",'code');
-$message = $welcome['public']['contents'];
+$message = (is_array($welcome) && isset($welcome['public']['contents'])) ? $welcome['public']['contents'] : '';
 
 //
 $_pm['mem']->memClose();
@@ -31,10 +35,11 @@ unset($db);
 
 //@Load template.
 $tn = $_game['template'] . 'tpl_active.html';
+$public = '';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array(
 				 '#word#',
 				 '#message#'

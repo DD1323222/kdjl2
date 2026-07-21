@@ -22,7 +22,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:90px;display:block;}
@@ -74,13 +74,17 @@ ol,ul {list-style:none}
 	top: 8px;
 }
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
 </style>
 
 <script type="text/javascript">
 	function setTab(name,cursel,n){
-	
-	for(i=1;i<=n;i++){
+	if(typeof selid != 'undefined' && selid && selid.style) selid.style.backgroundColor='#fff';
+	if(typeof bid != 'undefined') bid=0;
+	if(typeof price != 'undefined') price=0;
+	if(typeof pid != 'undefined') pid=0;
+	if(typeof selid != 'undefined') selid=0;
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
 	  if(i==cursel){
@@ -112,6 +116,8 @@ function showContent() {
     $('props_types').style.display = '';
 }
 var bid=0;// bag物品ID。
+var pid=0;
+var price=0;
 var selid=0;
 var types=-1;
 </script>
@@ -388,36 +394,49 @@ var types=-1;
 <script language="javascript">
 // Add by DuHao 2009-5-13
 var atype = "#atype#";
-if(atype == 3){
-	setTab('tab',3,3);
-}else if(atype == 2){
-	setTab('tab',2,3);
+atype = parseInt(atype, 10);
+if(atype >= 1 && atype <= 4){
+	setTab('tab',atype,4);
 }
 function copyWord(words)
 {
 	window.parent.$('baike_input').value=words;
+}
+function setTradeBuyNumDefault()
+{
+	var ids = ['num','sjnum','ybnum'];
+	for(var i=0;i<ids.length;i++)
+	{
+		if($(ids[i])) $(ids[i]).value = 1;
+	}
+}
+function reloadPaiAtype(atype)
+{
+	var url = window.location.href;
+	if(url.indexOf('?') == -1)
+	{
+		window.location.href = url + '?atype=' + atype;
+		return;
+	}
+	if(url.match(/([?&])atype=[^&]*/))
+	{
+		window.location.href = url.replace(/([?&])atype=[^&]*/, '$1atype=' + atype);
+		return;
+	}
+	window.location.href = url + '&atype=' + atype;
 }
 function sel(obj)
 {
 	if(selid!=0) selid.style.backgroundColor='#fff';
 	selid=obj;
 	obj.style.backgroundColor='#DFD496';
-	try
-	{
-		var pro = $(obj.id.replace("t","s")).innerHTML;
-		//$('num').value= parseInt(pro);
-		$('num').value = 1;
-	}
-	catch(e)
-	{
-		$('num').value = "";
-	}
+	setTradeBuyNumDefault();
 }
 
 function buy(){
 	var nums = parseInt($('num').value);
 	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
-	else if(nums<1 || nums>9999){window.parent.Alert('购买数量范围是1-9999之间的整数！');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
 	else{
 		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
 		var sump = price*parseInt(nums);
@@ -428,7 +447,7 @@ function buy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('您的金币不够！');
-					else if(n==0) {window.location.reload();}	
+					else if(n==0) {reloadPaiAtype(1);}	
 					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
 					else if(n==5) {window.parent.Alert('您操作太快！');}
 					else if(n==4) {window.parent.Alert('包裹空间不足！');}
@@ -599,7 +618,7 @@ function sale(){
     		 	},
     		 	asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/paiPropsGate.php?action=sale&bid='+pid,opt);
+			var ajax=new Ajax.Request('../function/paiPropsGate.php?action=sale&bagid='+bid+'&bid='+pid,opt);
 		}
 		else return;
 	}
@@ -619,6 +638,7 @@ function money()
 					window.parent.$('gw').src='./function/Pai_Mod.php?atype=2';
 				 }
 				 else if(n==100) {window.parent.Alert('您操作太快，请稍侯再试！');}
+				 else if(n==6) {window.parent.Alert('达到余额上限的款项仍保留在拍卖所，其余可领取款项已到账。');reloadPaiAtype(2);}
 				 else
 				 {
 				 	window.parent.Alert('您的拍卖所的钱为0！');
@@ -764,7 +784,7 @@ function ybpsell(){
 function sjbuy(){
 	var nums = parseInt($('sjnum').value);
 	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
-	else if(nums<1 || nums>1000){window.parent.Alert('购买数量范围是1-1000之间的整数！');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
 	else{
 		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
 		var sump = price*parseInt(nums);
@@ -775,7 +795,7 @@ function sjbuy(){
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
 					if(n==10) window.parent.Alert('你的水晶不够，可在神秘商店购买水晶卡增加水晶数量！');
-					else if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=3';}	
+					else if(n==0) {reloadPaiAtype(2);}	
 					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
 					else if(n==5) {window.parent.Alert('您操作太快！');}
 					else if(n==4) {window.parent.Alert('包裹空间不足！');}
@@ -801,7 +821,7 @@ function sjbuy(){
 function ybbuy(){
 	var nums = parseInt($('ybnum').value);
 	if(bid == 0){window.parent.Alert('请先选择要购买的物品。');return;}
-	else if(nums<1 || nums>1000){window.parent.Alert('购买数量范围是1-1000之间的整数！');return;}
+	else if(nums<1 || nums>100){window.parent.Alert('购买数量范围是1-100之间的整数！');return;}
 	else{
 		if(!validInt(nums)){window.parent.Alert('数量必须是数字!');return;};
 		var sump = price*parseInt(nums);
@@ -811,8 +831,8 @@ function ybbuy(){
     		 	method: 'get',
 				 onSuccess: function(t) {
 			 		var n=parseInt(t.responseText);
-					if(n==10) window.parent.Alert('你的元宝不够aaa！');
-					else if(n==0) {window.parent.$('gw').src='./function/Pai_Mod.php?atype=4';}	
+					if(n==10) window.parent.Alert('你的元宝不够！');
+					else if(n==0) {reloadPaiAtype(3);}	
 					else if(n==3) {window.parent.Alert('购买物品数量太多！');}
 					else if(n==5) {window.parent.Alert('您操作太快！');}
 					else if(n==4) {window.parent.Alert('包裹空间不足！');}

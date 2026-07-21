@@ -9,9 +9,10 @@
 <script language="javascript" src="../javascript/prototype.js"></script><strong></strong>
 <script type="text/javascript">
 	function setTab(name,cursel,n){
-	for(i=1;i<=n;i++){
+	for(var i=1;i<=n;i++){
 	  var menu=document.getElementById(name+i);
 	  var con=document.getElementById("con_"+name+"_"+i);
+	  if(!menu || !con) continue;
 	  menu.className=i==cursel?"on":"";
 	  con.style.display=i==cursel?"block":"none";
 	}
@@ -43,13 +44,16 @@ function friend(op)
     		 	asynchronous:true        
 			}
 			
-			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+name, opt);
+			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+encodeURIComponent(name), opt);
 			//$('f'+op).disabled=true;
 }
 function black(op)
 {
 	var name = $('nicknames').value;
-	if(name=='') window.parent.Alert('请正确输入玩家的角色名！');
+	if(name=='') {
+		window.parent.Alert('请正确输入玩家的角色名！');
+		return false;
+	}
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
@@ -76,7 +80,7 @@ function black(op)
     		 	asynchronous:true        
 			}
 			
-			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+name, opt);
+			var ajax=new Ajax.Request('../function/friendGate.php?op='+op+'&name='+encodeURIComponent(name), opt);
 			//$('f'+op).disabled=true;
 }
 function chat(name)
@@ -103,10 +107,10 @@ function blacks(name)
   </div>
   <div class="self_r r">
     <ul class="selftab">
-      <li onclick="setTab('self',1,3)" id="self1" class="on">
+      <li onclick="setTab('self',1,2)" id="self1" class="on">
         <p class="p1">属性</p>
       </li>
-      <li onclick="setTab('self',2,3)" id="self2">
+      <li onclick="setTab('self',2,2)" id="self2">
         <p class="p2">好友</p>
       </li>
      
@@ -170,6 +174,6 @@ function blacks(name)
 <script type="text/javascript">
 var listtype = #list#;
 if(listtype == 1){
-	setTab('self',2,3)
+	setTab('self',2,2)
 }
 </script>

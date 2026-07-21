@@ -1,8 +1,10 @@
 <?php
+header('HTTP/1.1 404 Not Found');
+exit;
 require_once('config/config.game.php');
 
 
-if($_SESSION['id']<1&&isset($_GET['id']))
+if((!isset($_SESSION['id']) || intval($_SESSION['id']) < 1) && isset($_GET['id']))
 {
 	$ip=get_real_ip();
 	$u = $_pm['mysql']->getOneRecord('select id from player where wg="'.$_pm['mysql']->escape($ip).'" limit 1');
@@ -17,12 +19,13 @@ if($_SESSION['id']<1&&isset($_GET['id']))
 	$_SESSION['vip']=0;
 	$bc=rand(1,5);
 	$key = $_SESSION['id'] . "chat";
-	if (!isset($_REQUEST['PHPSESSID']) || $_REQUEST['PHPSESSID']==='')
+	if (!isset($_REQUEST['PHPSESSID']) || is_array($_REQUEST['PHPSESSID']) || $_REQUEST['PHPSESSID']==='')
 	{
 		$_REQUEST['PHPSESSID'] = session_id();
 	}
+	if(!preg_match('/^[A-Za-z0-9,-]{1,128}$/', $_REQUEST['PHPSESSID'])) $_REQUEST['PHPSESSID'] = session_id();
 
-	
+
 	$crc = crc32($_REQUEST['PHPSESSID']);
 	if ($_pm['mem']->get($key) === false)
 	{
@@ -30,15 +33,17 @@ if($_SESSION['id']<1&&isset($_GET['id']))
 	}
 	else
 	{
-		$oldcrc = unserialize($_pm['mem']->get($key));
+		$oldcrc = kdjlSafeMemValue($_pm['mem']->get($key), '');
 		$_pm['mem']->set( array('k'=>$key, 'v'=>$crc) );
-		$_pm['mem']->del($oldcrc);
+		if ($oldcrc !== '' && (is_string($oldcrc) || is_numeric($oldcrc))) $_pm['mem']->del($oldcrc);
 	}
-	
-	$_pm['mysql']->query('insert into player set name="'.$_GET['n'].$_SESSION['id'].'",nickname="'.$_GET['n'].$_SESSION['id'].'",wg="'.$ip.'"');
-	
-	if($e=mysql_error()){
-		echo $e;
+
+	$namePrefix = (isset($_GET['n']) && !is_array($_GET['n'])) ? $_pm['mysql']->escape($_GET['n']) : '';
+	$robotName = $namePrefix.$_SESSION['id'];
+	$_pm['mysql']->query('insert into player set name="'.$robotName.'",nickname="'.$robotName.'",wg="'.$ip.'"');
+
+	if($e=mysql_error($_pm['mysql']->getConn())){
+		echo '创建机器人失败';
 	}else{
 		switch($bc)
 		{
@@ -51,89 +56,91 @@ if($_SESSION['id']<1&&isset($_GET['id']))
 		}
 		$u = $_SESSION['username'];
 		$bb = $_pm['mysql']->getOneRecord("SELECT * FROM bb WHERE id={$tbc} LIMIT 0,1");
-		
+
 		if (is_array($bb))
 		{
 			$czl = getCzl($bb['czl']);
-			$uinfo = $_pm['mysql']->getOneRecord("SELECT id,nickname 
-										  FROM player 
-										 WHERE name='{$u}' 
+			$uinfo = $_pm['mysql']->getOneRecord("SELECT id,nickname
+										  FROM player
+										 WHERE name='{$u}'
 										 LIMIT 0,1");
-			echo '<pre>
-line='.__LINE__.'
-';
-var_dump($uinfo);
-echo '</pre>
-';die();
+
 			$_SESSION['id']=$uinfo['id'];
 			$_pm['mysql']->query("INSERT INTO userbb(name,uid,username,level,wx,ac,mc,srchp,hp,srcmp,mp,skillist,stime,nowexp,
-									lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg)
+									lexp,imgstand,imgack,imgdie,hits,miss,speed,kx,remakelevel,remakeid,remakepid,czl,headimg,cardimg,effectimg,old_bid)
 						VALUES('{$bb['name']}','{$uinfo['id']}','{$uinfo['nickname']}','1','{$bb['wx']}',
 							   '{$bb['ac']}','{$bb['mc']}','{$bb['hp']}','{$bb['hp']}','{$bb['mp']}','{$bb['mp']}','{$bb['skillist']}',unix_timestamp(),
 							  '{$bb['nowexp']}','55','{$bb['imgstand']}','{$bb['imgack']}','{$bb['imgdie']}',
 							   '{$bb['hits']}','{$bb['miss']}','{$bb['speed']}','{$bb['kx']}','{$bb['remakelevel']}',
-							   '{$bb['remakeid']}','{$bb['remakepid']}','{$czl}','t{$tbc}.gif','k{$tbc}.gif','q{$tbc}.gif')
+							   '{$bb['remakeid']}','{$bb['remakepid']}','{$czl}','t{$tbc}.gif','k{$tbc}.gif','q{$tbc}.gif','{$tbc}')
 					  ");
-			$ids = $_pm['mysql']->getOneRecord("SELECT id 
-										FROM userbb 
-									   WHERE uid={$uinfo['id']} 
-									   ORDER BY stime DESC 
+			$ids = $_pm['mysql']->getOneRecord("SELECT id
+										FROM userbb
+									   WHERE uid={$uinfo['id']}
+									   ORDER BY stime DESC
 									   LIMIT 0,1"); // get last bb.
-			
-			$arr = split(":", $bb['skillist']);
+
+			$arr = explode(":", $bb['skillist']);
 			// Get jn info.
-			$jn = $_pm['mysql']->getOneRecord("SELECT * 
-									   FROM skillsys 
+			$jn = $_pm['mysql']->getOneRecord("SELECT *
+									   FROM skillsys
 									  WHERE id = {$arr[0]}");
-			$ack  = split(",", $jn['ackvalue']);
-			$plus = split(",", $jn['plus']);
-			$uhp  = split(",", $jn['uhp']);
-			$ump  = split(",", $jn['ump']);
+			$ack  = explode(",", $jn['ackvalue']);
+			$plus = explode(",", $jn['plus']);
+			$uhp  = explode(",", $jn['uhp']);
+			$ump  = explode(",", $jn['ump']);
 			// Insert userbb jn.
-						
+
 			$_pm['mysql']->query("INSERT INTO skill(bid,name,level,vary,wx,value,plus,img,uhp,ump)
 						VALUES('{$ids['id']}', '{$jn['name']}','{$arr['1']}','{$jn['vary']}','{$jn['wx']}','{$ack['0']}','{$plus['0']}','{$jn['img']}','{$uhp['0']}','{$ump['0']}')");
 			$_pm['mysql']->query("UPDATE player SET mbid = {$ids['id']} WHERE nickname='{$uinfo['nickname']}'");
-			
+
 			$_pm['mysql']->query("insert into player_ext set uid= ".$_SESSION['id'].',team_auto_times=90000');
 		}
-	}		
+	}
 	die('<script language="javascript">window.location.reload();</script>');//alert("注册成功:('.$_SESSION['id'].')");
 }
 
 function get_real_ip(){
 	$ip=false;
 
-	if(!empty($_SERVER["HTTP_CLIENT_IP"])){
+	if(!empty($_SERVER["HTTP_CLIENT_IP"]) && filter_var($_SERVER["HTTP_CLIENT_IP"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)){
 		$ip = $_SERVER["HTTP_CLIENT_IP"];
 	}
-	
+
 	if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-		$ips = explode (", ", $_SERVER['HTTP_X_FORWARDED_FOR']);
-		if ($ip) { 
-			array_unshift($ips, $ip); $ip = FALSE; 
+		$ips = explode(",", $_SERVER['HTTP_X_FORWARDED_FOR']);
+		if ($ip) {
+			array_unshift($ips, $ip); $ip = FALSE;
 		}
 		for ($i = 0; $i < count($ips); $i++) {
-			if (!preg_match("/^(10|172\.16|192\.168)\./i", $ips[$i])) {
-				$ip = $ips[$i];
+			$ipCandidate = trim($ips[$i]);
+			if (filter_var($ipCandidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && !preg_match("/^(10|172\.(1[6-9]|2[0-9]|3[0-1])|192\.168)\./i", $ipCandidate)) {
+				$ip = $ipCandidate;
 				break;
 			}
 		}
 	}
-	return ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
+	$remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+	return ($ip ? $ip : (filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $remoteAddr : ''));
 }
 require_once('login/qidian_config.php');
 //require_once((dirname(__FILE__)).'/kernel/dbSession.v1.php');
-if($_SESSION['id'] == "")
+if(!isset($_SESSION['id']) || $_SESSION['id'] == "")
 {
 	die('<script type="text/javascript">window.location="login/login.php"</script>');
 }
 secStart($_pm['mem']);
 
 define("WEL","db_welcome1");
-$cmd = unserialize($_pm['mem'] -> get(WEL));
+$cmd = kdjlSafeMemValue($_pm['mem'] -> get(WEL), array());
+$cmdDefaults = array('swfemotion'=>'','title'=>'','iframe'=>'','guanwang'=>'','pay'=>'','kefu'=>'','discuss'=>'','exit'=>'','linkatbottom'=>'','adbottomleft'=>'','adbottomright'=>'','ad_top'=>'','help'=>'');
+foreach($cmdDefaults as $cmdKey => $cmdDefault)
+{
+	if(!isset($cmd[$cmdKey])) $cmd[$cmdKey] = $cmdDefault;
+}
 
-$giftword = str_replace("\r\n",'!@#$^',$cmd['swfemotion']);
+$giftword = str_replace("\r\n",'!@#$^',isset($cmd['swfemotion']) ? $cmd['swfemotion'] : '');
 
 if(isset($_SESSION['ghpstr'])){
 	if(!empty($_SESSION['ghpstr'])){
@@ -142,21 +149,45 @@ if(isset($_SESSION['ghpstr'])){
 		$numarr = explode("\r\n",$_SESSION['ghpstr']);
 		$arr = explode(',',$numarr[0]);
 		$task = new task();
+		$str = '';
+		$checkflag = '';
+		$remainingRewards = array();
+		$awardedAny = false;
 		if(is_array($arr)){
 			foreach($arr as $v){
 				$inarr = explode(':',$v);
-				if(count($inarr) != 2){
+				if(count($inarr) != 2 || intval($inarr[0]) < 1 || intval($inarr[1]) < 1){
+					$checkflag .= '奖励配置错误；';
 					continue;
 				}
-				$givecheck = $task->saveGetPropsMore($inarr[0],$inarr[1]);
-				$parr = $_pm['mysql'] -> getOneRecord("SELECT name FROM props WHERE id = {$inarr[0]}");
-				$str .= '获得物品：'.$parr['name'].'&nbsp;'.$inarr[1].' 件，';
+				$pid = intval($inarr[0]);
+				$num = intval($inarr[1]);
+				$parr = $_pm['mysql'] -> getOneRecord("SELECT name FROM props WHERE id = {$pid}");
+				if(!is_array($parr)){
+					$checkflag .= '道具 '.$pid.' 不存在；';
+					continue;
+				}
+				$givecheck = false;
+				if($_pm['mysql']->query('START TRANSACTION')){
+					$givecheck = $task->saveGetPropsMore($pid,$num);
+					if($givecheck === true && $_pm['mysql']->query('COMMIT')){
+						$awardedAny = true;
+						$str .= '获得物品：'.$parr['name'].'&nbsp;'.$num.' 件，';
+						continue;
+					}
+					$_pm['mysql']->query('ROLLBACK');
+				}
+				$remainingRewards[] = $pid.':'.$num;
+				$checkflag .= ($givecheck === '200') ? '背包空间不足；' : '奖励发放失败；';
 			}
 		}
-		$pnote = 'card='.$_REQUEST['cardid'].'&pass='.$_REQUEST['pwd'].'&应得奖励：'.$numarr[0].'----实际：'.$str.'-----'.$checkflag;
-		$_pm['mysql'] -> query("insert into gamelog (ptime,seller,buyer,pnote,vary) values (".time().",{$_SESSION['id']},{$_SESSION['id']},'$pnote',91)");
-		$_SESSION['ghpstr'] = '';
-		$_SESSION['ghflag'] = '';
+		if($awardedAny) $_pm['mem']->del(MEM_USERBAG_KEY);
+		$requestCardId = (isset($_REQUEST['cardid']) && !is_array($_REQUEST['cardid'])) ? $_pm['mysql']->escape($_REQUEST['cardid']) : '';
+		$pnote = 'card='.$requestCardId.'&pass=***&应得奖励：'.$numarr[0].'----实际：'.$str.'-----'.$checkflag;
+		$pnoteSql = $_pm['mysql']->escape($pnote);
+		$_pm['mysql'] -> query("insert into gamelog (ptime,seller,buyer,pnote,vary) values (".time().",{$_SESSION['id']},{$_SESSION['id']},'$pnoteSql',91)");
+		$_SESSION['ghpstr'] = empty($remainingRewards) ? '' : implode(',',$remainingRewards);
+		if(empty($remainingRewards)) $_SESSION['ghflag'] = '';
 	}
 }
 
@@ -174,7 +205,7 @@ session_write_close();
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=gbk" />
 <title>
-<?=$cmd['title']?>
+<?php echo $cmd['title']; ?>
 </title>
 <link href="css/global.css" rel="stylesheet" type="text/css" />
 <script src="js/global.js" type="text/javascript"></script>
@@ -182,12 +213,13 @@ session_write_close();
 <script language=javascript src='/javascript/prototype.js'></script>
 <script src="/javascript/scriptaculous.js" type="text/javascript"></script>
 <script language=javascript src='/javascript/index.js'></script>
+<script type="text/javascript" src="/javascript/font12-bold.js?v=<?php echo filemtime(dirname(dirname(__FILE__)).'/javascript/font12-bold.js'); ?>"></script>
 <script language=javascript src='/javascript/msg.js'></script>
 
 <style type="text/css">
 .nav{width:459px; height:294px;color:#630;}
 .nav_01{width:459px; height:37px; float:left;}
-.nav_02{width:419px; height:279px; background-image:url(../new_images/ui/cjjzbg03.gif); float:left; padding:15px 0 0 40px; } 
+.nav_02{width:419px; height:279px; background-image:url(../new_images/ui/cjjzbg03.gif); float:left; padding:15px 0 0 40px; }
 .tt1 {
 	border: 1px solid #960;background-color:#F3E4B2;
 }
@@ -198,16 +230,16 @@ session_write_close();
 </head>
 <script language="javascript">
 function DRAG(){
-	if(!document.all){    
-		Event = arguments[0];		
+	if(!document.all){
+		Event = arguments[0];
 		try{UnTip();showm();}catch(e){}
 	}else{
 		Event = event;
-		
+
 		try{UnTip();showm();}catch(e){}
 	}
 }
-if(!document.all){    
+if(!document.all){
 	window.onmousemove = DRAG;
 }else{
 	document.onmousemove = DRAG;
@@ -222,13 +254,13 @@ var CURSOR_HAND = 'c:pointer';
 var friends={};
 var blacks={};
 
-var username="<?php echo $_SESSION["username"] ?>";
+var username="<?php echo addcslashes(isset($_SESSION["username"]) ? $_SESSION["username"] : '', "\\\"\r\n"); ?>";
 
-function   killErrors(){  
+function   killErrors(){
 	return   true;
-}     
+}
 
-window.onerror =  killErrors; 
+window.onerror =  killErrors;
 var loudSpeaksMsg = {};
 var displayedMsgId = 0;
 function loadads()
@@ -257,15 +289,15 @@ function loadads()
 		div1.style.display="none";
 	}
 }
-	
-	function   killErrors(){  
+
+	function   killErrors(){
 		return   true;
-	}     
-	window.onerror =  killErrors; 
+	}
+	window.onerror =  killErrors;
 	var loudSpeaksMsg = {};
 	var displayedMsgId = 0;
-	
-	
+
+
 
   String.prototype.trim = function() {
     return this.replace(/(^\s*)|(\s*$)/g, "");
@@ -273,7 +305,7 @@ function loadads()
 
   function searchPocketBaike() {
     var searchKey = $("baike_input").value.trim();
-    
+
     if (searchKey) {
         var url = 'function/search_knol.php?key=' + searchKey;
         //window.open(url, '', 'location=no,status=no');
@@ -306,14 +338,14 @@ function loadads()
 		{
 			allm = allm+"<img src='"+imgserver+"images/ui/motion/"+i+".gif' onclick=\"sendm('("+i+")')\"/> ";
 		}
-			
+
 		$('cmdiv').innerHTML = allm+"<span onclick=$('cmdiv').style.display='none' style=cursor:pointer;>&nbsp;&nbsp;<u><b><font color=red>关</font></b></u></span>";
 	}
 	function sendm(m)
 	{
 		$('cmsg').value+=m;
 	}
-				
+
 </script>
 <script language="JavaScript">
 function dealUserList(str)
@@ -331,8 +363,8 @@ function refreshFAndB()
 	var fstr=thisMovie("socketChatswf").getFriendList();
 	var bstr=thisMovie("socketChatswf").getBlackList();
 	var strs = [];
-	var str = fstr;	
-	
+	var str = fstr;
+
 	if(str.length>0)
 	{
 		strs = str.split("|");
@@ -340,13 +372,13 @@ function refreshFAndB()
 		{
 			if(strs[i].length>0)
 			{
-				friends[strs[i].replace(/[\$\`]/g,'')] = 0;				
+				friends[strs[i].replace(/[\$\`]/g,'')] = 0;
 			}
 		}
-		updateFriendListHTML();		
+		updateFriendListHTML();
 	}
-	
-	str = bstr;	
+
+	str = bstr;
 	if(str.length>0)
 	{
 		strs = str.split("|");
@@ -372,20 +404,20 @@ function updateFriendListHTML()
 		{
 			color='#009900';
 		}
-		tmp+='<li style="cursor:pointer; color:'+color+'" onclick="$(\'cmsg\').value=\'//'+name+' \'">'+name+'</span></li>';		
+		tmp+='<li style="cursor:pointer; color:'+color+'" onclick="$(\'cmsg\').value=\'//'+name+' \'">'+name+'</span></li>';
 	}
 	tmp+='</ul>';
 	obj.innerHTML=tmp;
 }
 
 function updateForBOl(name,sts)
-{	
+{
 	if(typeof(friends[name])!='undefined')
-	{		
+	{
 		friends[name] = sts;
-		updateFriendListHTML();	
+		updateFriendListHTML();
 	}
-	
+
 	if(typeof(blacks[name])!='undefined')
 	{
 		blacks[name] = sts;
@@ -420,7 +452,7 @@ function AsCallBack(str)
 	}else if(str=='getTeamFightMod'){
 		document.getElementById('gw').contentWindow.getTeamFightMod();
 	}else if(str.substr(0,16)=='getTeamFightGate'){
-		document.getElementById('gw').contentWindow.getTeamFightGate(str.substr(16));	
+		document.getElementById('gw').contentWindow.getTeamFightGate(str.substr(16));
 	}else if(str=='information-->'){
 		msgflag = 1;
 		change_type();
@@ -477,7 +509,7 @@ function doReload()
 		}
 	}catch(e){
 	}
-	
+
 	try{
 		thisMovie("socketChatswf").reconnectSocket();
 	}catch(e){
@@ -514,21 +546,28 @@ function whenConnect2()
 	}
 }
 <?php
+$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $httpHost)) $httpHost = '';
+$sessionCookieName = ini_get("session.name");
+$sessionCookieValue = (isset($_COOKIE[$sessionCookieName]) && !is_array($_COOKIE[$sessionCookieName])) ? $_COOKIE[$sessionCookieName] : session_id();
+if(!preg_match('/^[A-Za-z0-9,-]{1,128}$/', $sessionCookieValue)) $sessionCookieValue = session_id();
 $str=$_SESSION['id'].$_SESSION['username'].intval($_SESSION['password']).intval($_SESSION['vip']).iconv('gbk','utf-8',$_SESSION['nickname']);
+$settingText = (isset($server_ip)?$server_ip:$httpHost)
+	."|".$sessionCookieValue."|".$socket_port."|30|".
+	$_SESSION['id']."|".$_SESSION['username']."|".intval($_SESSION['password'])."|".intval($_SESSION['vip']).'|'.$_SESSION['nickname'].'|'.md5($str);
+$settingTextJs = addcslashes($settingText, "\\\"\r\n");
+$nicknameGbJs = addcslashes(isset($_SESSION['nicknamegb']) ? $_SESSION['nicknamegb'] : '', "\\\"\r\n");
 ?>
 
 function getSetting()
 {
-	return "<?php echo (isset($server_ip)?$server_ip:$_SERVER['HTTP_HOST'])
-	."|".$_COOKIE[ini_get("session.name")]."|".$socket_port."|30|".
-	$_SESSION['id']."|".$_SESSION['username']."|".intval($_SESSION['password'])."|".intval($_SESSION['vip']).'|'.$_SESSION['nickname'].'|'.md5($str);
-	?>";
+	return "<?php echo $settingTextJs; ?>";
 }
 
 function getName()
 {
 	//<?php echo $_SESSION['nickname']."\r\n"; ?>
-	return "<?php echo $_SESSION['nicknamegb']; ?>";
+	return "<?php echo $nicknameGbJs; ?>";
 }
 
 
@@ -540,7 +579,7 @@ function thisMovie(movieName) {
 	}
 }
 
-function sendToActionScript(value) {	
+function sendToActionScript(value) {
 	thisMovie("socketChatswf").sendToActionScript(value);
 }
 
@@ -570,8 +609,8 @@ function callJS(str)
 function callGMCommand(str)
 {
 	var opt = {
-    		 method: 'get',
-    		 onSuccess: function(t) {
+		 method: 'get',
+		 onSuccess: function(t) {
 				 if(t.responseText == 'NOBROADCAST'){
 					 Alert('您没有喇叭道具！');
 				 }
@@ -584,12 +623,12 @@ function callGMCommand(str)
 				 if(t.responseText.indexOf('nabaweihu')==0){
 					 Alert('喇叭功能正在维护中！');
 				 }
-    		 },
-    		 on404: function(t) {
-    		 },
-    		 onFailure: function(t) {
-    		 },
-    		 asynchronous:true        
+		 },
+		 on404: function(t) {
+		 },
+		 onFailure: function(t) {
+		 },
+		 asynchronous:true
 		}
 
 	var ajax=new Ajax.Request('/function/chatGate.php?msg='+decodeURI(str), opt);
@@ -617,13 +656,13 @@ function substrx(str,len)//截取文字,英文算半个
 function GetSwfVer(){
 	// NS/Opera version >= 3 check for Flash plugin in plugin array
 	var flashVer = -1;
-	
+
 	if (navigator.plugins != null && navigator.plugins.length > 0) {
 		if (navigator.plugins["Shockwave Flash 2.0"] || navigator.plugins["Shockwave Flash"]) {
 			var swVer2 = navigator.plugins["Shockwave Flash 2.0"] ? " 2.0" : "";
 			var flashDescription = navigator.plugins["Shockwave Flash" + swVer2].description;
 			var descArray = flashDescription.split(" ");
-			var tempArrayMajor = descArray[2].split(".");			
+			var tempArrayMajor = descArray[2].split(".");
 			var versionMajor = tempArrayMajor[0];
 			var versionMinor = tempArrayMajor[1];
 			var versionRevision = descArray[3];
@@ -649,7 +688,7 @@ function GetSwfVer(){
 	else if (navigator.userAgent.toLowerCase().indexOf("webtv") != -1) flashVer = 2;
 	else if ( isIE && isWin && !isOpera ) {
 		flashVer = ControlVersion();
-	}	
+	}
 	return flashVer;
 }
 function ControlVersion()
@@ -669,14 +708,14 @@ function ControlVersion()
 		try {
 			// version will be set for 6.X players only
 			axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");
-			
+
 			// installed player is some revision of 6.0
 			// GetVariable("$version") crashes for versions 6.0.22 through 6.0.29,
-			// so we have to be careful. 
-			
+			// so we have to be careful.
+
 			// default to the first public version
 			version = "WIN 6,0,21,0";
-			// throws if AllowScripAccess does not exist (introduced in 6.0r47)		
+			// throws if AllowScripAccess does not exist (introduced in 6.0r47)
 			axo.AllowScriptAccess = "always";
 			// safe to call for 6.0r47 or greater
 			version = axo.GetVariable("$version");
@@ -711,7 +750,7 @@ function ControlVersion()
 			version = -1;
 		}
 	}
-	
+
 	return version;
 }
 function DetectFlashVer(reqMajorVer, reqMinorVer, reqRevision)
@@ -731,7 +770,7 @@ function DetectFlashVer(reqMajorVer, reqMinorVer, reqRevision)
 		var versionMajor      = versionArray[0];
 		var versionMinor      = versionArray[1];
 		var versionRevision   = versionArray[2];
-        	// is the major.revision >= requested major.revision AND the minor version >= requested minor
+	// is the major.revision >= requested major.revision AND the minor version >= requested minor
 		if (versionMajor > parseFloat(reqMajorVer)) {
 			return true;
 		} else if (versionMajor == parseFloat(reqMajorVer)) {
@@ -757,12 +796,12 @@ if(!hasRightVersion) {
 	var alternateContent = ' 您的flash player版本过低,不能正常游戏。\r\n '
 		+ '现在去获取flash player的新版本么? ';
 	if(confirm(alternateContent)){
-		window.location= 'http://www.adobe.com/go/getflashplayer/';	
+		window.location= 'http://www.adobe.com/go/getflashplayer/';
 	}
 }
 jsReady = true;
 
-window.onbeforeunload = function(){ 
+window.onbeforeunload = function(){
 	return checkTF();
 }
 function checkTF(){
@@ -772,7 +811,7 @@ function checkTF(){
 		{
 			if(arguments[0])
 				return true;
-			else	
+			else
 				return;
 		}else{
 			return "您正在组队战斗,退出将导致您和其它队员不可预料的状况,确定离开吗?\n出现不正常情况时，请解散队伍之后重新组队！";
@@ -780,15 +819,20 @@ function checkTF(){
 	}
 	if(arguments[0])
 		return true;
-	else	
+	else
 		return;
+}
+function decodeContactName(str){
+	var node=document.createElement('div');
+	node.innerHTML=str;
+	return typeof(node.textContent)=='string'?node.textContent:node.innerText;
 }
 function blacklistu(str){
 	var datas=str.split('<u>');
 	var tmp='';
 	var con='';
 	for(var i=1;i<datas.length;i++){
-		tmp+=con+datas[i].substr(0,datas[i].indexOf('<'));
+		tmp+=con+decodeContactName(datas[i].substr(0,datas[i].indexOf('<')));
 		con=',';
 	}
 	thisMovie('socketChatswf').setBlackList(tmp);
@@ -799,18 +843,18 @@ function friendlistu(str){
 	var con='';
 	var tmpf={};
 	for(var i=1;i<datas.length;i++){
-		var name=datas[i].substr(0,datas[i].indexOf('<'));
+		var name=decodeContactName(datas[i].substr(0,datas[i].indexOf('<')));
 		tmp+=con+name;
 		con=',';
 		if(typeof(friends[name])=='undefined')
-		{		
+		{
 			tmpf[name] = 0;
 		}else{
 			tmpf[name] = friends[name];
 		}
 	}
 	friends=tmpf;
-	updateFriendListHTML();	
+	updateFriendListHTML();
 	thisMovie('socketChatswf').setFriendList(tmp);
 	//dealUserList(tmp);
 }
@@ -838,7 +882,7 @@ function friendlistu(str){
 <iframe id="iframechat" width="600" height="215" scrolling="no" src="/socketChat/chatS.php" style="display:none; z-index:3;left:400px;top:600px; position:absolute;" class="wgframe"></iframe>
 <?php
 //盛大IBW显示开始
-$www=explode('.',$_SERVER['HTTP_HOST']);
+$www=explode('.',$httpHost);
 $website='';
 for($i=1;$i<count($www);$i++)
 {
@@ -847,21 +891,21 @@ for($i=1;$i<count($www);$i++)
 switch ($website)
 {
 	case 'game.qidian.com.':
-	
+
 ?>
-<script type="text/javascript" src="http://ibw.sdo.com/flash/js/webwidget.js"> 
+<script type="text/javascript" src="http://ibw.sdo.com/flash/js/webwidget.js">
 </script>
 <script type="text/javascript">
 ibw.appid=608;
 ibw.color="230";//圈圈皮肤默认颜色
 ibw.brightness="0.86999";//圈圈皮肤默认亮度
 ibw.saturation="0.76";//圈圈皮肤默认饱和度
-ibw.barMode=1;//圈圈在网页默认显示的模式(竖向:1 横向:2) 
-ibw.barDisplay="none";//圈圈在网页默认显示的状态，（打开："block"；关闭："none") 
+ibw.barMode=1;//圈圈在网页默认显示的模式(竖向:1 横向:2)
+ibw.barDisplay="none";//圈圈在网页默认显示的状态，（打开："block"；关闭："none")
 ibw.needLogout=false;// 设定圈圈是否需要注销功能（true(默认)：需要； false：不需要）
 ibw.barTop=30; ibw.barRight=30;//圈圈在网页默认显示的位置
 </script>
-<?php	
+<?php
 break;
 }
 ?>
@@ -964,26 +1008,26 @@ break;
           </form>
         </div>
         <!-- 口袋百科搜索 结束 -->
-        <iframe name="gamewindow" src="<?=$cmd['iframe']?>" style="width:253px; height:94px; overflow:hidden;" frameborder="0" scrolling="no" allowTransparency="true"></iframe>
+        <iframe name="gamewindow" src="<?php echo $cmd['iframe']; ?>" style="width:253px; height:94px; overflow:hidden;" frameborder="0" scrolling="no" allowTransparency="true"></iframe>
         <!-- 新闻活动调用 开始 -->
-        
+
         <!-- 新闻活动调用 结束 -->
         <div class="link">
           <ul>
             <!-- 右下链接 开始 -->
             <li><a  onclick="$('help').style.display='block';void(0)">帮助</a></li>
-            <li><a href="<?=$cmd['guanwang']?>" target="_blank">官网</a></li>
-            <li><a onclick="<?=$cmd['pay']?>;void(0);" class="pay">充值</a></li>
-            <li><a href="<?=$cmd['kefu']?>" target="_blank">客服</a></li>
-            <li><a href="<?=$cmd['discuss']?>" target="_blank">论坛</a></li>
-            <li><a href="<?=$cmd['exit']?>">退出</a></li>
+            <li><a href="<?php echo $cmd['guanwang']; ?>" target="_blank">官网</a></li>
+            <li><a onclick="<?php echo $cmd['pay']; ?>;void(0);" class="pay">充值</a></li>
+            <li><a href="<?php echo $cmd['kefu']; ?>" target="_blank">客服</a></li>
+            <li><a href="<?php echo $cmd['discuss']; ?>" target="_blank">论坛</a></li>
+            <li><a href="<?php echo $cmd['exit']; ?>">退出</a></li>
             <!-- 右下链接 结束 -->
           </ul>
         </div>
       </div>
     </div>
     <!-- 底部链接 开始 -->
-    <?=$cmd['linkatbottom']?>
+    <?php echo $cmd['linkatbottom']; ?>
     <!--div class="footer"><a href="#">新手帮助</a><a href="#">宠物合成</a><a href="#">追龙任务</a><a href="#">宠物一览</a><a href="#">道具获得</a><a href="#">17173百科</a><a href="#">在线问题提交</a></div-->
     <!-- 底部链接 结束 -->
   </div>
@@ -1012,17 +1056,17 @@ break;
 </div>
 <!--下面广告-->
 <div id=adbottomleft style="left:20px;top:635px;width=460px;height=110px;position:absolute;">
-  <?=$cmd['adbottomleft']?>
+  <?php echo $cmd['adbottomleft']; ?>
 </div>
 <div id=adbottomright style="left:522px;top:635px;width=460px;height=110px;position:absolute;">
-  <?=$cmd['adbottomright']?>
+  <?php echo $cmd['adbottomright']; ?>
 </div>
 <!--右边广告-->
 <div id=adright style="left: 1007px; width: 120px; height: 430px; top:0px; position:absolute">
 </script>
 </div>
 <div id=ads style="left:1007px;top:440px;width=120px;height=193px;position:absolute;">
-  <?=$cmd['ad_top']?>
+  <?php echo $cmd['ad_top']; ?>
 </div>
 <div id='systips' style="position:absolute;width:246px; z-index:2;left:400px;top:410px;font-size:12px;color:#ffffff;height:142px; border:0px;background:url(../new_images/index/boxk.gif);filter:alpha(opacity=80); -moz-opacity:0.8;display:none; padding:10px;z-index:30001"></div>
 <!--帮助-->
@@ -1040,7 +1084,7 @@ break;
     <tr>
       <td height="174" valign="top" align="left" background="../images/help/bbz04.gif" style="font-size:12px;padding:10px;padding-top:0px;line-height:1.7;"><a href="javascript:helpsys('desc');void(0);" style='color:#1c4ec1'>简介</a> <a href="javascript:helpsys('city');void(0);" style='color:#1c4ec1'>城镇</a> <a href="javascript:helpsys('shop');void(0);" style='color:#1c4ec1'>商店</a> <a href="javascript:helpsys('gpc');void(0);" style='color:#1c4ec1'>打怪</a> <a href="javascript:helpsys('skill');void(0);" style='color:#1c4ec1'>技能</a> <a href="javascript:helpsys('chat');void(0);" style='color:#1c4ec1'>聊天</a> <a href="javascript:helpsys('task');void(0);" style='color:#1c4ec1'>任务</a> <a href="javascript:helpsys('bag');void(0);" style='color:#1c4ec1'>装备</a> <a href="javascript:$('help').style.display='none';void(0);" style='color:#1c4ec1'>关闭</a> <span id='helptarget' style="color:#333333;"><br/>
         《口袋精灵》是根据提取口袋精灵系列游戏的精华进行改编的超人气宠物网页游戏,不用下载,即使在上班的时候,你只要打开网页就能和自己心爱的宠物愉快的度过一天！.<br/>
-        <a href="<?=$cmd['help']?>" target="_blank"><img src="../images/help/help.gif" 
+        <a href="<?php echo $cmd['help']; ?>" target="_blank"><img src="../images/help/help.gif"
 		border=0></a> <font color=green>关闭后按TAB键(字母Q左边的键)可以再次打开！</font> </span> </td>
     </tr>
     <tr>
@@ -1049,7 +1093,7 @@ break;
   </table>
 </div>
 <div class="box_task_show_123" id="taskmsg">
-  
+
 </div>
 
 <div width="680" id="swfdbgdiv" height="240" style="display:none;left:0px;top:600px; z-index:3; position:absolute" class="wgframe">
@@ -1154,13 +1198,13 @@ new Draggable('Box_Tools_3',{scroll:window,zindex:1,handle:'Box_Tools_3_handle',
 </script>
 <script type="text/javascript">
 pageInit();
-function addBookmark() {	
+function addBookmark() {
 	//window.external.AddFavorite(document.location.href,document.title);
-	if (document.all){   
-       window.external.addFavorite(document.URL,document.title);   
-    }else if (window.sidebar){   
-       window.sidebar.addPanel(document.title, document.URL, "");   
-    } 
+	if (document.all){
+       window.external.addFavorite(document.URL,document.title);
+    }else if (window.sidebar){
+       window.sidebar.addPanel(document.title, document.URL, "");
+    }
 }
 
 function blacklist()
@@ -1192,26 +1236,26 @@ function OpenLogin(op,tid,n){
 		var SSS = xHeight
 	}
 	var opt = {
-     	method: 'get',
+	method: 'get',
 		onSuccess: function(t) {
 					//$('do_task').innerHTML = "";
-			 		if(t.responseText!='') $('taskmsg').innerHTML = t.responseText;
-    		 	},
-     	asynchronous:true        
+					if(t.responseText!='') $('taskmsg').innerHTML = t.responseText;
+			},
+	asynchronous:true
 	}
 	var ajax=new Ajax.Request('../function/getTaskinfo.php?op='+op+'&n='+n+'&t='+tid, opt);
 	var sHH = document.documentElement.clientHeight;
-	document.getElementById('light').style.display='block'; 
+	document.getElementById('light').style.display='block';
 	document.getElementById('light').style.width=sWidth+"px";
 	document.getElementById('light').style.height=SSS+"px";
 	document.getElementById('taskmsg').style.display='block';
-	document.getElementById('taskmsg').style.display='block';	
+	document.getElementById('taskmsg').style.display='block';
 	document.getElementById('taskmsg').style.top=20+"px";
 	document.getElementById('taskmsg').style.left=x+"px";
 }
 function CloseLogin(){
-	document.getElementById('light').style.display='none'; 	
-	document.getElementById('taskmsg').style.display='none'; 
+	document.getElementById('light').style.display='none';
+	document.getElementById('taskmsg').style.display='none';
 }
 </script>
 <script language="javascript" src="/javascript/robot.js"></script>

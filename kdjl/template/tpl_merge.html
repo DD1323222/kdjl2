@@ -23,7 +23,7 @@ td{height:25px}
 .clearfix{zoom:1;}  
 ol,ul {list-style:none} 
 
-.leaft{margin:3px 0 0 5px;background:url(../new_images/ui/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
+.leaft{margin:3px 0 0 5px;background:url(../images/i_bnt.gif) repeat scroll 0 -68px;width:39px;height:17px;border:0 none;cursor:pointer}
 .task_nav{width:640px;height:29px;}
 .task_nav li{float:left;height:29px;}
 .task_nav li a{width:89px;display:block;}
@@ -68,10 +68,12 @@ ol,ul {list-style:none}
 .con{display:none;}
 #apDiv1 {position:absolute;	width:305px;height:20px;z-index:2;left: 361px;top: 4px;}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#DE4E67; padding-top:2px;}
-.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;cursor:pointer;border:0 none;margin:0px 5px 0 5px;}
+.conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
+.image_button{display:block;cursor:pointer;}
+.intro_button{position:absolute;left:673px;top:33px;width:72px;height:19px;line-height:19px;text-align:center;cursor:pointer;color:#600;background:url(../images/qzlihun.jpg) no-repeat;}
 .jiehun_an{margin-right:20px;}
-.jiehun_an a{ background:url(../images/an01.jpg); height:15px; width:39px; display:block;text-align:center; line-height:15px; text-decoration:none; color:#990000; padding-top:2px;}
-.jiehun_an a:hover{ background:url(../images/an01.jpg); height:15px; width:39px; display:block;text-align:center; line-height:15px; text-decoration:none; color:#FF0000; padding-top:2px;}
+.jiehun_an a{ background:url(../images/bnt.gif); height:15px; width:39px; display:block;text-align:center; font-family:SimSun,"宋体"; font-size:12px; font-weight:bold; line-height:15px; letter-spacing:0; text-decoration:none; color:#772200; padding-top:2px;}
+.jiehun_an a:hover{ background:url(../images/bnt.gif); height:15px; width:39px; display:block;text-align:center; font-family:SimSun,"宋体"; font-size:12px; font-weight:bold; line-height:15px; letter-spacing:0; text-decoration:none; color:#FF0000; padding-top:2px;}
 </style>
 
 <script type="text/javascript">
@@ -109,7 +111,7 @@ ol,ul {list-style:none}
                   <table width="150" border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td width="104" align="right"><input id="txtname" name="textfield" type="text" size="10" /></td>
-                <td width="46" align="right"><img src="../images/search.jpg" width="41" height="19" onclick="merge_sel();" /></td>
+                <td width="46" align="right"><img class="image_button" src="../images/search.jpg" width="41" height="19" alt="查询" onclick="merge_sel();" /></td>
                 </tr>
             </table></div>
 		  </div>
@@ -132,7 +134,7 @@ ol,ul {list-style:none}
 			<div class="box01">
 				<div class="box02">
 					<div class="bb01"><img src="../new_images/ui/icon09.jpg" width="65" height="25" /></div>
-					<div id='jhjs' align="center" style="position:absolute; width:72px; left:673px; cursor:pointer; padding-top:5px; background-image:url(../images/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="merge_js()"> 结婚介绍</div>
+					<div class="intro_button" onclick="merge_js()">结婚介绍</div>
                 </div>
 				<div class="box03">
 					<table border="0" cellspacing="0" class="tit01">
@@ -233,7 +235,7 @@ ol,ul {list-style:none}
 			<div class="box01">
 				<div class="box02">
 					<div class="bb01"><img src="../new_images/ui/icon10.jpg" width="65" height="25" /></div>
-				<div id='jhjs' align="center" style="position:absolute; width:72px; left:673px; cursor:pointer; padding-top:5px; background-image:url(../images/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="merge_js1()"> 传承介绍</div>	
+				<div class="intro_button" onclick="merge_js1()">传承介绍</div>
 				</div>
 				<div class="box03">
 					<table border="0" cellspacing="0" class="tit01">
@@ -387,7 +389,7 @@ function xy_qx(){
 function merge_js(){
 	if(jh==0){
 		var js1=$('js');
-		$('ccjs').style.display=='none';
+		$('ccjs').style.display='none';
 		if(js1.style.display=='none'){
 			js1.style.display='block';
 		}else{
@@ -720,7 +722,6 @@ function merge_sel(){
 				//alert(x);
 				$('mergelist1').innerHTML="<table border='0' cellpadding='0' cellspacing='0'>"+arr[1]+"</table>";
 				$('mergelist').style.display="block";
-				$('merr').style.display="none";
 				if(x=="|" || arr[0]=="" || arr[1]=="" ){
 			 		window.parent.Alert('玩家不存在!');
 					merid=0;
@@ -732,7 +733,7 @@ function merge_sel(){
 			},
 			asynchronous:true        
 		}
-		var ajax=new Ajax.Request('../function/Chuancheng.php?type=6&ts='+ts+'&value='+txt, opt);
+		var ajax=new Ajax.Request('../function/Chuancheng.php?type=6&ts='+ts+'&value='+encodeURIComponent(txt), opt);
 	
 }
 
@@ -857,7 +858,6 @@ function setTab1(){
 	$('chclist').style.display="none";
 	$('mergelist').style.display="none";
 	$('txtname').value="";
-	$('merr').style.display="block";
 	$('tabb').style.display="block";
 	$('ser').style.display="none";
 	}
@@ -1294,6 +1294,6 @@ var txt=$('serbbname').value;
 				},
 				asynchronous:true        
 			}
-			var ajax=new Ajax.Request('../function/Chuancheng.php?type=9&txt='+txt, opt);
+			var ajax=new Ajax.Request('../function/Chuancheng.php?type=9&txt='+encodeURIComponent(txt), opt);
 }
 </script>

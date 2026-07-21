@@ -17,22 +17,39 @@ secStart($m);
 
 define('SPECIAL_GOODS', 99999);
 
-$user		= $u->getUserById($_SESSION['id']);
-$userBag	= $u->getUserBagById($_SESSION['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid < 1) die('');
+del_bag_expire();
 
-$sjarr = $_pm['mysql'] -> getOneRecord("SELECT sj FROM player_ext WHERE uid = {$_SESSION['id']}");
-
-//$props = unserialize($m->get(MEM_PROPS_KEY));
-
-$style = intval($_GET['style']);
-if(empty($style)){//$style表示商店的小类
-	$style = 1;
+function shopsmModHtml($value)
+{
+	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
-$sjstyle = intval($_GET['sjstyle']);//表示是哪个大商店
 
-if(empty($sjstyle)){
-	$sjstyle = 1;
+function shopsmModJsSingle($value)
+{
+	$value = str_replace("\\", "\\\\", (string)$value);
+	$value = str_replace("'", "\\'", $value);
+	$value = str_replace(array("\r", "\n"), array("\\r", "\\n"), $value);
+	return $value;
 }
+
+$user		= $u->getUserById($uid);
+$userBag	= $u->getUserBagById($uid);
+if(!is_array($user)) die('');
+$userDefaults = array('money'=>0, 'yb'=>0, 'maxbag'=>0, 'task'=>0);
+foreach($userDefaults as $userDefaultKey => $userDefaultValue)
+{
+	if(!isset($user[$userDefaultKey])) $user[$userDefaultKey] = $userDefaultValue;
+}
+
+$sjarr = $_pm['mysql'] -> getOneRecord("SELECT sj FROM player_ext WHERE uid = {$uid}");
+if(!is_array($sjarr)) $sjarr = array('sj' => 0);
+
+$style = (isset($_GET['style']) && !is_array($_GET['style'])) ? intval($_GET['style']) : 0;
+if($style < 1 || $style > 4) $style = 1;//$style表示商店的小类
+$sjstyle = (isset($_GET['sjstyle']) && !is_array($_GET['sjstyle'])) ? intval($_GET['sjstyle']) : 0;//表示是哪个大商店
+if($sjstyle < 1 || $sjstyle > 4) $sjstyle = 1;
 //if($sjstyle==2){
 	$sql = "SELECT id,name,sj,vary,stime,varyname,timelimit FROM props WHERE sj > 0 AND sj < 99999 AND stime like '$style%' ORDER BY stime,id";
 	$sjprops = $_pm['mysql']->getRecords($sql);
@@ -48,8 +65,9 @@ $sql = "SELECT id,name,yb,vary,stime,varyname,timelimit FROM props WHERE yb > 0 
 $props = $_pm['mysql']->getRecords($sql);
 $sparr = $sjsparr = $vipsparr = array();
 $shop = $sjshop = $vipshop = $limitshop = '';
-$bagtype = $_REQUEST['bagtype'];
-$basetype = $_REQUEST['basetype'];
+$bagtype = (isset($_REQUEST['bagtype']) && !is_array($_REQUEST['bagtype'])) ? preg_replace('/[^0-9,|]/', '', $_REQUEST['bagtype']) : '';
+$basetype = (isset($_REQUEST['basetype']) && !is_array($_REQUEST['basetype'])) ? preg_replace('/[^0-9,|]/', '', $_REQUEST['basetype']) : '';
+$bagoption = '';
 #########################仓库的物品 9.18 谭炜###########################3
 $strings = ",1,2,3,4,5,6,7,8,9,10|11,12,13,14,15,16";
 $strinfo = "全部道具,辅助道具,增益道具,捕捉道具,收集道具,技能书,卡片道具,进化道具,合体道具,装备道具,精练道具,宝箱道具,特殊道具,功能道具,宠物卵,合成道具";
@@ -61,11 +79,11 @@ foreach($arr as $ks => $v)
 {
 	if($bagtype == $v)
 	{
-		$bagoption .= "<option selected=selected value='./Shopsm_Mod.php?bagtype=".$v."&basetype=".$basetype." '>".$arrinfo[$ks]."</option>";
+		$bagoption .= "<option selected=selected value='./Shopsm_Mod.php?bagtype=".$v."&basetype=".$basetype."&style=".$style."&sjstyle=".$sjstyle."'>".$arrinfo[$ks]."</option>";
 	}
 	else
 	{
-		$bagoption .= "<option value='./Shopsm_Mod.php?bagtype=".$v."&basetype=".$basetype." '>".$arrinfo[$ks]."</option>";
+		$bagoption .= "<option value='./Shopsm_Mod.php?bagtype=".$v."&basetype=".$basetype."&style=".$style."&sjstyle=".$sjstyle."'>".$arrinfo[$ks]."</option>";
 	}
 }
 
@@ -75,23 +93,29 @@ if (!is_array($props)) $shop='还没有任何此类商品!';
 else
 {
 	$i=0;
-	$varyname = explode("|",$basetype); 
+	$varyname = explode("|",$basetype);
 	foreach ($props as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id'=>0, 'name'=>'', 'yb'=>0, 'vary'=>0, 'stime'=>0, 'varyname'=>'', 'timelimit'=>'');
+		foreach($rsDefaults as $rsDefaultKey => $rsDefaultValue)
+		{
+			if(!isset($rs[$rsDefaultKey])) $rs[$rsDefaultKey] = $rsDefaultValue;
+		}
 		$i++;
         if ($rs['yb'] != SPECIAL_GOODS) { /* only if statement is added by Zheng.Ping */
-	
+
         #########################神密商店的物品 9.18 谭炜###########################
             if(!empty($basetype))
             {
-                
+
                 if(!in_array($rs['varyname'],$varyname))
                 {
                     continue;
                 }
             }
         ##########################在这里结束###############################
-        
+
             if (intval($rs['yb'])<1) continue;
 			$sparr[] = $rs;
 			//arsort($sparr);
@@ -113,12 +137,14 @@ if(is_array($sparr)){//以时间为KEY的数组
 			}
 		}
 		//增加自动上下架的功能在这里结束
-		
-		$shop .= '<tr>
+
+	$nameHtml = shopsmModHtml($rs['name']);
+	$nameJs = shopsmModHtml(shopsmModJsSingle($rs['name']));
+	$shop .= '<tr>
 		<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$rs['varyname'].'.gif" /></td>
-                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$rs[name].'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['yb'].';">'.$rs['name'].'</td>
+                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$nameJs.'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['yb'].';">'.$nameHtml.'</td>
                         <td width="60px" style="text-align:left">' . $rs['yb'] . '</td>
-                        <td style="text-align:left">' . $_props['vary'][$rs['vary']] .'</td>
+                        <td style="text-align:left">' . shopsmModHtml(isset($_props['vary'][$rs['vary']]) ? $_props['vary'][$rs['vary']] : '') .'</td>
                      </tr>';
 	}
 }else{
@@ -131,6 +157,12 @@ else
 	$i=0;
 	foreach ($sjprops as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id'=>0, 'name'=>'', 'sj'=>0, 'vary'=>0, 'stime'=>0, 'varyname'=>'', 'timelimit'=>'');
+		foreach($rsDefaults as $rsDefaultKey => $rsDefaultValue)
+		{
+			if(!isset($rs[$rsDefaultKey])) $rs[$rsDefaultKey] = $rsDefaultValue;
+		}
 		$i++;
         if ($rs['sj'] != SPECIAL_GOODS) { /* only if statement is added by Zheng.Ping */
             if (intval($rs['sj'])<1) continue;
@@ -154,12 +186,14 @@ if(is_array($sjsparr)){//以时间为KEY的数组
 			}
 		}
 		//增加自动上下架的功能在这里结束
-		
-		$sjshop .= '<tr>
+
+	$nameHtml = shopsmModHtml($rs['name']);
+	$nameJs = shopsmModHtml(shopsmModJsSingle($rs['name']));
+	$sjshop .= '<tr>
 		<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$rs['varyname'].'.gif" /></td>
-                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$rs[name].'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['sj'].';">'.$rs['name'].'</td>
+                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$nameJs.'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['sj'].';">'.$nameHtml.'</td>
                         <td width="60px" style="text-align:left">' . $rs['sj'] . '</td>
-                        <td style="text-align:left">' . $_props['vary'][$rs['vary']] .'</td>
+                        <td style="text-align:left">' . shopsmModHtml(isset($_props['vary'][$rs['vary']]) ? $_props['vary'][$rs['vary']] : '') .'</td>
                      </tr>';
 	}
 }else{
@@ -173,6 +207,12 @@ else
 	$i=0;
 	foreach ($vipprops as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id'=>0, 'name'=>'', 'vip'=>0, 'vary'=>0, 'stime'=>0, 'varyname'=>'', 'timelimit'=>'');
+		foreach($rsDefaults as $rsDefaultKey => $rsDefaultValue)
+		{
+			if(!isset($rs[$rsDefaultKey])) $rs[$rsDefaultKey] = $rsDefaultValue;
+		}
 		$i++;
         if ($rs['vip'] != SPECIAL_GOODS) { /* only if statement is added by Zheng.Ping */
             if (intval($rs['vip'])<1) continue;
@@ -183,7 +223,7 @@ else
 
 }
 if(is_array($vipsparr)){
-	foreach($vipsparr as $rs){	
+	foreach($vipsparr as $rs){
 		if(!empty($rs['timelimit'])){
 			$limitarr = explode('|',$rs['timelimit']);
 			$nowtime = date('YmdHi');
@@ -191,11 +231,13 @@ if(is_array($vipsparr)){
 				continue;
 			}
 		}
-		$vipshop .= '<tr>
+	$nameHtml = shopsmModHtml($rs['name']);
+	$nameJs = shopsmModHtml(shopsmModJsSingle($rs['name']));
+	$vipshop .= '<tr>
 		<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$rs['varyname'].'.gif" /></td>
-                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$rs[name].'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['vip'].';">'.$rs['name'].'</td>
+                        <td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$rs['id'].',1,event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$nameJs.'\');sel(this);bid='.($rs['id']?$rs['id']:0).';price='.$rs['vip'].';">'.$nameHtml.'</td>
                         <td width="60px" style="text-align:left">' . $rs['vip'] . '</td>
-                        <td style="text-align:left">' . $_props['vary'][$rs['vary']] .'</td>
+                        <td style="text-align:left">' . shopsmModHtml(isset($_props['vary'][$rs['vary']]) ? $_props['vary'][$rs['vary']] : '') .'</td>
                      </tr>';
 	}
 }else{
@@ -213,32 +255,40 @@ else
 {
 	foreach ($userBag as $k => $rs)
 	{
+		if(!is_array($rs)) continue;
+		$rsDefaults = array('id'=>0, 'name'=>'', 'sums'=>0, 'zbing'=>0, 'varyname'=>'', 'requires'=>'', 'sell'=>0);
+		foreach($rsDefaults as $rsDefaultKey => $rsDefaultValue)
+		{
+			if(!isset($rs[$rsDefaultKey])) $rs[$rsDefaultKey] = $rsDefaultValue;
+		}
 		if ($rs['sums'] < 1 || $rs['id']==0 ||  $rs['zbing'] == 1) continue;
 		$curBagNum++;
 		#########################背包的物品 9.18 谭炜###########################
 		if(!empty($bagtype))
 		{
-			$varyname = explode("|",$bagtype); 
+			$varyname = explode("|",$bagtype);
 			if(!in_array($rs['varyname'],$varyname))
 			{
 				continue;
 			}
 		}
 		##########################在这里结束###############################
-		if (strlen($rs['requires'])>2) 
+		if (strlen($rs['requires'])>2)
 		{
-			$t = split(',', 
+			$t = explode(',',
 					   str_replace(array('lv','wx'), array('等级','五行'), $rs['requires'])
 					  );
-			$wx = str_replace($_props['wxs'], $_props['wxd'], $t[1]);
+			$wx = isset($t[1]) ? str_replace($_props['wxs'], $_props['wxd'], $t[1]) : '';
 		}
 		else $t[0]= $wx= '无';
+		$nameHtml = shopsmModHtml($rs['name']);
+		$nameJs = shopsmModHtml(shopsmModJsSingle($rs['name']));
 		$bag .= '<tr>
 					<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$rs['varyname'].'.gif" /></td>
-              		<td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="showTip('.$rs['id'].',0,1,2);this.style.border=\'solid 1px #DFD496\';"  onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$rs[name].'\');sel(this);bid='.$rs['id'].';price='.$rs['sell'].';">'.$rs['name'].'</td>
-              		<td width="60px" style="text-align:left" >' . $rs['sell'] . '</td>
-              		<td style="text-align:left">' . $rs['sums'] .'</td>
-            	 </tr>';
+		<td width="110px" id="t'.$rs['id'].'" style="cursor:pointer;text-align:left" onmouseover="showTip('.$rs['id'].',0,1,2);this.style.border=\'solid 1px #DFD496\';"  onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$nameJs.'\');sel(this);bid='.$rs['id'].';price='.$rs['sell'].';">'.$nameHtml.'</td>
+		<td width="60px" style="text-align:left" >' . $rs['sell'] . '</td>
+		<td style="text-align:left">' . $rs['sums'] .'</td>
+	 </tr>';
 	}
 }
 
@@ -255,20 +305,21 @@ if(empty($bag))
 	$bag = "您的背包中没有相应的物品！";
 }
 
-$msgs = zhaohui(); 
+$msgs = zhaohui();
+$pro = '';
 if($msgs)//如果有权限才进入 true
-{	
+{
 	$msgs_str = substr($msgs,1);
-	$array = explode(',', $msgs_str);//Array ( [0] => 35 [1] => 34 ) 
+	$array = explode(',', $msgs_str);//Array ( [0] => 35 [1] => 34 )
 
 	foreach($array as $array_key=>$array_value)
 	{
 		$pro.='<div id="prizelist_'.$array_value.'" style="display:none">'.getprizelist($array_value).'</div>';//返回物品的字符列表
-	
+
 	}
-	
+
 	$pro.='<div id="prizelist_real" style="padding-top:5px;padding-left:7px;display:none;background-color:#dfd496;position:absolute; left: 157px; top: 50px; width: 184px;overflow:auto;text-decoration:none;"></div>';
-	
+
 }
 else
 {
@@ -281,20 +332,24 @@ $tm = $_pm["mysql"] -> getOneRecord($sql);
 if(is_array($tm)){
 	$time = date('Y-m-d H:i:s');
 	$tarr = explode('|',$tm['value2']);
+	if(count($tarr) < 2 || $tarr[0] == '' || $tarr[1] == '') $tarr = array($time, $time);
 	$sytime = strtotime($tarr[1]) - time();
-	$ssytime = strtotime($tarr[0]) - time();//echo strtotime($tarr[0]);exit; 
+	$ssytime = strtotime($tarr[0]) - time();//echo strtotime($tarr[0]);exit;
 	if($sytime < 0){
 		$sytime = 0;
 	}
 	if($ssytime > 0){
 		$sytime = -1;
 	}//echo $sytime;exit;
-	if($time > $tarr[0] && $time < $tarr[1]){
-		$p = explode(',',$tm['contents']);//20100915120000
-		$v = '';
-		foreach($p as $v){
-			$va = explode(':',$v);
-			$sql = 'SELECT id,varyname,name,zhekouyb,timelimit FROM props WHERE zhekouyb > 0 AND zhekouyb < 99999 AND stime > 0 AND LEFT(CAST(stime AS CHAR),1) IN (1,2,3,4) AND id = '.$va[0];
+	if($time >= $tarr[0] && $time <= $tarr[1]){
+			$p = empty($tm['contents']) ? array() : explode(',',$tm['contents']);//20100915120000
+			$v = '';
+			foreach($p as $v){
+				$va = explode(':',$v);
+				if(count($va) < 2 || $va[0] == '') continue;
+			$limitPropId = intval($va[0]);
+			if($limitPropId < 1) continue;
+			$sql = 'SELECT id,varyname,name,zhekouyb,timelimit FROM props WHERE zhekouyb > 0 AND zhekouyb < 99999 AND stime > 0 AND LEFT(CAST(stime AS CHAR),1) IN (1,2,3,4) AND id = '.$limitPropId;
 			$res = $_pm['mysql'] -> getOneRecord($sql);
 			if(!is_array($res)) continue;
 			if(!empty($res['timelimit'])){
@@ -303,16 +358,18 @@ if(is_array($tm)){
 				if((!empty($limitarr[0]) && $nowtime < $limitarr[0]) || (!empty($limitarr[1]) && $nowtime > $limitarr[1])) continue;
 			}
 			/*$sql = 'SELECT sum(nums) as nums FROM yblog WHERE title ='.$va[0].' AND DATE_FORMAT(buytime,"%Y%m%d%H%i%s") > '.$tarr[0].' AND DATE_FORMAT(buytime,"%Y%m%d%H%i%s") < '.$tarr[1];
-			
+
 			$ybarr = $_pm['mysql'] -> getOneRecord($sql);*/
-			$zk = unserialize($_pm['mem']->get('zhekou_'.$res['id'].'_num'));
-			$s = $va[1];
+			$zk = intval(kdjlSafeMemValue($_pm['mem']->get('zhekou_'.$res['id'].'_num'), 0));
+			$s = intval($va[1]);
 			if($zk > 0){
 				$s = $s - $zk;
 			}
+			$nameHtml = shopsmModHtml($res['name']);
+			$nameJs = shopsmModHtml(shopsmModJsSingle($res['name']));
 			$limitshop .= '<tr>
 		<td width="35px" ><img style="width:25px;height:25px;" src="../images/ui/bag/'.$res['varyname'].'.gif" /></td>
-                        <td width="110px" id="t'.$res['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$res['id'].',1,window.event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$res[name].'\');sel(this);bid='.($res['id']?$res['id']:0).';price='.$res['zhekouyb'].';">'.$res['name'].'</td>
+                        <td width="110px" id="t'.$res['id'].'" style="cursor:pointer;text-align:left" onmouseover="window.parent.showTipEquip('.$res['id'].',1,event);this.style.border=\'solid 1px #DFD496\';"   onmouseout="window.parent.UnTip();this.style.border=0;" onclick="copyWord(\''.$nameJs.'\');sel(this);bid='.($res['id']?$res['id']:0).';price='.$res['zhekouyb'].';">'.$nameHtml.'</td>
                         <td width="60px" style="text-align:left">' . $res['zhekouyb'] . '</td>
                         <td style="text-align:left">' . ($s>0?$s:"已售完") .'</td>
                      </tr>';
@@ -328,7 +385,7 @@ $tn = $_game['template'] . 'tpl_smshop.html';
 if (file_exists($tn))
 {
 	$tpl = @file_get_contents($tn);
-	
+
 	$src = array('#sj#',
 				 '#yb#',
 				 '#vip#',
@@ -368,7 +425,7 @@ if (file_exists($tn))
 
 // gzip echo. if maybe.
 ob_start('ob_gzip');
-	
+
 $m->memClose();
 echo $shop;
 ob_end_flush();

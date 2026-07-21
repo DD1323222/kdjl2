@@ -7,21 +7,30 @@
 *@Write Date: 2008.05.20
 *@Update Date: 2008.05.30
 *@Usage:Get User props.
-*@Note: 
+*@Note:
 */
 require_once('../config/config.game.php');
 secStart($_pm['mem']);
 
 $err = 0;
-$id = intval($_REQUEST['id']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+if($uid <= 0) die('玩家数据错误！');
+$id = (isset($_REQUEST['id']) && !is_array($_REQUEST['id'])) ? intval($_REQUEST['id']) : 0;
 
-if ($id<1) die('Error Item Id!');
-$user		= $_pm['user']->getUserById($_SESSION['id']);
-$BAG		= $_pm['user']->getUserBagById($_SESSION['id']);
+if ($id<1) die('道具编号错误！');
+del_bag_expire();
+$user		= $_pm['user']->getUserById($uid);
+$BAG		= $_pm['user']->getUserBagById($uid);
+if(!is_array($BAG)) $BAG = array();
 $wp			= false;
 foreach ($BAG as $k => $v)
 {
-	if ($v['uid'] == $_SESSION['id'] && $v['id'] == $id)
+	if (!is_array($v)) continue;
+	$rowUid = isset($v['uid']) ? intval($v['uid']) : 0;
+	$rowId = isset($v['id']) ? intval($v['id']) : 0;
+	$rowZbing = isset($v['zbing']) ? intval($v['zbing']) : 0;
+	$rowCantrade = isset($v['cantrade']) ? intval($v['cantrade']) : 0;
+	if ($rowUid == $uid && $rowId == $id && $rowZbing == 0 && $rowCantrade != 3)
 	{
 		$wp = $v;
 		break;
@@ -31,14 +40,47 @@ foreach ($BAG as $k => $v)
 	$lein_dbg = true;
 }
 */
-if (!is_array($wp) || $wp['sums']<1) die('Error item!');
+if (!is_array($wp) || !isset($wp['sums']) || $wp['sums']<1) die('道具数据错误！');
 else
 {
-	$_pm['mysql']->query("UPDATE userbag
-							 SET sums=abs(sums-1)
-						   WHERE uid={$_SESSION['id']} and id={$id} and sums > 0
+	if(!$_pm['mysql']->query('START TRANSACTION'))
+	{
+		die('道具数据错误！');
+	}
+	$itemUsed = $_pm['mysql']->query("UPDATE userbag
+							 SET sums=sums-1
+						   WHERE uid={$uid} and id={$id} and sums > 0 and zbing=0
+						     and (cantrade IS NULL OR cantrade<>3)
 						");
-	$err = getValue($id, $wp['effect']);
+	if(!$itemUsed || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('道具数据错误！');
+	}
+	if(!$_pm['mysql']->query("DELETE FROM userbag WHERE uid={$uid} and id={$id} and sums<=0 and bsum<=0 and psum<=0 and pyb=0 and zbing=0 and (cantrade IS NULL OR cantrade<>3)"))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('道具数据错误！');
+	}
+	$err = getValue($uid, $id, isset($wp['effect']) ? $wp['effect'] : '');
+	if($err === 'hasusemedbuff')
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('hasusemedbuff');
+	}
+	if($err === false)
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('道具数据错误！');
+	}
+	if(!$_pm['mysql']->query('COMMIT'))
+	{
+		$_pm['mysql']->query('ROLLBACK');
+		die('道具数据错误！');
+	}
+	$_pm['mem']->del(MEM_USER_KEY);
+	$_pm['mem']->del(MEM_USERBB_KEY);
+	$_pm['mem']->del(MEM_USERBAG_KEY);
 	//$_pm['user']->updateMemUserbag($_SESSION['id']);
 }
 $_pm['mem']->memClose();
@@ -46,27 +88,30 @@ echo $err;
 
 // Get effect value
 // 目前开放加MP,HP。
-function getValue($n,$effect)
+function getValue($uid,$n,$effect)
 {
 	global $_pm,$BAG;
 	$hp = $mp = 0;
+	$needFirstIn = false;
 	$buff['addac'] = $buff['addmc'] = 0;
+	$effect = is_string($effect) ? $effect : '';
 	$arr = explode(',', $effect);
 	foreach ($arr as $k => $v)
 	{
 		$tarr = explode(':', $v);
-		switch ($tarr[0])
+		$key = isset($tarr[0]) ? $tarr[0] : '';
+		switch ($key)
 		{
-			case "hp": $hp = $tarr[1];break;
-			case "mp": $mp = $tarr[1];break;
-			case "addac": 
+			case "hp": $hp = isset($tarr[1]) ? intval($tarr[1]) : 0;break;
+			case "mp": $mp = isset($tarr[1]) ? intval($tarr[1]) : 0;break;
+			case "addac":
 			{
-				$buff['addac'] = $tarr[1];
+				$buff['addac'] = isset($tarr[1]) ? intval($tarr[1]) : 0;
 				break;
 			}
-			case "addmc": 
+			case "addmc":
 			{
-				$buff['addmc'] = $tarr[1];
+				$buff['addmc'] = isset($tarr[1]) ? intval($tarr[1]) : 0;
 				break;
 			}
 
@@ -76,12 +121,17 @@ function getValue($n,$effect)
 	}
 	if( $buff['addac'] > 0 || $buff['addmc'] > 0 )
 	{
-		$med_buff_info = $_pm['mysql']->getOneRecord(" SELECT F_Medicine_Buff FROM player_ext WHERE uid = '".$_SESSION['id']."'");
-		
+		$med_buff_info = $_pm['mysql']->getOneRecord(" SELECT F_Medicine_Buff FROM player_ext WHERE uid = {$uid} FOR UPDATE");
+		if(!is_array($med_buff_info)) $med_buff_info = array('F_Medicine_Buff' => '');
+		$effectSql = $_pm['mysql']->escape($effect);
+
 		if(  $med_buff_info['F_Medicine_Buff'] == '' )	//从未使用过
 		{
-			$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '".$effect."' WHERE uid = '".$_SESSION['id']."'");	
-			$_SESSION['first_in'] = 1;
+			if(!$_pm['mysql'] -> query("INSERT INTO player_ext(uid,bbshow,F_Medicine_Buff)
+									     VALUES ({$uid},5,'{$effectSql}')
+				ON DUPLICATE KEY UPDATE F_Medicine_Buff=VALUES(F_Medicine_Buff)") ||
+				mysql_affected_rows($_pm['mysql']->getConn()) < 1) return false;
+			$needFirstIn = true;
 		}
 		else
 		{	//addac:10000,addmc:10000
@@ -91,80 +141,69 @@ function getValue($n,$effect)
 				{
 					if( strstr($med_buff_info['F_Medicine_Buff'],$key) )
 					{
-						die('hasusemedbuff');	//有类似属性了
+						return 'hasusemedbuff';	//有类似属性了
 					}
 				}
 			}
 			//遍历完没有类似属性
 			$buff_set = $med_buff_info['F_Medicine_Buff'].','.$effect;
-			$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '".$buff_set."' WHERE uid = '".$_SESSION['id']."'");	
-			$_SESSION['first_in'] = 1;
+			$buffSetSql = $_pm['mysql']->escape($buff_set);
+			if(!$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '{$buffSetSql}' WHERE uid = {$uid}") || mysql_affected_rows($_pm['mysql']->getConn()) != 1) return false;
+			$needFirstIn = true;
 			unset($med_buff_info);
 		}
-		
-	}
-	$bb	= $_pm['user']->getUserPetById($_SESSION['id']);
-	$fit= $_SESSION['fight'.$_SESSION['id']];
 
-	if (!is_array($fit) || !is_array($bb)) return false;
+	}
+	$fit= isset($_SESSION['fight'.$uid]) && is_array($_SESSION['fight'.$uid]) ? $_SESSION['fight'.$uid] : array();
+
+	if (!is_array($fit)) return false;
+	$fitBid = isset($fit['bid']) ? intval($fit['bid']) : 0;
+	if($fitBid < 1) return false;
+	$pet = $_pm['mysql']->getOneRecord("SELECT id,uid,hp,mp,srchp,srcmp,addhp,addmp FROM userbb WHERE id={$fitBid} AND uid={$uid} FOR UPDATE");
+	if(!is_array($pet)) return false;
+	$curHp = intval($pet['hp']);
+	$curMp = intval($pet['mp']);
+	$srcHp = max(0, intval($pet['srchp']));
+	$srcMp = max(0, intval($pet['srcmp']));
+	$curAddHp = max(0, intval($pet['addhp']));
+	$curAddMp = max(0, intval($pet['addmp']));
+	$hp = max(0, intval($hp));
+	$mp = max(0, intval($mp));
+	$newhp = min($srcHp, $curHp + $hp);
+	$newmp = min($srcMp, $curMp + $mp);
 	$addHPSql="";
 	$addMPSql="";
-	foreach ($bb as $x => $y)
+	$equipment = false;
+	$hpOverflow = max(0, $curHp + $hp - $srcHp);
+	if($hpOverflow > 0)
 	{
-		if (
-			 $y['id'] == $fit['bid'] && 
-			 $y['uid'] == $_SESSION['id'])
-		{
-			$sumhp = $y['hp'] + $hp;
-			$summp = $y['mp'] + $mp;
-			if($sumhp>$y['srchp']){//如果加血之后还有剩余，即加血量大于损耗的量
-				$newhp= $y['srchp'];
-				if($hp>$y['srchp']-$y['hp']){//如果道具加血量大于损失血量
-					$arr = getzbAttrib($y['id']);
-					if($arr['hp']>0){//如果装备加血量大于0
-						$leftAavialeHP=$hp-($y['srchp']-$y['hp']);
-						if($leftAavialeHP>$arr['hp']){
-							$addHPSql=",addhp=".$arr['hp'];
-						}else{
-							$addHPSql=",addhp=addhp+".intval($leftAavialeHP);
-						}
-					}
-				}
-			}else $newhp = $sumhp;			
-
-			if($summp>$y['srcmp']){//如果加魔之后还有剩余，即加魔量大于损耗的量
-				$newmp= $y['srcmp'];
-				if($mp>$y['srcmp']-$y['mp']){//如果道具加魔量大于损失魔量
-					if(!isset($arr)){
-						$arr = getzbAttrib($y['id']);
-					}
-					if($arr['mp']>0){//如果装备加魔量大于0
-						$leftAavialeMP=$hp-($y['srcmp']-$y['mp']);
-						if($leftAavialeMP>$arr['mp']){
-							$addMPSql=",addmp=".$arr['mp'];
-						}else{
-							$addMPSql=",addmp=addmp+".intval($leftAavialeMP);
-						}
-					}
-				}
-			}else $newmp = $summp;
-			
-			break;
-		}
+		$equipment = getzbAttrib($fitBid);
+		if(!is_array($equipment)) $equipment = array();
+		$maxAddHp = isset($equipment['hp']) ? max(0, intval($equipment['hp'])) : 0;
+		if($maxAddHp > 0) $addHPSql = ',addhp='.min($maxAddHp, $curAddHp + $hpOverflow);
 	}
-	
+	$mpOverflow = max(0, $curMp + $mp - $srcMp);
+	if($mpOverflow > 0)
+	{
+		if(!is_array($equipment)) $equipment = getzbAttrib($fitBid);
+		if(!is_array($equipment)) $equipment = array();
+		$maxAddMp = isset($equipment['mp']) ? max(0, intval($equipment['mp'])) : 0;
+		if($maxAddMp > 0) $addMPSql = ',addmp='.min($maxAddMp, $curAddMp + $mpOverflow);
+	}
+
 	$sql = "UPDATE userbb
 				   SET hp={$newhp},
 					   mp={$newmp}".$addMPSql.$addHPSql."
-				 WHERE uid={$_SESSION['id']} and id={$fit['bid']}
+				 WHERE uid={$uid} and id={$fitBid}
 			  ";
 			  /*if($_SESSION['id'] == '261619'){
-			  	echo $sql;
+				echo $sql;
 			  }*/
 	// Update bb info.
-	$_pm['mysql']->query($sql);
+	if(!$_pm['mysql']->query($sql)) return false;
+	if($needFirstIn) $_SESSION['first_in'] = 1;
 	$fit['fuzu']=1;
-	$_SESSION['fight'.$_SESSION['id']]=$fit;
+	$_SESSION['fight'.$uid]=$fit;
 	return $hp.','.$mp.','.$buff['addac'].','.$buff['addmc'];
 }
 ?>
