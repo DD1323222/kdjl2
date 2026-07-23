@@ -232,6 +232,12 @@ if($title_vary == 2)//显示每一个大类下面的任务
 			{
 				continue;
 			}
+			$taskCidParts = explode(':', strval($v['cid']), 2);
+			$isSequenceTask = count($taskCidParts) === 2 && $taskCidParts[0] === 'rwl';
+			if($v['hide'] != 1 && !$isSequenceTask)
+			{
+				continue;
+			}
 			//是否可见条件判断
 			if(!empty($v['limitlv']))
 			{

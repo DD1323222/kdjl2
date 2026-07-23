@@ -106,6 +106,43 @@ if (!function_exists('kdjlEnsureTgt31CrystalPaid')) {
 	}
 }
 
+if (!function_exists('kdjlIsSoloTeamDungeonMap')) {
+	function kdjlIsSoloTeamDungeonMap($mapId)
+	{
+		return in_array(intval($mapId), array(128, 129, 130), true);
+	}
+}
+
+if (!function_exists('kdjlEnsureSoloTeamDungeonTeam')) {
+	function kdjlEnsureSoloTeamDungeonTeam($uid, $mapId, $team, $socket)
+	{
+		$uid = intval($uid);
+		$mapId = intval($mapId);
+		$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+		if ($teamId > 0) {
+			return array('team_id'=>$teamId, 'team'=>$team, 'created'=>false);
+		}
+		if ($uid < 1 || !kdjlIsSoloTeamDungeonMap($mapId) || !is_object($team)) {
+			return false;
+		}
+
+		$created = $team->createTeam();
+		$teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
+		if ($created !== true || $teamId < 1) {
+			return false;
+		}
+
+		$team = new team($teamId, $socket);
+		if ($team->checkMyTeam() === false ||
+			!$team->setTeamState(array('team_select_map'=>$mapId))) {
+			$team->disbandTeam(false);
+			return false;
+		}
+		$_SESSION['team_inmap'] = $mapId;
+		return array('team_id'=>$teamId, 'team'=>$team, 'created'=>true);
+	}
+}
+
 if (!function_exists('kdjlStartTeamDungeonEntry')) {
 	function kdjlStartTeamDungeonEntry($uid, $teamId, $team, $mapId, $crystalCost, $chargeCrystal)
 	{

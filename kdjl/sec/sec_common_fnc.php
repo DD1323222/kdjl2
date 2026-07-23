@@ -748,7 +748,19 @@ define('TASKENDTIME',			'2009-04-20 00:00:00');*/
 	$rwlidarr = array();
 	foreach($memtask as $v)
 	{
+		if(!is_array($v))
+		{
+			continue;
+		}
 		if(!taskScheduleIsActive($v, $timearr, $nowtime))
+		{
+			continue;
+		}
+		$taskCid = isset($v['cid']) ? strval($v['cid']) : '';
+		$taskCidParts = explode(':', $taskCid, 2);
+		$isSequenceTask = count($taskCidParts) === 2 && $taskCidParts[0] === 'rwl';
+		$taskHide = isset($v['hide']) ? intval($v['hide']) : 0;
+		if($taskHide != 1 && !$isSequenceTask)
 		{
 			continue;
 		}

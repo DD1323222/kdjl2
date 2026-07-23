@@ -1182,7 +1182,9 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 				}
 
 				//$memberNum=count($teamInfo['members']);
-				$multiple=$memberNum*0.2+1;
+				$teamRewardMapId = isset($_SESSION['team_inmap']) ? intval($_SESSION['team_inmap']) : 0;
+				$soloTeamReward = $memberNum == 1 && kdjlIsSoloTeamDungeonMap($teamRewardMapId);
+				$multiple = $soloTeamReward ? 1 : $memberNum*0.2+1;
 				$moneyAvg=intval($teamState['money_get']*$multiple/$memberNum);
 				$expAvg  =intval($teamState['exp_get']*$multiple/$memberNum);
 				$props   =explode(',',$teamState['props_get']);

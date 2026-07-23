@@ -1,6 +1,7 @@
 <?php
 require_once('../config/config.game.php');
 require_once('../sec/dblock_fun.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 secStart($_pm['mem']);
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('登录状态已失效，请重新登录！');
@@ -340,7 +341,8 @@ foreach(tarotTeamMembers($teamInfo) as $mem)
 	}
 }
 
-if($ct<2){
+$minimumMembers = kdjlIsSoloTeamDungeonMap($teamInMap) ? 1 : 2;
+if($ct<$minimumMembers){
 	if(!$team->setTeamState(array(
 							'team_fuben_card_step_num'=>-1,
 							'team_fuben_step'=>array(0,0),
@@ -798,7 +800,7 @@ else if($requestOp == 'o'){
 
 					$hit = $_pm['mysql'] -> getOneRecord('SELECT id,nickname FROM player WHERE id = '.$memarr[$i]);
 					$hitName = is_array($hit) ? $hit['nickname'] : $memarr[$i];
-					if(count($nuid) > 1){
+					if(count($nuid) > 1 || (count($nuid) == 1 && kdjlIsSoloTeamDungeonMap($teamInMap))){
 						$rs=tarotSendMessage(kdjlSafeIconv('utf-8','utf-8','SYSN|alertTarot->您的队友'.$hitName.'被踢出战斗！'),$nuid);
 					}else{//只有队长一个人的时候
 						$rs=tarotSendMessage(kdjlSafeIconv('utf-8','utf-8','SYSN|outTarot->由于副本人数不足，强制离开副本，挑战失败。'),$nuid);
@@ -932,7 +934,7 @@ else if($requestOp == 'o'){
 							$uidarr[] = $mem['uid'];
 						}
 					}
-					if(count($uidarr) == 1){
+					if(count($uidarr) == 1 && !kdjlIsSoloTeamDungeonMap($teamInMap)){
 							$rs=tarotSendMessage(kdjlSafeIconv('utf-8','utf-8','SYSN|goTarot->由于副本人数不足，将强制离开副本，挑战失败。'),$uidarr);
 						if(!$team->setTeamState(array(
 							'team_fuben_card_step_num'=>-1,

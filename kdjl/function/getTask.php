@@ -130,7 +130,12 @@ if($type == "get") // 接取任务
 	if(empty($taskinfo['fromnpc'])){
 		taskGateAbort('任务接取数据错误！');
 	}
-	if(strpos($taskinfo['cid'],'rwl') !== false){
+	$taskCidParts = explode(':', strval($taskinfo['cid']), 2);
+	$isSequenceTask = count($taskCidParts) === 2 && $taskCidParts[0] === 'rwl';
+	if($taskinfo['hide'] != 1 && !$isSequenceTask){
+		taskGateAbort('该任务当前不可接受！');
+	}
+	if($isSequenceTask){
 		if($taskinfo['hide'] != 1){
 			$a = explode('|',$taskinfo['fromnpc']);
 			$rwlarr = $_pm['mysql'] -> getOneRecord("SELECT taskid FROM tasklog WHERE uid = {$uid} AND xulie = {$taskinfo['xulie']} and fromnpc = {$a[0]}");

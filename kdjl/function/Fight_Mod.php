@@ -52,7 +52,7 @@ $teamInfo=array();
 
 if(isset($_SESSION['gs']) && intval($_SESSION['gs']) == 3 && $teamId > 0 && $team->isTeamLeader($uid, $teamId))
 {
-	$tarotTeam = $_pm['mysql']->getOneRecord('SELECT id FROM team WHERE id='.$teamId.' AND inmap=128 AND creator='.$uid);
+	$tarotTeam = $_pm['mysql']->getOneRecord('SELECT id FROM team WHERE id='.$teamId.' AND inmap IN (128,129,130) AND creator='.$uid);
 	if(is_array($tarotTeam) && isset($tarotTeam['id']))
 	{
 		$disbandResult = $team->disbandTeam(false);
@@ -88,6 +88,21 @@ if(!isset($baseMapInfo['needs'])) $baseMapInfo['needs'] = '';
 if(!isset($baseMapInfo['czlprops'])) $baseMapInfo['czlprops'] = 0;
 $memmapid[$inmap] = $baseMapInfo;
 $teamFubenInmap = isset($__teamFubenMap[$inmap]) ? intval($__teamFubenMap[$inmap]) : $inmap;
+$allowSoloTeamDungeon = kdjlIsSoloTeamDungeonMap($inmap);
+if($baseMapInfo['multi_monsters']==3 && $allowSoloTeamDungeon && $teamId<1)
+{
+	$soloTeam = kdjlEnsureSoloTeamDungeonTeam($uid, $inmap, $team, $s);
+	if(!is_array($soloTeam) || empty($soloTeam['team_id']) || !isset($soloTeam['team']))
+	{
+		die('<script language="javascript">
+parent.Alert("单人副本队伍创建失败，请稍后重试！");
+window.location="/function/Team_Mod.php?n=128";
+</script>');
+	}
+	$teamId = intval($soloTeam['team_id']);
+	$team = $soloTeam['team'];
+	$myState = 1;
+}
 if(!isset($_SESSION['team_inmap'])) $_SESSION['team_inmap'] = $inmap;
 $_SESSION['team_inmap'] = intval($_SESSION['team_inmap']);
 
