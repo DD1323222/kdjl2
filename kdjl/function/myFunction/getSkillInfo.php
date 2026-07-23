@@ -96,6 +96,18 @@ if($vary === 3)
     else if($ump > 0) $effectTexts[] = '消耗魔法：'.$ump;
 }
 
+if($vary !== 4)
+{
+    $activeText = skillInfoPassiveEffect(isset($skill['img']) ? $skill['img'] : '');
+    if($activeText === '' && isset($skill['system_imgeft']))
+    {
+        $activeText = skillInfoPassiveEffect(
+            skillInfoLevelValue($skill['system_imgeft'], $skill['level'])
+        );
+    }
+    if($activeText !== '') $effectTexts[] = '附加效果：'.$activeText;
+}
+
 if($vary === 4)
 {
     $passiveText = skillInfoPassiveEffect(isset($skill['img']) ? $skill['img'] : '');
