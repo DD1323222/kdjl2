@@ -9,7 +9,15 @@ https://pan.baidu.com/s/1MlwUxyuilFfxBFzuVoHT4Q?pwd=v9fa
 http://xx.xx.xx.xx/admin/
 <img width="3831" height="1841" alt="image" src="https://github.com/user-attachments/assets/48597dfb-6832-4be8-96bd-1e88668b4e08" />
 <img width="1752" height="734" alt="image" src="https://github.com/user-attachments/assets/db841250-39ef-480d-b99c-0c2d88f33e38" />
-123
+
+⭐1.4.2
+
+微调功能。
+
+⭐1.4.1
+
+微调数据。
+
 ⭐1.4
 
 更新了假人，单人玩家可以正常体验神圣战场。家族可设置自动加入，单人玩家可申请加入系统家族。
