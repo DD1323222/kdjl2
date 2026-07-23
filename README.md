@@ -10,6 +10,10 @@ http://xx.xx.xx.xx/admin/
 <img width="3831" height="1841" alt="image" src="https://github.com/user-attachments/assets/48597dfb-6832-4be8-96bd-1e88668b4e08" />
 <img width="1752" height="734" alt="image" src="https://github.com/user-attachments/assets/db841250-39ef-480d-b99c-0c2d88f33e38" />
 
+⭐1.4.4
+
+微调了背包。
+
 ⭐1.4.3
 
 微调了背包。
