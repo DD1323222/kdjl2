@@ -26,6 +26,7 @@ function fbFightHtmlText(value)
 var fightActionDuration = 3000;
 var fightActionTimer = null;
 var attackWaitDeadlineMs = 0;
+var fbFightAttackPreviewActive = false;
 
 function fbFightAttackEarlySeconds()
 {
@@ -38,6 +39,24 @@ function fightScheduleAction(callback)
 {
 	if(fightActionTimer !== null) window.clearTimeout(fightActionTimer);
 	fightActionTimer = window.setTimeout(callback, fightActionDuration);
+}
+
+function fbFightStartAttackPreview(skillVary)
+{
+	if(parseInt(skillVary, 10) !== 1 || !$('pimg')) return;
+	fbFightAttackPreviewActive = true;
+	$('pimg').style.left='470px';
+	$('pimg').style.zIndex='100';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8].replace('z',gimg);
+}
+
+function fbFightResetAttackPreview()
+{
+	if(!fbFightAttackPreviewActive) return;
+	fbFightAttackPreviewActive = false;
+	if(!$('pimg')) return;
+	$('pimg').style.left='10px';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8];
 }
 
 function createLeft(){
@@ -145,6 +164,7 @@ function Usejn(n){
 	window.parent.usejn = n;
 	if(using==true) return;
 	var tump=0;
+	var skillVary=n==1 ? 1 : 0;
 	if(n>1)
 	{
 		for(var skillIndex=0;skillIndex<bbjn.length;skillIndex++)
@@ -153,11 +173,16 @@ function Usejn(n){
 			if(n==skillInfo[9])
 			{
 				tump=skillInfo[8];
+				skillVary=parseInt(skillInfo[2],10);
 				break;
 			}
 		}
 	}
-	if(n!=1 && tump>bbmcur) n=1;
+	if(n!=1 && tump>bbmcur)
+	{
+		n=1;
+		skillVary=1;
+	}
 	var cookie_tax = "pm_skill_"+n;
 	var timestamp = Date.parse(new Date());
 	var cold_skill = new Array(319,320,321,322,323);	//冷却技能，此为技能id,写死，不能更改，并保持与fight.js,fbfight.js,fbfightGate.php,FightGate.php的数组一致，否则会出现不可预知的错误！
@@ -240,6 +265,7 @@ function Usejn(n){
 	if(n!=1) gimg='s';
 	else gimg='g';
 
+	fbFightStartAttackPreview(skillVary);
 
 	// Get ack by jn.
 	getAckOfBB(n, earlySeconds);
@@ -255,6 +281,7 @@ function font(str,fun){
 }
 
 function fontHide(str){ // Pets return stand position.
+	fbFightAttackPreviewActive=false;
 	switch (wx_type)
 	{
 		case "1" :
@@ -440,6 +467,7 @@ loadtime(waittime);
 // @Now, for demo, simple test in localhost.
 function fbFightRequestFailed(message, retry)
 {
+	fbFightResetAttackPreview();
 	using=false;
 	if($('tooldiv')) $('tooldiv').style.display='';
 	if(message) window.parent.Alert(message);
@@ -455,6 +483,7 @@ function getAckOfBB(id, earlySeconds){
 			 if(t.responseText == 'SKILLCOLD')
 			 {
 				parent.Alert("你使用的技能尚在冷却中");
+				fbFightResetAttackPreview();
 				using=false;
 				loadtime(waittime);
 				return;
@@ -497,7 +526,7 @@ function splits(str)
 	{
 		ackstr = str.split("<ack>");
 	}
-	if(str == 'autoend') {autoFitStart(2);return;}
+	if(str == 'autoend') {fbFightResetAttackPreview();autoFitStart(2);return;}
 	var tt = str.split('#');
 	fubenend = 0;
 	if(tt.length > 3 && tt[3] == 'end')

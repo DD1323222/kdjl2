@@ -154,8 +154,8 @@ if($requestBname!='' && $requestBc!='')
 		{
 			die('注册失败：系统繁忙。');
 		}
-		if(!$_pm['mysql']->query("INSERT INTO player(name,secret,nickname,sex,regtime,lastvtime,money,yb,headimg,task)
-				    VALUES('{$uSql}','".md5($pass)."','{$tuSql}','{$p['sex']}',".time().",".time().",0,0,'{$p['head']}','')
+		if(!$_pm['mysql']->query("INSERT INTO player(name,secret,nickname,sex,regtime,lastvtime,money,yb,headimg,task,maxbag,maxbase,maxmc)
+				    VALUES('{$uSql}','".md5($pass)."','{$tuSql}','{$p['sex']}',".time().",".time().",0,0,'{$p['head']}','',500,300,80)
 				  "))
 		{
 			if(mysql_errno($_pm['mysql']->getConn()) == 1062) registerFail('角色已经存在或者您已经有一个角色!');

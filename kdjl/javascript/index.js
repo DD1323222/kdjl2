@@ -55,6 +55,46 @@ function helpsys(msg)
 }
 
 var bid=0;
+var currentBagType='';
+var bagRequestSerial=0;
+
+function getBagRequestUrl(clean)
+{
+	var url='getBag.php?style=1';
+	if(clean) url+='&clean=1';
+	if(currentBagType!='') url+='&bagtype='+encodeURIComponent(currentBagType);
+	return url;
+}
+
+function refreshBagContents(clean)
+{
+	var bagRoot=$('bags');
+	if(!bagRoot) return;
+	var requestSerial=++bagRequestSerial;
+	var opt={
+		method:'get',
+		onSuccess:function(t)
+		{
+			if(requestSerial!=bagRequestSerial) return;
+			bagRoot.innerHTML=t.responseText;
+		},
+		onFailure:function()
+		{
+			if(requestSerial==bagRequestSerial) Alert('背包加载失败，请稍后重试！');
+		},
+		asynchronous:true
+	};
+	new Ajax.Request('../function/'+getBagRequestUrl(clean)+'&_='+(new Date()).getTime(),opt);
+}
+
+function changeBagType(type)
+{
+	currentBagType=typeof(type)=='string'?type:'';
+	bid=0;
+	selid=0;
+	refreshBagContents(false);
+}
+
 //function $(element){return document.getElementById(element)?document.getElementById(element):element;}
 //Show_Tools
 var sp=Array(0,0,0,0);
@@ -87,7 +127,7 @@ function ShowBox(name,cursel,n)
 		}
 		else
 		{
-			url = 'getBag.php?style=1';	
+			url = getBagRequestUrl(false);
 		}
 		for(i=1;i<=n;i++)
 		{	
@@ -338,7 +378,7 @@ function HelpMenu(){
 function ajaxfun(obj,name)
 {
 	var url = '';
-	if (name == 'bag') url = 'getBag.php?style=1';
+	if (name == 'bag') url = getBagRequestUrl(false);
 	else if(name == 'task') url = 'getTaskItem.php';
 	else if (name== 'pets'){
 		/*$('showmybagusedcells').innerHTML='';
@@ -534,14 +574,7 @@ function bindSelectedBagItem()
 			Alert(response.substring(3));
 			bid = 0;
 			selid = 0;
-			var refreshOpt = {
-				method: 'get',
-				onSuccess: function(r) {
-					if($('bags')) $('bags').innerHTML = r.responseText;
-				},
-				asynchronous: true
-			};
-			new Ajax.Request('../function/getBag.php?style=1&_=' + (new Date()).getTime(), refreshOpt);
+			refreshBagContents(false);
 		},
 		onFailure: function() {
 			bindingBagItem = false;
@@ -576,12 +609,9 @@ function putBagProps2Depot() {
             var ret = parseInt(t.responseText);
 
             if (ret == 0) {
-                if ($('t' + bid)) {
-                    var propsRow   = $('t' + bid).parentNode;
-                    var propsTable = propsRow.parentNode;
-                    propsTable.removeChild(propsRow);
-                    bid = '';
-                }
+                bid = 0;
+                selid = 0;
+                refreshBagContents(false);
                 window.parent.Alert('已经存入仓库!');
             } else if(ret == 2) {
                 alert('仓库已满，放入仓库失败!');
@@ -604,12 +634,9 @@ function putBagPropsAllSameIn() {
                 var ret = parseInt(t.responseText);
     
                 if (ret == 0) {
-                    if ($('t' + bid)) {
-                        var propsRow   = $('t' + bid).parentNode;
-                        var propsTable = propsRow.parentNode;
-                        propsTable.removeChild(propsRow);
-                        bid = '';
-                    }
+                    bid = 0;
+                    selid = 0;
+                    refreshBagContents(false);
                     window.parent.Alert('已经存入仓库!');
                 } else if(ret == 2) {
                     alert('仓库已满，放入仓库失败!');
@@ -644,12 +671,9 @@ function dropBagProps()
             var ret = parseInt(t.responseText);
 
             if (ret == 0) {
-                if ($('t' + bid)) {
-                    var propsRow   = $('t' + bid).parentNode;
-                    var propsTable = propsRow.parentNode;
-                    propsTable.removeChild(propsRow);
-                    bid = '';
-                }
+                bid = 0;
+                selid = 0;
+                refreshBagContents(false);
                 window.parent.Alert('丢弃成功!');
             } else if (ret == 3) {
                 alert('背包中没有该道具，丢弃失败!');
@@ -1327,14 +1351,9 @@ var d=t.getDate()<10?"0"+t.getDate():t.getDate();
 //背包整理
 function Clean()
 {
-	var opt = {
-     	method: 'get',
-		onSuccess: function(t) {
-			 		$('bags').innerHTML=t.responseText;
-    		 	},
-     	asynchronous:true 
-	}
-	var ajax=new Ajax.Request('./function/getBag.php?clean=1&style=1', opt);	
+	bid=0;
+	selid=0;
+	refreshBagContents(true);
 }
 
 

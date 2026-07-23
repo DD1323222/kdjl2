@@ -26,6 +26,7 @@ function battleHtmlText(value)
 var fightActionDuration = 3000;
 var fightActionTimer = null;
 var attackWaitDeadlineMs = 0;
+var battleAttackPreviewActive = false;
 
 function battleAttackEarlySeconds()
 {
@@ -38,6 +39,25 @@ function fightScheduleAction(callback)
 {
 	if(fightActionTimer !== null) window.clearTimeout(fightActionTimer);
 	fightActionTimer = window.setTimeout(callback, fightActionDuration);
+}
+
+function battleStartAttackPreview()
+{
+	if(!$('pimg')) return;
+	battleAttackPreviewActive = true;
+	$('pimg').style.left='470px';
+	$('pimg').style.zIndex='3';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8].replace('z',gimg);
+}
+
+function battleResetAttackPreview()
+{
+	if(!battleAttackPreviewActive) return;
+	battleAttackPreviewActive = false;
+	if(!$('pimg')) return;
+	$('pimg').style.left='10px';
+	$('pimg').style.zIndex='2';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8];
 }
 
 function createLeft(){
@@ -158,6 +178,8 @@ function Usejn(n){
 	if(n!=1) gimg='s';
 	else gimg='g';
 
+	battleStartAttackPreview();
+
 	// Get ack by jn.
 	getAckOfBB(n, earlySeconds);
 }
@@ -172,6 +194,7 @@ function font(str,fun){
 }
 
 function fontHide(str){ // Pets return stand position.
+	battleAttackPreviewActive=false;
 	switch (wx_type)
 	{
 		case "1" :
@@ -323,6 +346,7 @@ loadtime(waittime);
 // @Now, for demo, simple test in localhost.
 function battleRequestFailed(message, retry)
 {
+	battleResetAttackPreview();
 	using=false;
 	if($('tooldiv')) $('tooldiv').style.display='';
 	if(message) window.parent.Alert(message);
@@ -338,6 +362,7 @@ function getAckOfBB(id, earlySeconds){
 			var response=t.responseText;
 			if(response.indexOf('WAIT:')===0)
 			{
+				battleResetAttackPreview();
 				using=false;
 				$('tooldiv').style.display='';
 				loadtime(parseInt(response.substr(5),10));
@@ -380,7 +405,7 @@ function splits(str)
 		str = dxarr.shift();
 		defenseInfo = dxarr.join('<dx>');
 	}
-	if(str == 'autoend') {autoFitStart(2);return;}
+	if(str == 'autoend') {battleResetAttackPreview();autoFitStart(2);return;}
 	var tt = str.split('#');
 	if(tt.length<4)
 	{

@@ -1888,12 +1888,12 @@ CREATE TABLE `player` (
   `money` int(11) DEFAULT NULL,
   `headimg` int(11) DEFAULT NULL,
   `task` varchar(255) DEFAULT NULL,
-  `maxbag` int(11) NOT NULL DEFAULT '30',
+  `maxbag` int(11) NOT NULL DEFAULT '500',
   `sysautosum` int(11) DEFAULT '0',
   `sysautotime` int(11) DEFAULT '0',
   `maxautofitsum` int(11) DEFAULT '0',
   `maxdblexptime` int(11) DEFAULT '0',
-  `maxmc` int(11) DEFAULT '10',
+  `maxmc` int(11) DEFAULT '80',
   `dblstime` int(11) DEFAULT '0',
   `score` int(11) DEFAULT '0',
   `prestige` int(11) DEFAULT '0',
@@ -1909,7 +1909,7 @@ CREATE TABLE `player` (
   `tgtime` int(11) DEFAULT '0',
   `tgmax` int(11) DEFAULT '1',
   `ckpwd` varchar(255) DEFAULT NULL,
-  `maxbase` int(11) DEFAULT '40',
+  `maxbase` int(11) DEFAULT '300',
   `useyb` int(11) DEFAULT '0',
   `active_useyb` int(11) DEFAULT '0',
   `openmap` varchar(255) DEFAULT '1',
@@ -3718,4 +3718,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-23 22:43:19
+-- Dump completed on 2026-07-24  1:03:53

@@ -22,11 +22,30 @@ function fightcHtmlText(value)
 
 var fightActionDuration = 3000;
 var fightActionTimer = null;
+var fightcAttackPreviewActive = false;
 
 function fightScheduleAction(callback)
 {
 	if(fightActionTimer !== null) window.clearTimeout(fightActionTimer);
 	fightActionTimer = window.setTimeout(callback, fightActionDuration);
+}
+
+function fightcStartAttackPreview(skillVary)
+{
+	if(parseInt(skillVary, 10) !== 1 || !$('pimg')) return;
+	fightcAttackPreviewActive = true;
+	$('pimg').style.left='470px';
+	$('pimg').style.zIndex='100';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8].replace('z',gimg);
+}
+
+function fightcResetAttackPreview()
+{
+	if(!fightcAttackPreviewActive) return;
+	fightcAttackPreviewActive = false;
+	if(!$('pimg')) return;
+	$('pimg').style.left='10px';
+	$('pimg').src=''+IMAGE_SRC_URL+'/bb/'+bb[8];
 }
 
 function createLeft(){
@@ -128,6 +147,7 @@ function createLeft(){
 
 function Usejn(n){
 	var tump=0;
+	var skillVary=1;
 	n=parseInt(n,10);
 	if(isNaN(n) || n < 1) n=1;
 	window.parent.usejn=n;
@@ -138,12 +158,17 @@ function Usejn(n){
 			var ttarr = bbjn[i];
 			if (n==ttarr[9])
 			{
-				tump=ttarr[8];break;
+				tump=ttarr[8];
+				skillVary=parseInt(ttarr[2],10);
+				break;
 			}
 		}
 	}
 	if (n!=1 && tump>bbmcur)
-	{n=1;}//alert('您的魔法值不足，无法使用魔法技能！');return;}
+	{
+		n=1;
+		skillVary=1;
+	}//alert('您的魔法值不足，无法使用魔法技能！');return;}
 
 	if(using==true) return;
 	using=true;
@@ -154,6 +179,8 @@ function Usejn(n){
 	$('tooldiv').style.display='none';
 	if(n!=1) gimg='s';
 	else gimg='g';
+
+	fightcStartAttackPreview(skillVary);
 
 	// Get ack by jn.
 	getAckOfBB(n);
@@ -169,6 +196,7 @@ function font(str,fun){
 }
 
 function fontHide(str){ // Pets return stand position.
+	fightcAttackPreviewActive=false;
 	switch (wx_type)
 	{
 		case "1" :
@@ -327,6 +355,7 @@ loadtime(waittime);
 // @Now, for demo, simple test in localhost.
 function fightcRequestFailed(message, retry)
 {
+	fightcResetAttackPreview();
 	using=false;
 	if($('tooldiv')) $('tooldiv').style.display='';
 	if(message) window.parent.Alert(message);
@@ -392,7 +421,7 @@ function splits(str)
 
 	mMonsterFighting = false;
 	//alert(str)
-	if(str == 'autoend') {autoFitStart(2);return;}
+	if(str == 'autoend') {fightcResetAttackPreview();autoFitStart(2);return;}
 	var tt = str.split('#');
 	if(tt.length < 5)
 	{

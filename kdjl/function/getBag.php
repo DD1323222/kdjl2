@@ -84,25 +84,14 @@ if($clean == 1)
 	}
 }
 
-#########################仓库的物品 9.18 谭炜###########################3
-$strings = ",1,2,3,4,5,6,7,8,9,10|11,12,13,14,15,16";
-$strinfo = "全部道具,辅助道具,增益道具,捕捉道具,收集道具,技能书,卡片道具,进化道具,合体道具,装备道具,精练道具,宝箱道具,特殊道具,功能道具,宠物卵,合成道具";
-$arr = explode(",",$strings);
-$arrinfo = explode(",",$strinfo);
-//背包
-foreach($arr as $ks => $v)
+$bagTypeValues = array('', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10|11', '12', '13', '14', '15', '16');
+$bagTypeLabels = array('全部道具', '辅助道具', '增益道具', '捕捉道具', '收集道具', '技能书', '卡片道具', '进化道具', '合体道具', '装备道具', '精练道具', '宝箱道具', '特殊道具', '功能道具', '宠物卵', '合成道具');
+if(!in_array($bagtype, $bagTypeValues, true)) $bagtype = '';
+foreach($bagTypeValues as $ks => $value)
 {
-	$arrLabel = isset($arrinfo[$ks]) ? $arrinfo[$ks] : '';
-	if($bagtype == $v)
-	{
-		$bagoption .= "<option selected=selected value='./getBag_Mod.php?bagtype=".$v."'>".$arrLabel."</option>";
-	}
-	else
-	{
-		$bagoption .= "<option value='./paiProps_Mod.php?getBag=".$v."'>".$arrLabel."</option>";
-	}
+	$selected = $bagtype === $value ? ' selected="selected"' : '';
+	$bagoption .= '<option value="'.getBagHtml($value).'"'.$selected.'>'.getBagHtml($bagTypeLabels[$ks]).'</option>';
 }
-##########################在这里结束###############################
 /**
 * Delete userbag for novalid.
 */
@@ -263,14 +252,21 @@ else if($style == 3){
 }
 if($bagRenderCount < 1)
 {
-	if($style == 1) $bag .= '<li><a><p class="p2">您的包裹是空的！</p></a></li>';
+	if($style == 1)
+	{
+		$emptyText = $bagtype === '' ? '您的包裹是空的！' : '该分类暂无物品！';
+		$bag .= '<li class="bag_empty"><p>'.$emptyText.'</p></li>';
+	}
 	else $bag = '您的包裹是空的！';
 }
 $maxbag = isset($user['maxbag']) ? intval($user['maxbag']) : 0;
 $bagInfo = $bagUsedCellCT.'/'.$maxbag;
 if ($style == 1)
 {
-	$bag = '<div class="close_btn" onclick="ShowBox(\'Tools\',\'1\',\'3\')"></div><div class="i_pack"><span>当前背包空间：'.$bagInfo.'</span><input type="button" id="incangkuAll" class="bag_quick_depot" value="秒放仓库" onclick="putBagPropsAllSameIn();"/></div>'.' <div class="pack_title">
+	$bag = '<div class="close_btn" onclick="ShowBox(\'Tools\',\'1\',\'3\')"></div>
+	<div class="i_pack"><span>当前背包空间：'.$bagInfo.'</span><input type="button" id="incangkuAll" class="bag_quick_depot" value="秒放仓库" onclick="putBagPropsAllSameIn();"/></div>
+	<div class="pack_filter"><label for="bag_type_select">分类查看：</label><select id="bag_type_select" onchange="changeBagType(this.value)">'.$bagoption.'</select></div>
+	<div class="pack_title">
 	<ul class="list l1"><li><p class="p1">图标</p><p class="p2">物品名称</p><p class="p3">类型</p><p class="p4">数量</p></li></ul>
         </div>'.$bag.' </ul>
         </div>
