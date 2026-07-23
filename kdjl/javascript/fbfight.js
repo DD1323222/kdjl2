@@ -10,6 +10,11 @@ if(isNaN(waittime)){
 	waittime = 0;
 }
 window.parent.waittime = waittime;
+var selectedSkillId = parseInt(window.parent.usejn, 10);
+if(isNaN(selectedSkillId) || selectedSkillId < 1){
+	selectedSkillId = 1;
+}
+window.parent.usejn = selectedSkillId;
 var fubenend = 0;
 var wx_type = "";
 
@@ -94,8 +99,8 @@ function createLeft(){
 	$('fm').appendChild(sp);
 
 	hp = document.createElement('DIV'); // hp gif
-	hp.style.cssText='width:110px;height:11px;position:absolute;left:620px;top:47px; z-index:3; padding-left:13px';
-	var hpsrc = '<div id="ghpbkvalue" style="width:96px;height:11px;line-height:11px;padding-left:0;left:31px;top:0;position:absolute;color:#412804;font-size:10px;text-align:left;overflow:hidden;">'+gg[5]+'/'+gg[5]+'</div><div id="ghpbk" style="width:96px;height:11px;padding-left:18px;background-repeat:no-repeat;background-position:right top;background-image:url(../images/ui/newmap/dr03.gif);overflow:hidden"><div id="ghp" style="background-image:url(../images/ui/newmap/dr04.gif);width:91px;background-repeat:repeat-x;height:11px;"></div></div>';
+	hp.style.cssText='width:110px;height:11px;position:absolute;left:620px;top:47px;z-index:3;';
+	var hpsrc = '<div id="ghpbkvalue" style="width:96px;height:11px;line-height:11px;padding-left:0;left:31px;top:0;position:absolute;z-index:2;color:#412804;font-size:10px;text-align:left;overflow:hidden;">'+gg[5]+'/'+gg[5]+'</div><div id="ghpbk" style="width:96px;height:11px;left:31px;top:0;position:absolute;z-index:1;background-repeat:no-repeat;background-position:right top;background-image:url(../images/ui/newmap/dr03.gif);overflow:hidden"><div id="ghp" style="background-image:url(../images/ui/newmap/dr04.gif);width:91px;background-repeat:repeat-x;height:11px;"></div></div>';
 
 	hp.innerHTML = hpsrc;
 	//hp.id='ghp';
@@ -123,7 +128,7 @@ function createLeft(){
 
 	// add jn name.
 	var jnfont = document.createElement('DIV');
-	jnfont.style.cssText='position:absolute;left:600px;top:100px;font-weight:bold;width:250px;height:30px;font-family:华文新魏;font-size:16px;color:yellow';
+	jnfont.style.cssText='position:absolute;left:600px;top:100px;font-weight:bold;width:250px;height:30px;font-family:华文新魏;font-size:18px;color:yellow';
 	jnfont.id='pfont';
 	$('fm').appendChild(jnfont);
 
@@ -135,9 +140,26 @@ function createLeft(){
 }
 
 function Usejn(n){
+	n = parseInt(n, 10);
+	if(isNaN(n) || n < 1) n = 1;
+	window.parent.usejn = n;
+	if(using==true) return;
+	var tump=0;
+	if(n>1)
+	{
+		for(var skillIndex=0;skillIndex<bbjn.length;skillIndex++)
+		{
+			var skillInfo = bbjn[skillIndex];
+			if(n==skillInfo[9])
+			{
+				tump=skillInfo[8];
+				break;
+			}
+		}
+	}
+	if(n!=1 && tump>bbmcur) n=1;
 	var cookie_tax = "pm_skill_"+n;
 	var timestamp = Date.parse(new Date());
-	var tump=0;
 	var cold_skill = new Array(319,320,321,322,323);	//冷却技能，此为技能id,写死，不能更改，并保持与fight.js,fbfight.js,fbfightGate.php,FightGate.php的数组一致，否则会出现不可预知的错误！
 	switch (n)
 	{
@@ -207,21 +229,6 @@ function Usejn(n){
 			}
 		}
 	}
-	if(n>1)
-	{
-		for(var i=0;i<bbjn.length;i++)
-		{
-			var ttarr = bbjn[i];
-			if (n==ttarr[9])
-			{
-				tump=ttarr[8];break;
-			}
-		}
-	}
-	if (n!=1 && tump>bbmcur)
-	{n=1;}//alert('您的魔法值不足，无法使用魔法技能！');return;}
-
-	if(using==true) return;
 	var earlySeconds = fbFightAttackEarlySeconds();
 	attackWaitDeadlineMs = 0;
 	using=true;
@@ -239,7 +246,11 @@ function Usejn(n){
 }
 
 function font(str,fun){
-	$('pfont').innerHTML=str;
+	var fontBox = $('pfont');
+	if(!fontBox){ fightScheduleAction(fun); return; }
+	fontBox.style.width='270px';
+	fontBox.style.zIndex='1000000';
+	fontBox.innerHTML=str;
 	fightScheduleAction(fun);
 }
 
@@ -427,6 +438,14 @@ loadtime(waittime);
 // Server part.###########################
 // @Get bb ack.
 // @Now, for demo, simple test in localhost.
+function fbFightRequestFailed(message, retry)
+{
+	using=false;
+	if($('tooldiv')) $('tooldiv').style.display='';
+	if(message) window.parent.Alert(message);
+	if(retry !== false) loadtime(waittime);
+}
+
 function getAckOfBB(id, earlySeconds){
 	earlySeconds = parseFloat(earlySeconds);
 	if(!isFinite(earlySeconds) || earlySeconds < 0) earlySeconds = 0;
@@ -450,14 +469,16 @@ function getAckOfBB(id, earlySeconds){
 					return;
 				}
 				if(t.responseText == 0 || t.responseText==''){
-					using=false;
+					fbFightRequestFailed();
 					return;
 				}
 				else {splits(t.responseText);}
 		 },
 		 on404: function(t) {
+			fbFightRequestFailed();
 		 },
 		 onFailure: function(t) {
+			fbFightRequestFailed();
 		 },
 		 asynchronous:true
 		}
@@ -490,8 +511,8 @@ function splits(str)
 	}
 	if(tt.length < 5)
 	{
-		using=false;
-		loadtime(waittime);
+		var errorMessage = tt.length > 2 && tt[2] ? tt[2] : (str || '副本战斗状态异常，请重新进入副本！');
+		fbFightRequestFailed(errorMessage, false);
 		return;
 	}
 	var bbr = tt[0].split(',');
@@ -564,7 +585,7 @@ function splits(str)
 			{
 				var fontValue='<font color=red><i>-'+bbr[2]+'</i> </font>!!';
 			}
-			$('pfont').style.left='620px';
+			$('pfont').style.left='500px';
 			hpimg('ghp');
 
 			//判断吸血和吸魔的值是否为空和是否显示
@@ -670,10 +691,12 @@ function hpimg(imgid)
 			hpmax=gg[5];
 			if (gwcur<=0) {fc=-1;gwcur=0;}
 			cur = gwcur;
-			$('ghpbk').style.width=(parseInt((imgw/hpmax)*cur)+5)+'px';
 		}
 
 		var iw = parseInt((imgw/hpmax)*cur);
+		if(isNaN(iw) || iw < 0) iw=0;
+		if(iw > imgw) iw=imgw;
+		if(imgid != 'php' && $('ghpbk')) $('ghpbk').style.width=(iw > 0 ? iw+5 : 0)+'px';
 
 		$(imgid).style.width=iw+'px';
 		$(imgid).style.border='0px';
@@ -702,6 +725,32 @@ function viewyw(n)
 	$('ywin').style.display = '';
 }
 
+function validateMedicineResponse(text)
+{
+	text = String(text == null ? '' : text).replace(/^\s+|\s+$/g, '');
+	if(text == '0') return false;
+	if(text == 'hasusemedbuff')
+	{
+		window.parent.Alert('你已经使用过类似的临时状态药了哦');
+		return false;
+	}
+	var values = text.split(',');
+	if(values.length < 4)
+	{
+		window.parent.Alert(text || '道具使用失败！');
+		return false;
+	}
+	for(var i = 0; i < 4; i++)
+	{
+		if(isNaN(parseInt(values[i], 10)))
+		{
+			window.parent.Alert(text || '道具使用失败！');
+			return false;
+		}
+	}
+	return true;
+}
+
 function UseYao(n)
 {
 	if( $('timev').innerHTML <=1 )
@@ -712,6 +761,7 @@ function UseYao(n)
 	var opt = {
 		 method: 'get',
 		 onSuccess: function(t){//window.parent.Alert(t.responseText);
+				if(!validateMedicineResponse(t.responseText)) return;
 				if(t.responseText != '0')
 				{
 					if(t.responseText != 'hasusemedbuff')
@@ -764,8 +814,10 @@ function UseYao(n)
 				}
 		 },
 		 on404: function(t) {
+				window.parent.Alert('道具使用请求失败，请稍后重试。');
 		 },
 		 onFailure: function(t) {
+				window.parent.Alert('道具使用请求失败，请稍后重试。');
 		 },
 		 asynchronous:true
 		}

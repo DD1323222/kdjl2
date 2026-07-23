@@ -73,8 +73,8 @@ input,textarea {font:12px/normal; color:#000}
 .list li p {float:left; text-align:center}
 .l1 p.p1 {width:40px; text-align:center}
 .l1 p.p1 img {width:18px; height:18px; padding-top:3px}
-.l1 p.p2 {width:130px}
-.l1 p.p3 {width:100px}
+.l1 p.p2 {width:170px}
+.l1 p.p3 {width:60px}
 .l1 p.p4 {width:40px}
 
 
@@ -114,9 +114,10 @@ input,textarea {font:12px/normal; color:#000}
 .task_list ul.lev li p {cursor:pointer;line-height:25px; padding:0 20px 0 30px; color:#915d0c; font-weight:bold; background:url(../new_images/index/ico_2.gif) 10px center no-repeat}
 .task_list ul.lev li.on p {background:url(../new_images/index/ico_1.gif) 10px center no-repeat; color:#ff4200}
 
-.task_list ul.con li{}
+.task_list ul.con li{height:25px; overflow:hidden}
 .task_list ul.con li a {display:block; height:25px; background:url(../new_images/index/task_lev.jpg) no-repeat;}
 .task_list ul.con li a:hover,.task_list ul.lev li.on {}
+.task_list ul.con li p {display:block; width:100%; height:25px; box-sizing:border-box; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; text-align:left}
 
 .task_list ul.con li.c p {line-height:25px; padding:0 20px 0 40px; color:#d55f00; background:url(../new_images/index/task_ico_new.jpg) 20px center no-repeat}
 .task_list ul.con li.cfocus p {line-height:25px; padding:0 20px 0 40px; color:#d55f00; background:url(../new_images/index/task_ico_new.jpg) 20px center no-repeat; background-color:#B2E7F9}

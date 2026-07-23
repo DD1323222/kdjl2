@@ -11,7 +11,8 @@ if($uid < 1) die('');
 
 function taskshowHtml($value)
 {
-	return htmlspecialchars(strval($value), ENT_QUOTES);
+	$value = html_entity_decode(strval($value), ENT_QUOTES, 'UTF-8');
+	return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
 function taskshowJsSingle($value)
@@ -454,19 +455,19 @@ if($title_vary == 2)//显示每一个大类下面的任务
 				//	$flagnum = 2;
 					$flagnum = 1;
 					$npcnum = $values['oknpc'];
-					$title_details .= '<li class="t"><a style="cursor:pointer"onclick="void(0)"><p onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',3)">'.$taskTitleHtml.'</p></a></li>';
+					$title_details .= '<li class="t"><a style="cursor:pointer"onclick="void(0)"><p title="'.$taskTitleHtml.'" onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',3)">'.$taskTitleHtml.'</p></a></li>';
 				}else if(!$in && $gt!==false){
 					$check = "可接";//显示接受按钮
 					$flagnum = 1;
 					$npcnum = $bid;
-					$title_details .= '<li class="a"><a style="cursor:pointer"onclick="void(0)"><p onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',4)">'.$taskTitleHtml.'</p></a></li>';
+					$title_details .= '<li class="a"><a style="cursor:pointer"onclick="void(0)"><p title="'.$taskTitleHtml.'" onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',4)">'.$taskTitleHtml.'</p></a></li>';
 				}else if(!$gt)
 				{
 					$flagnum = 1;
 					$check = '不可接';//显示关闭按钮
 					$npcnum = $bid;
 					//$title_details .= '<li><p class="p1" onclick="javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',5)">'.$values['title'].'</p><span>'.$check.'</span></li>';
-					$title_details .= '<li class="t"><a style="cursor:pointer"onclick="void(0)"><p onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',5)">'.$taskTitleHtml.'</p></a></li>';
+					$title_details .= '<li class="t"><a style="cursor:pointer"onclick="void(0)"><p title="'.$taskTitleHtml.'" onclick="taskASwap(this);javascript:OpenLogin('.$flagnum.','.$values['id'].','.$npcnum.',5)">'.$taskTitleHtml.'</p></a></li>';
 				}
 			//echo strlen($title_details)."<br/>\n";$title_details='';
 			//if($ct>13) die(__LINE__.' --死循环--:'. memory_get_usage());
@@ -514,14 +515,14 @@ if($title_vary == 3)//显示大类以及默认接受任务内容
 					{
 						$accept = '可交';//屏蔽接受按钮
 						//$ac = explode('|',$accept_value['fromnpc']);
-						$task_accept_arr .= '<li class="u"><a style="cursor:pointer"onclick="void(0)"><p onclick="taskASwap(this);javascript:OpenLogin(2,'.$accept_value['id'].','.$accept_value['oknpc'].',1)">'.$acceptTitleHtml.'</p></a></li>';
+						$task_accept_arr .= '<li class="u"><a style="cursor:pointer"onclick="void(0)"><p title="'.$acceptTitleHtml.'" onclick="taskASwap(this);javascript:OpenLogin(2,'.$accept_value['id'].','.$accept_value['oknpc'].',1)">'.$acceptTitleHtml.'</p></a></li>';
 
 					}
 					else
 					{
 						$accept = '不可交';//只有一个放弃按钮
 						//$ac = explode('|',$accept_value['fromnpc']);
-						 $task_accept_arr .= '<li class="c"><a style="cursor:pointer"onclick="void(0)"><p onclick="taskASwap(this);javascript:OpenLogin(2,'.$accept_value['id'].','.$accept_value['oknpc'].',2)">'.$acceptTitleHtml.'</p></a></li>';
+						 $task_accept_arr .= '<li class="c"><a style="cursor:pointer"onclick="void(0)"><p title="'.$acceptTitleHtml.'" onclick="taskASwap(this);javascript:OpenLogin(2,'.$accept_value['id'].','.$accept_value['oknpc'].',2)">'.$acceptTitleHtml.'</p></a></li>';
 					}
 		}
 	}

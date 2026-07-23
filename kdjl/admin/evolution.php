@@ -44,7 +44,7 @@ adminPageStart('进化查询', 'evolution');
 			<td class="code"><?php echo intval($route['source_id']); ?>-<?php echo intval($route['branch']); ?></td>
 			<td><?php adminPetCell($route['source_id'], isset($pets[$route['source_id']]) ? $pets[$route['source_id']]['name'] : null); ?></td>
 			<td>+</td>
-			<td><div class="form-row"><?php $first = true; foreach ($route['material_ids'] as $materialId) { if (!$first) echo '<span>/</span>'; adminPropCell($materialId, isset($props[$materialId]) ? $props[$materialId]['name'] : null); $first = false; } ?></div></td>
+			<td><div class="form-row"><?php $first = true; foreach ($route['material_ids'] as $materialId) { if (!$first) echo '<span>/</span>'; adminPropCell($materialId, isset($props[$materialId]) ? $props[$materialId]['name'] : null, isset($props[$materialId]) ? $props[$materialId]['propslock'] : null); $first = false; } ?></div></td>
 			<td>=</td>
 			<td><?php adminPetCell($route['target_id'], isset($pets[$route['target_id']]) ? $pets[$route['target_id']]['name'] : null); ?></td>
 			<td><?php echo intval($route['level']); ?> 级</td>

@@ -180,7 +180,7 @@ $total = is_array($countRow) ? intval($countRow['total']) : 0;
 $maxPage = max(1, intval(ceil($total / $pageSize)));
 if ($page > $maxPage) $page = $maxPage;
 $offset = ($page - 1) * $pageSize;
-$rows = $adminDb->getRecords('SELECT id,name,vary,varyname,img,effect,buy,yb,sj,vip,stime,zhekouyb FROM props WHERE ' . $where . ' ORDER BY id LIMIT ' . $offset . ',' . $pageSize);
+$rows = $adminDb->getRecords('SELECT id,name,vary,varyname,img,effect,buy,yb,sj,vip,stime,zhekouyb,propslock FROM props WHERE ' . $where . ' ORDER BY id LIMIT ' . $offset . ',' . $pageSize);
 if (!is_array($rows)) $rows = array();
 
 $varyLabels = isset($_props['vary']) && is_array($_props['vary']) ? $_props['vary'] : array(1 => '可叠加', 2 => '不可叠加');
@@ -215,7 +215,7 @@ adminPageStart('道具修改管理', 'items');
 				<div class="field"><label>道具分类 varyname</label><select class="select" name="varyname"><?php $currentType = intval(adminItemInput($editor, 'varyname')); if (!isset($typeLabels[$currentType])) { ?><option value="<?php echo $currentType; ?>" selected="selected">未知分类 <?php echo $currentType; ?></option><?php } foreach ($typeLabels as $id => $label) { ?><option value="<?php echo intval($id); ?>"<?php echo $currentType === intval($id) ? ' selected="selected"' : ''; ?>><?php echo adminH($label); ?> (<?php echo intval($id); ?>)</option><?php } ?></select></div>
 				<div class="field"><label>装备位置 postion</label><select class="select" name="postion"><?php $currentPosition = intval(adminItemInput($editor, 'postion')); if (!isset($positionLabels[$currentPosition])) { ?><option value="<?php echo $currentPosition; ?>" selected="selected">未知位置 <?php echo $currentPosition; ?></option><?php } foreach ($positionLabels as $id => $label) { ?><option value="<?php echo intval($id); ?>"<?php echo $currentPosition === intval($id) ? ' selected="selected"' : ''; ?>><?php echo adminH($label); ?> (<?php echo intval($id); ?>)</option><?php } ?></select></div>
 				<div class="field"><label>品质颜色 propscolor</label><select class="select" name="propscolor"><?php foreach ($colorLabels as $id => $label) { ?><option value="<?php echo $id; ?>"<?php echo intval(adminItemInput($editor, 'propscolor')) === $id ? ' selected="selected"' : ''; ?>><?php echo adminH($label); ?> (<?php echo $id; ?>)</option><?php } ?></select></div>
-				<div class="field"><label>是否锁定交易</label><select class="select" name="propslock"><option value="0"<?php echo intval(adminItemInput($editor, 'propslock')) === 0 ? ' selected="selected"' : ''; ?>>否 (0)</option><option value="1"<?php echo intval(adminItemInput($editor, 'propslock')) === 1 ? ' selected="selected"' : ''; ?>>是 (1)</option></select></div>
+				<div class="field"><label>默认是否可交易</label><select class="select" name="propslock"><option value="0"<?php echo intval(adminItemInput($editor, 'propslock')) === 0 ? ' selected="selected"' : ''; ?>>不可交易 (0)</option><option value="1"<?php echo intval(adminItemInput($editor, 'propslock')) === 1 ? ' selected="selected"' : ''; ?>>可交易 (1)</option></select></div>
 				<div class="field catalog-image-field"><label>图片文件名 img</label><div class="catalog-image-input"><?php if (is_array($preview)) { ?><img src="<?php echo adminH($preview['url']); ?>?v=<?php echo intval(@filemtime($preview['path'])); ?>" alt="" /><?php } ?><input class="input code-input" name="img" maxlength="50" value="<?php echo adminH(adminItemInput($editor, 'img')); ?>" /></div><span class="subtle"><?php echo is_array($preview) ? '当前来自 images/' . adminH($preview['directory']) : '不同分类会从 props、card_Mod 或 tarot 等目录读取'; ?></span></div>
 				<div class="field span-2"><label>使用说明 usages</label><textarea class="textarea" name="usages" maxlength="255" rows="2"><?php echo adminH(adminItemInput($editor, 'usages')); ?></textarea></div>
 				<div class="field span-2"><label>使用要求 requires</label><input class="input code-input" name="requires" maxlength="100" value="<?php echo adminH(adminItemInput($editor, 'requires')); ?>" /></div>
@@ -257,12 +257,13 @@ adminPageStart('道具修改管理', 'items');
 	<?php } ?>
 
 	<section class="band">
-		<div class="table-wrap"><table class="catalog-table item-table"><thead><tr><th>道具</th><th>分类</th><th>叠加</th><th>使用效果</th><th>价格摘要</th><th>商店编码</th><th>操作</th></tr></thead><tbody>
+		<div class="table-wrap"><table class="catalog-table item-table"><thead><tr><th>道具</th><th>分类</th><th>叠加</th><th>是否可交易</th><th>使用效果</th><th>价格摘要</th><th>商店编码</th><th>操作</th></tr></thead><tbody>
 		<?php foreach ($rows as $row) { $preview = adminItemImagePreview($row['img']); ?>
 		<tr>
 			<td><div class="catalog-entity"><?php if (is_array($preview)) { ?><img src="<?php echo adminH($preview['url']); ?>" alt="" /><?php } ?><div><strong><?php echo adminH($row['name']); ?></strong><span>id=<?php echo intval($row['id']); ?></span></div></div></td>
 			<td><?php echo isset($typeLabels[intval($row['varyname'])]) ? adminH($typeLabels[intval($row['varyname'])]) : '类型 ' . intval($row['varyname']); ?></td>
 			<td><?php echo isset($varyLabels[intval($row['vary'])]) ? adminH($varyLabels[intval($row['vary'])]) : intval($row['vary']); ?></td>
+			<td><?php adminPropTradeBadge($row); ?></td>
 			<td class="code catalog-ellipsis"><?php echo adminH($row['effect']); ?></td>
 			<td class="code">金币 <?php echo intval($row['buy']); ?> / 元宝 <?php echo intval($row['yb']); ?> / 水晶 <?php echo intval($row['sj']); ?><br />VIP <?php echo intval($row['vip']); ?> / 抢购 <?php echo intval($row['zhekouyb']); ?></td>
 			<td class="code"><?php echo intval($row['stime']); ?></td>

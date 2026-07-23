@@ -10,9 +10,11 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 unset($_SESSION['catch_gw_info']);
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
+kdjlFightBeginNavigationWait($uid);
 if(!isset($_SESSION['fight'.$uid]) || !is_array($_SESSION['fight'.$uid])) $_SESSION['fight'.$uid] = array();
 $_SESSION['fight'.$uid]['gid'] = 0;
 //用于抓进城补血，继续打怪外挂！如果是使用目前的外挂（2009-01-30）则不会访问这个地方，$_SESSION['GoToCity']为一个时间，进入战斗时就可以判断这个玩家使用外挂！

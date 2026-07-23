@@ -13,6 +13,8 @@ p:  pets id
 cp: 被挑战玩家的主战pets id
 */
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
 $_SESSION['id'] = $uid;
@@ -21,6 +23,8 @@ if(isset($_SESSION['team_id']) && intval($_SESSION['team_id']) > 0)
 	die('退出出队伍才可以进入！');
 }
 secStart($_pm['mem']);
+if(isset($_GET['guild_fight'])) kdjlGuildBattleTick($_pm['mysql'], $_pm['mem'], time());
+kdjlRunActivityAutomation($_pm['mysql'], $_pm['mem']);
 
 function challengeModJsSingle($value)
 {

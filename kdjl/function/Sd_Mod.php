@@ -33,6 +33,19 @@ function sdModImage($value)
 	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
 }
 
+function sdModNormalizeNirvanaText($value)
+{
+	return preg_replace('/涅[盘磐]/u', '涅槃', (string)$value);
+}
+
+function sdModIsNirvanaPet($pet)
+{
+	$baseId = isset($pet['old_bid']) ? intval($pet['old_bid']) : 0;
+	if(in_array($baseId, array(103, 104, 105), true)) return true;
+	$name = sdModNormalizeNirvanaText(isset($pet['name']) ? $pet['name'] : '');
+	return in_array($name, array('涅槃兽（亥）', '涅槃兽（午）', '涅槃兽（卯）'), true);
+}
+
 $user		= $_pm['user']->getUserById($uid);
 $petsAll	= $_pm['user']->getUserPetById($uid);
 $bag		= $_pm['user']->getUserBagById($uid);
@@ -132,17 +145,18 @@ if (is_array($petsAll))
 			$combblistid .= $combblistid?",'{$rs['id']}-{$cardImg}'":"'{$rs['id']}-{$cardImg}'";
 		}
 		// 涅槃宠物
-		if($rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") && $rs['muchang'] == 0)
+		$isNirvanaPet = sdModIsNirvanaPet($rs);
+		if($rs['level'] >= 60 && $isNirvanaPet && $rs['muchang'] == 0)
 		{
 			$zsoption .= "<option value='{$rs['id']}'>".sdModHtml($rs['name'])."-".intval($rs['level'])."</option>\n";
 		}
-		if ($rs['level']>=60 && $zskk < 3 && $rs['wx'] == 6 && ($rs['name'] != "涅磐兽（亥）" && $rs['name'] != "涅磐兽（午）" && $rs['name'] != "涅磐兽（卯）")){
+		if ($rs['level']>=60 && $zskk < 3 && $rs['wx'] == 6 && !$isNirvanaPet){
 			$cardImg = sdModImage($rs['cardimg']);
 			$zspets[$zskk++] = "<img src='".IMAGE_SRC_URL."/bb/".$cardImg."' onclick='Display({$rs['id']});' style='cursor:pointer;display:none;' id='zscp{$zskk}'>";
 			$zsapetslist .= "<option value='{$rs['id']}'>".sdModHtml($rs['name'])."-".intval($rs['level'])."</option>\n";
 			$zsbblistid .= $zsbblistid?",'{$rs['id']}-{$cardImg}'":"'{$rs['id']}-{$cardImg}'";
 		}
-		//涅磐从这里结束
+		// 涅槃从这里结束
 
 		if($pid == 0)
 		{
@@ -454,12 +468,14 @@ if (is_array($bag))
 		}
 		//转生
 		$name = explode(":",$v['usages']);
-		if(!empty($v['sums']) && $name[0] != '涅盘')
+		$usageType = sdModNormalizeNirvanaText(isset($name[0]) ? $name[0] : '');
+		if(!empty($v['sums']) && $usageType != '涅槃')
 		{
 			$plist .= "<option value='{$v['id']}'>".sdModHtml($v['name'])."-".intval($money)."-".intval($v['sums'])."个</option>\n";
 		}
 		$effarr = explode(":",$v['usages']);
-		if($effarr[0] == '涅盘' && !empty($v['sums'])){
+		$usageType = sdModNormalizeNirvanaText(isset($effarr[0]) ? $effarr[0] : '');
+		if($usageType == '涅槃' && !empty($v['sums'])){
 			$zsplist .= "<option value='{$v['id']}'>".sdModHtml($v['name'])."-".intval($v['sums'])."个</option>\n";
 		}
 	}

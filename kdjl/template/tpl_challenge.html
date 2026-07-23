@@ -70,12 +70,10 @@ function preloader() {
 <![endif]-->
 
 <body>
-<div style="width:778px;height:311px; background-image:url(../images/map/t#inmap#/#inmap#.gif)" id="fm">
-
-</div>
+<div style="width:778px;height:311px;position:absolute;background-image:url(../images/map/t#inmap#/#inmap#.gif)" id="fm">
 #flash#
 <!-- jn tools-->
-<div style="position:absolute;left:8px;top:251px; background-image:url(../images/ui/fight/zdean01.gif);
+<div style="position:absolute;left:8px;top:251px;background-image:url(../images/ui/newmap/zdzsk.gif);
 width:778px;height:71px;" id="tooldiv">
   <div id="tauto" style="position:absolute; width:37px; height:34px; left: 218px; top: 7px; cursor:pointer;"  onclick="loadtool(1);">&nbsp;&nbsp;<br/>
   &nbsp;&nbsp;</div>
@@ -105,77 +103,25 @@ width:778px;height:71px;" id="tooldiv">
 <!-- -->
 
 <!--player info-->
-<div id="team0" style="position:absolute;left:8px;top:8px;border:0px;">
-<table width="117" height="44" border="0" cellpadding="0" cellspacing="0">
-     <tr>
-       <td height="4"><img src="../images/ui/fight/zdean07.gif" width="117" height="4"></td>
-     </tr>
-     <tr>
-       <td><table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="405978">
-         <tr>
-           <td width="3"><img src="../images/ui/fight/zdean09.gif" width="3" height="36"></td>
-           <td width="36" height="36" bgcolor="#FFF95B"><img src="../images/bb/#head0#" width="36" height="36"></td>
-           <td width="21"><img src="../images/ui/fight/zdean11.gif" width="21" height="36"></td>
-           <td><table width="100%" border="0" cellpadding="0" cellspacing="0">
-             <tr>
-               <td height="9"><table width="55" border="0" cellspacing="0" cellpadding="0">
-                 <tr>
-                   <td height="9" width="55">
-				   <img src="../images/ui/fight/zdean15.gif" width="55" border="0" height="9" id="php"/></td>
-                 </tr>
-               </table></td>
-             </tr>
-             <tr>
-               <td height="4" ></td>
-             </tr>
-             <tr>
-               <td height="9"><table width="40%" border="0" cellspacing="0" cellpadding="0">
-                 <tr>
-                   <td height="9" width="55">
-				   <img src="../images/ui/fight/zdean14.gif" width="55" border="0" height="9" id="pmp"/></td>
-                 </tr>
-               </table></td>
-             </tr>
-             <tr>
-               <td height="4"></td>
-             </tr>
-             <tr>
-               <td height="9"><table width="35%" border="0" cellspacing="0" cellpadding="0">
-                 <tr>
-                   <td height="9">
-				   		<img src="../images/ui/fight/zdean13.gif" width="55" border="0" height="9" id="pexp"/></td>
-                 </tr>
-               </table></td>
-             </tr>
-           </table></td>
-           <td width="1"><img src="../images/ui/fight/zdean10.gif" width="1" height="37"></td>
-         </tr>
-       </table></td>
-     </tr>
-     <tr>
-       <td height="4"><img src="../images/ui/fight/zdean08.gif" width="117" height="4"></td>
-     </tr>
-     <tr>
-       <td height="21" align="center" valign="middle"><table width="100%" border="0" cellspacing="0" cellpadding="0">
-         <tr>
-           <td width="9"><img src="../images/ui/fight/zdean17.gif" width="9" height="18"></td>
-           <td background="../images/ui/fight/zdean18.gif" style="color:#694a06;">#nickname#</td>
-           <td width="9"><img src="../images/ui/fight/zdean19.gif" width="9" height="18"></td>
-         </tr>
-       </table></td>
-     </tr>
-  </table>
+<div id="team0" style="position:absolute;left:0px;top:0px;border:0px;z-index:98">
+  <div id="pname" style="padding-top:0;text-align:center;position:absolute;z-index:101;left:8px;top:2px;border:0px;height:19px;line-height:19px;width:147px;overflow:hidden;background:url(../images/ui/newmap/zd01.gif)"></div>
+  <div style="position:absolute;z-index:101;left:5px;top:21px;border:0px;height:47px;width:90px;background:url(../images/ui/newmap/zd02.gif)">
+    <div style="position:absolute;z-index:101;left:23px;top:1px;border:0px;height:36px;width:36px;"><img src="../images/bb/#head0#" width="36" height="36" /></div>
+  </div>
+  <div style="position:absolute;z-index:99;left:70px;top:23px;border:0px;height:48px;width:160px;"><img src="../images/ui/newmap/zd04.gif" style="opacity:0.4;filter:progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=40,finishOpacity=100);" /></div>
+  <div style="position:absolute;z-index:100;left:70px;top:24px;border:0px;height:16px;width:160px;"><table border="0" cellspacing="0" cellpadding="0"><tr><td><img src="../images/ui/newmap/xthong01.gif" width="156" border="0" height="16" id="php" /></td><td width="4"><img src="../images/ui/newmap/xthong00.gif" width="4" border="0" height="16" /></td></tr></table></div>
+  <div style="position:absolute;z-index:100;left:70px;top:41px;border:0px;height:16px;width:160px;"><table border="0" cellspacing="0" cellpadding="0"><tr><td><img src="../images/ui/newmap/xtlan01.gif" width="155" border="0" height="16" id="pmp" /></td><td width="5"><img src="../images/ui/newmap/xtlan00.gif" width="5" border="0" height="16" /></td></tr></table></div>
+  <div style="position:absolute;z-index:100;left:70px;top:59px;border:0px;height:11px;width:160px;"><table border="0" cellspacing="0" cellpadding="0"><tr><td><img src="../images/ui/newmap/xthuang01.gif" width="156" border="0" height="11" id="pexp" /></td><td width="4"><img src="../images/ui/newmap/xthuang00.gif" width="4" border="0" height="11" /></td></tr></table></div>
+  <div id="med_buff" style="position:absolute;z-index:100;left:110px;top:75px;width:100px;height:15px;"></div>
+  <div id="petname" style="position:absolute;z-index:100;left:4px;top:66px;border:0px;height:48px;width:99px;background:url(../images/ui/newmap/zd03.gif)"></div>
 </div>
 
-<div id="timev" style="width:60px;height:37px; background-image:url(../images/ui/fight/zdean06.gif);
-position:absolute;left:361px;top:10px;padding-top:35px; text-align:center;font-weight:bold;color:#025b26;font-size:18px;"></div>
+<div id="timev" style="width:81px;height:52px;background-image:url(../images/ui/newmap/db.gif);position:absolute;left:361px;top:10px;padding-top:25px;text-align:center;font-weight:bold;color:#6A2F06;font-size:25px;font-family:黑体"></div>
 
-<div id="result" style="position:absolute; background:#025B26; left: 270px; top: 87px;color:#fff; line-height:1.7;width:246px;;filter:alpha(opacity=60); -moz-opacity:0.6;display:none; padding:10px;z-index:10000"></div>
+<div id="result" style="position:absolute;background:#025B26;left:270px;height:160px;top:87px;color:#fff;line-height:1.7;width:246px;filter:alpha(opacity=60);-moz-opacity:0.6;display:none;padding:10px;z-index:10000;overflow-y:auto"></div>
 
-<div style="position:absolute;left:547px;top:150px;font-weight:bold;width:233px;height:30px;font-family:华文新魏;font-size:13px;color:yellow" id="pfont"></div>
-<div id="med_buff" style="position:absolute;z-index:100; left:100px; top:75px;width:100px; height:15px;">
 </div>
 </body>
 </html>
-<script language="javascript" src="../javascript/fightc.js?v=20260721d"></script>
+<script language="javascript" src="../javascript/fightc.js?v=20260723g"></script>
 #test#

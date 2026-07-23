@@ -204,7 +204,7 @@ if($uid<1||intval($user['fightbb'])<1)
 {
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 	$_SESSION['first_in'] = 3;
-	exit('10');
+	exit('主战宠物状态异常，请重新进入副本！');
 }
 $_bb = $_pm['user']->getUserPetByIdS($uid,$user['fightbb']);
 if (!is_array($_bb))
@@ -220,7 +220,7 @@ if (!is_array($_bb))
 		{
 			$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 			$_SESSION['first_in'] = 3;
-			exit('10');
+			exit('主战宠物数据读取失败，请重新进入副本！');
 		}
 		sleep(1);
 	}
@@ -230,7 +230,7 @@ if(intval($fight['bid']) != intval($user['fightbb']) || (isset($_bb['muchang']) 
 {
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 	$_SESSION['first_in'] = 3;
-	exit('10');
+	exit('主战宠物已变更，请重新进入副本！');
 }
 
 if($id == 112){
@@ -251,7 +251,7 @@ if($uid<1||intval($user['fightbb'])<1)
 {
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 	$_SESSION['first_in'] = 3;
-	exit('10');
+	exit('主战宠物状态异常，请重新进入副本！');
 }
 if (!is_array($_sk))
 {
@@ -506,7 +506,7 @@ if(is_array($rs) && is_array($gs))
 	{
 		$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 		$_SESSION['first_in'] = 3;
-		exit('10');
+		exit('主战宠物战斗状态读取失败，请重新进入副本！');
 	}
 
 	//计算加血，因为流程是玩家先加血，怪物再打玩家，所以应该先加血，怪物再打，

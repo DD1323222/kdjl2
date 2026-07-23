@@ -13,6 +13,7 @@
 */
 session_start();
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 secStart($_pm['mem']);
 
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
@@ -51,6 +52,7 @@ define('USEJG',$useJG);
 
 $num  = (isset($_REQUEST['t']) && !is_array($_REQUEST['t'])) ? intval($_REQUEST['t']) : 0;
 $num  = $num<1?0:$num;
+if($num === 4) kdjlSacredBattleTick($_pm['mysql'], $_pm['mem'], time());
 
 $user	= $_pm['user']->getUserById($uid);
 if(!is_array($user)) die('玩家数据错误！');

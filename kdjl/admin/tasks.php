@@ -418,9 +418,24 @@ function adminTaskPickerSource($map)
 	$result = array();
 	foreach ($map as $id => $row)
 	{
-		$result[] = array('id' => intval($id), 'name' => isset($row['name']) ? (string)$row['name'] : '');
+		$item = array('id' => intval($id), 'name' => isset($row['name']) ? (string)$row['name'] : '');
+		if (array_key_exists('propslock', $row)) $item['propslock'] = intval($row['propslock']);
+		$result[] = $item;
 	}
 	return $result;
+}
+
+function adminTaskJsonSafe($value)
+{
+	if (is_array($value))
+	{
+		$result = array();
+		foreach ($value as $key => $item) $result[$key] = adminTaskJsonSafe($item);
+		return $result;
+	}
+	if (!is_string($value) || preg_match('//u', $value)) return $value;
+	$clean = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+	return $clean === false ? '' : $clean;
 }
 
 function adminTaskPickerField($label, $name, $value, $source, $mode, $quantity, $extraClass, $multi)
@@ -754,7 +769,7 @@ if (is_array($editTask))
 		'gpc' => adminTaskPickerSource($gpcMap),
 		'pets' => adminTaskPickerSource($petMap)
 	);
-	$taskPickerJson = json_encode($taskPickerSources);
+	$taskPickerJson = json_encode(adminTaskJsonSafe($taskPickerSources));
 	if ($taskPickerJson === false) $taskPickerJson = '{}';
 	$taskPickerJson = str_replace('</', '<\/', $taskPickerJson);
 ?>

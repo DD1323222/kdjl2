@@ -14,7 +14,7 @@
   ###############################################################
      成功：设我方宠物与对方宠物的成长值之差=x
 	       战场等级：提供军功基数与女神生命
-		   军功值=取整{战场胜利军功基数*[1－(X－20）/100)]}
+		   军功值=取整{战场胜利军功基数*[1－(X－20）/1000)]}
 	       同时减少对方女神X点生命
      玩家失败：减自己阵营女生生命 1 点。
 
@@ -91,7 +91,7 @@ function battleSettleDuel($uid,$won,$attackerGrowth,$defenderGrowth)
 	if($won)
 	{
 		$jgvalue = intval(intval($cUser['addjgvalue'])*(1-(intval($attackerGrowth)-intval($defenderGrowth)-20)/1000));
-		$jgvalue *= intval($cUser['doublejg']) == 1 ? 3 : 2;
+		$jgvalue *= intval($cUser['doublejg']) == 1 ? 4 : 2;
 		if($jgvalue < 0) $jgvalue = 5;
 		if(!$_pm['mysql']->query('UPDATE battlefield_user SET curjgvalue=COALESCE(curjgvalue,0)+'.$jgvalue.' WHERE id='.intval($cUser['id'])))
 		{
@@ -165,7 +165,7 @@ $cUser = $_pm['mysql']->getOneRecord("SELECT bid,pos,levels,lastvtime
 										FROM battlefield_user
 									   WHERE uid={$uid} AND pos IN(1,2) AND lastvtime>=UNIX_TIMESTAMP(CURDATE())
 									   ORDER BY id LIMIT 1");
-if(!is_array($user) || !is_array($cUser) || intval($cUser['bid']) < 1 || empty($fight['gid'])) exit('10');
+if(!is_array($user) || !is_array($cUser) || intval($cUser['bid']) < 1 || empty($fight['gid'])) exit('神圣战场会话异常，请重新进入战场！');
 
 /** 非法数据监测。*/
 if ($fight['gid'] != $gid) stopUser();
@@ -185,7 +185,7 @@ $attackEarlySeconds = kdjlFightRequestEarlySeconds($requestEarly, $fight, $user,
 
 
 /* Fix read database fail!*/
-if(intval($_SESSION['id'])<1||intval($cUser['bid'])<1) exit('10');
+if(intval($_SESSION['id'])<1||intval($cUser['bid'])<1) exit('神圣战场主战宠物状态异常，请重新进入战场！');
 $_bb = $_pm['user']->getUserPetByIdS($_SESSION['id'],$cUser['bid']);
 if (!is_array($_bb))
 {
@@ -196,16 +196,16 @@ if (!is_array($_bb))
 		$ct++;
 		$_bb		 = $_pm['user']->getUserPetByIdS($_SESSION['id'],$cUser['bid']);
 		if (is_array($_bb)) break;
-		if($ct>10) exit('10');
+		if($ct>10) exit('神圣战场主战宠物数据读取失败，请重新进入战场！');
 		sleep(1);
 	}
 }
 if(intval(isset($_bb['uid']) ? $_bb['uid'] : 0) != $uid ||
 	intval(isset($_bb['muchang']) ? $_bb['muchang'] : 0) != 0 ||
-	intval(isset($_bb['tgflag']) ? $_bb['tgflag'] : 0) != 0) exit('10');
+	intval(isset($_bb['tgflag']) ? $_bb['tgflag'] : 0) != 0) exit('神圣战场主战宠物已变更，请重新进入战场！');
 $_sk		 = $_pm['user']->getUserPetSkillByIdS($_SESSION['id'],$_bb['id'],$id);
 
-if(intval($_SESSION['id'])<1||intval($cUser['bid'])<1) exit('10');
+if(intval($_SESSION['id'])<1||intval($cUser['bid'])<1) exit('神圣战场主战宠物状态异常，请重新进入战场！');
 if (!is_array($_sk))
 {
 	$_sk = $_pm['user']->getUserPetSkillByIdS($_SESSION['id'],$_bb['id'],1);

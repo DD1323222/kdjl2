@@ -6,8 +6,10 @@ class socketmsg{
 	var $ip='';
 	function __construct(){}
 	function connect(){
-		global $server_ip,$socket_port;
+		global $server_ip,$socket_backend_ip,$socket_port;
 		$this->dbg=false;
+		$connectIp = (isset($socket_backend_ip) && is_string($socket_backend_ip) &&
+			filter_var($socket_backend_ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)) ? $socket_backend_ip : $server_ip;
 		$this->socket = @socket_create (AF_INET, SOCK_STREAM, SOL_TCP);		  // 创建一个SOCKET
 		//if($this->ip=='')  $this->ip=$this->get_real_ip();
 		//if($this->ip=='125.69.81.43') $this->dbg=true;
@@ -15,7 +17,7 @@ class socketmsg{
 		if (!$this->socket){
 			if($this->dbg)
 			{
-				echo "socket_create() failed:(".$server_ip.",".$socket_port.")".socket_strerror(socket_last_error())."\n";
+				echo "socket_create() failed:(".$connectIp.",".$socket_port.")".socket_strerror(socket_last_error())."\n";
 			}
 			return false;
 		}
@@ -25,7 +27,7 @@ class socketmsg{
 		socket_set_option($this->socket,SOL_SOCKET, SO_RCVTIMEO,  array(		   "sec"=>3, 		   "usec"=>0  		   )		  );
 		socket_set_option($this->socket,SOL_SOCKET,SO_REUSEADDR,1);
 		//echo 'timeout=3';
-		$this->conn = @socket_connect ($this->socket, $server_ip, $socket_port);// 建立SOCKET的连接
+		$this->conn = @socket_connect ($this->socket, $connectIp, $socket_port);// 建立SOCKET的连接
 		if (!$this->conn){
 			if($this->dbg)echo "socket_connect() failed:".socket_strerror(socket_last_error($this->socket))."\n";
 			if($this->socket)

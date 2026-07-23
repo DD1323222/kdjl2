@@ -70,8 +70,28 @@ function adminPageEnd()
 function adminPropLabel($row)
 {
 ?>
-	<div class="item"><img src="../images/ui/bag/<?php echo intval($row['varyname']); ?>.gif" alt="" /><div><strong><?php echo adminH($row['name']); ?></strong><span>id=<?php echo intval($row['id']); ?></span></div></div>
+	<div class="item"><img src="../images/ui/bag/<?php echo intval($row['varyname']); ?>.gif" alt="" /><div><strong><?php echo adminH($row['name']); ?></strong><div class="prop-meta"><span>id=<?php echo intval($row['id']); ?></span><?php adminPropTradeBadge($row); ?></div></div></div>
 <?php
+}
+
+function adminPropTradeState($row)
+{
+	if (!is_array($row) || !array_key_exists('propslock', $row) || $row['propslock'] === null) return null;
+	return intval($row['propslock']) === 1;
+}
+
+function adminPropTradeText($row)
+{
+	$state = adminPropTradeState($row);
+	if ($state === null) return '交易状态未知';
+	return $state ? '可交易' : '不可交易';
+}
+
+function adminPropTradeBadge($row)
+{
+	$state = adminPropTradeState($row);
+	$class = $state === null ? 'warning' : ($state ? 'success' : 'muted');
+	echo '<span class="badge ' . $class . '">' . adminH(adminPropTradeText($row)) . '</span>';
 }
 
 function adminScheduleBadge($state)
@@ -89,10 +109,12 @@ function adminPetCell($id, $name)
 <?php
 }
 
-function adminPropCell($id, $name)
+function adminPropCell($id, $name, $propslock = null)
 {
 	$name = $name === null || $name === '' ? '道具定义不存在' : $name;
+	$row = array();
+	if ($propslock !== null) $row['propslock'] = $propslock;
 ?>
-	<div class="query-pet"><strong><?php echo adminH($name); ?></strong><span>id=<?php echo intval($id); ?></span></div>
+	<div class="query-pet"><strong><?php echo adminH($name); ?></strong><div class="prop-meta"><span>id=<?php echo intval($id); ?></span><?php adminPropTradeBadge($row); ?></div></div>
 <?php
 }

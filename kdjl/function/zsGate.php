@@ -21,6 +21,39 @@ function zsGateShutdown()
 	}
 	realseLock();
 }
+
+function zsGateNormalizeNirvanaText($value)
+{
+	return preg_replace('/涅[盘磐]/u', '涅槃', (string)$value);
+}
+
+function zsGateNirvanaPetKind($pet)
+{
+	$baseId = isset($pet['old_bid']) ? intval($pet['old_bid']) : 0;
+	if($baseId == 103) return 'hai';
+	if($baseId == 104) return 'wu';
+	if($baseId == 105) return 'mao';
+	$name = zsGateNormalizeNirvanaText(isset($pet['name']) ? $pet['name'] : '');
+	if($name == '涅槃兽（亥）') return 'hai';
+	if($name == '涅槃兽（午）') return 'wu';
+	if($name == '涅槃兽（卯）') return 'mao';
+	return '';
+}
+
+function zsGateIsNirvanaPet($pet)
+{
+	return zsGateNirvanaPetKind($pet) !== '';
+}
+
+function zsGateNirvanaGrowthBonus($pet)
+{
+	$kind = zsGateNirvanaPetKind($pet);
+	if($kind == 'mao') return 0.3;
+	if($kind == 'wu') return 0.15;
+	if($kind == 'hai') return 0.05;
+	return 0;
+}
+
 $a = getLock($uid);
 if (!is_array($a)) {
     realseLock();
@@ -37,10 +70,14 @@ $_GET['type'] = $type;
 $_GET['type1'] = $type1;
 $_GET['p2'] = (isset($_GET['p2']) && !is_array($_GET['p2'])) ? $_GET['p2'] : 0;
 $srctime = 10;
-$chouqu_chk_ext = $_pm['mysql']->getRecords("select 1 from userbb where wx=6 and name not like '涅磐兽%' and czl=1 and uid={$uid} and (id=$ap or id=$bp)");
-if (is_array($chouqu_chk_ext) && count($chouqu_chk_ext) > 0) {
-    realseLock();
-    die("某个宠物已经抽取过成长,不能进行涅槃!");
+$chouqu_chk_ext = $_pm['mysql']->getRecords("select name,old_bid from userbb where wx=6 and czl=1 and uid={$uid} and (id=$ap or id=$bp)");
+if (is_array($chouqu_chk_ext)) {
+	foreach($chouqu_chk_ext as $chouquPet) {
+		if(!zsGateIsNirvanaPet($chouquPet)) {
+			realseLock();
+			die("某个宠物已经抽取过成长,不能进行涅槃!");
+		}
+	}
 }
 
 $cishu = $_pm['mysql']->getOneRecord("select chouqu_chongwu from player_ext where uid={$uid}");
@@ -176,7 +213,7 @@ if (is_array($userbb) && is_array($userbag)) {
 			$app = $rs;
 		} else if ($rs['id'] == $bp && $rs['level'] >= 60 && $rs['muchang'] == 0 && $rs['tgflag'] == 0) {
 			$bpp = $rs;
-		} else if ($rs['id'] == $zs && $rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）" ) && $rs['muchang'] == 0 && $rs['tgflag'] == 0) {
+		} else if ($rs['id'] == $zs && $rs['level'] >= 60 && zsGateIsNirvanaPet($rs) && $rs['muchang'] == 0 && $rs['tgflag'] == 0) {
             $zsp = $rs;
         }
     }
@@ -217,7 +254,7 @@ if (is_array($userbb) && is_array($userbag)) {
     if (!isset($zsp['id'])) {
         realseLock();
         unLockItem($ap);
-        die("7");//请选择涅磐兽
+        die("7");// 请选择涅槃兽
     }
 
 
@@ -360,7 +397,7 @@ if (is_array($userbb) && is_array($userbag)) {
 	}
     // 记录日志：
     $log .= "合成结果：" . ($cstatus == 1 ? "失败" : "成功") . "\n";
-	$log .= "合成道具：1:" . (isset($pp1['name']) ? $pp1['name'] : '') . '，合成道具：2:' . (isset($pp2['name']) ? $pp2['name'] : '') . ' 涅磐:' . $zsp['id'] . "\n";
+	$log .= "合成道具：1:" . (isset($pp1['name']) ? $pp1['name'] : '') . '，合成道具：2:' . (isset($pp2['name']) ? $pp2['name'] : '') . ' 涅槃:' . $zsp['id'] . "\n";
 
     //######### del props Start.##################
 	if (!delProps()) {
@@ -436,7 +473,7 @@ if (is_array($userbb) && is_array($userbag)) {
 		$newbbarr['ac'] = isset($newbbarr['ac']) ? $newbbarr['ac'] : 0;
 		$newbbarr['hits'] = isset($newbbarr['hits']) ? $newbbarr['hits'] : 0;
 		$newbbarr['srchp'] = isset($newbbarr['srchp']) ? $newbbarr['srchp'] : 0;
-       $str = '新宠物名字：' . $brs['name'] . 'level:' . $newbbarr['level'] . 'czl:' . $newbbarr['czl'] . 'ac:' . $newbbarr['ac'] . 'hits:' . $newbbarr['hits'] . ',使用物品：' . $pp1['name'] . ',涅磐兽：' . $zsp['name'] . 'level:' . $zsp['level'] . 'czl:' . $zsp['czl'] . 'ac:' . $zsp['ac'] . 'hits:' . $zsp['hits'] . ',宠物：' . $app['name'] . 'level:' . $app['level'] . 'czl:' . $app['czl'] . 'ac:' . $app['ac'] . 'hits:' . $app['hits'] . '-' . $bpp['name'] . 'level:' . $bpp['level'] . 'czl:' . $bpp['czl'] . 'ac:' . $bpp['ac'] . 'hits:' . $bpp['hits'];
+       $str = '新宠物名字：' . $brs['name'] . 'level:' . $newbbarr['level'] . 'czl:' . $newbbarr['czl'] . 'ac:' . $newbbarr['ac'] . 'hits:' . $newbbarr['hits'] . ',使用物品：' . $pp1['name'] . ',涅槃兽：' . $zsp['name'] . 'level:' . $zsp['level'] . 'czl:' . $zsp['czl'] . 'ac:' . $zsp['ac'] . 'hits:' . $zsp['hits'] . ',宠物：' . $app['name'] . 'level:' . $app['level'] . 'czl:' . $app['czl'] . 'ac:' . $app['ac'] . 'hits:' . $app['hits'] . '-' . $bpp['name'] . 'level:' . $bpp['level'] . 'czl:' . $bpp['czl'] . 'ac:' . $bpp['ac'] . 'hits:' . $bpp['hits'];
 		$strSql = $_pm['mysql']->escape($str);
         $_pm['mysql']->query("INSERT INTO gamelog(ptime,seller,buyer,pnote,vary)
 		                      VALUES(unix_timestamp(),'{$uid}','{$uid}','{$strSql}',11)
@@ -730,17 +767,10 @@ function bbczl($a, $b, $pp1, $zs, $pp2)
 	$b['czl'] = isset($b['czl']) ? floatval($b['czl']) : 0;
 	$a['level'] = isset($a['level']) ? intval($a['level']) : 0;
 	$b['level'] = isset($b['level']) ? intval($b['level']) : 0;
-	$lv = 0;
+	$lv = zsGateNirvanaGrowthBonus($zs);
 	$num1 = 0;
 	$num2 = 0;
-    // 资料库中宠物属性。
-    if ($zs['name'] == '涅磐兽（卯）') {
-        $lv = 0.3;
-    } else if ($zs['name'] == '涅磐兽（午）') {
-        $lv = 0.15;
-    } else if ($zs['name'] == '涅磐兽（亥）') {
-        $lv = 0.05;
-    }
+	// 三种涅槃兽分别增加本次新增成长的 30%、15%、5%。
     //if($a['name'] == '小神龙琅玡' || $a['name'] == '★青龙★' || $a['name'] == '★破天虎★' || $a['name'] == '白虎' || $a['name'] == '★龙蛇玄武★' || $a['name'] == '圣兽赤牝鹿' || $a['name'] == '蝶·影娅瑟' || $a['name'] == '尤佳娜' || $a['name'] == 'GM-鸭子' || $a['name'] == '忍者小乌龟' || $a['name'] == '囧娃娃' || $a['name'] == '蜡笔妹妹' || $a['name'] == '四叶草宝宝')
     $zs1 = explode(",", $zsarr['zs1']);
     $zs2 = explode(",", $zsarr['zs2']);
@@ -824,7 +854,7 @@ function bbczl($a, $b, $pp1, $zs, $pp2)
             $num2 = 1500;
         }
     }
-    //主宠物成长+{[(主宠物等级/主宠物成长./2)+(副宠物等级*副宠物成长/1500)]*(100%+涅盘兽百分比+道具百分比)}
+    //主宠物成长+{[(主宠物等级/主宠物成长./2)+(副宠物等级*副宠物成长/1500)]*(100%+涅槃兽百分比+道具百分比)}
 	if ($a['czl'] <= 0 || $num1 <= 0 || $num2 <= 0) {
 		return 0;
 	}

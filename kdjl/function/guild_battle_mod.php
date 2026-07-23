@@ -12,9 +12,13 @@ Note:
 session_start();
 set_time_limit(3600);
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 
 
 secStart($_pm['mem']);
+kdjlGuildBattleTick($_pm['mysql'], $_pm['mem'], time());
+kdjlRunActivityAutomation($_pm['mysql'], $_pm['mem']);
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
 if(!$_pm['mysql']->query('UPDATE player SET inmap=0 WHERE id='.$uid)) die('');
@@ -54,8 +58,8 @@ if(is_array($ginfo)){
 			$v['flags'] = isset($v['flags']) ? intval($v['flags']) : 0;
 			if($v['flags'] == 0){
 
-				$str .= "<tr><td width='70%'>{$v['name']}</td><td style='cursor:pointer' onclick='accept(".$v['challenger_id'].")'>接受</td></tr>";
-			}else $str .= "<tr><td width='70%'>{$v['name']}</td><td>已接受</td></tr>";
+				$str .= "<tr><td>{$v['name']}</td><td style='cursor:pointer' onclick='accept(".$v['challenger_id'].")'>接受</td></tr>";
+			}else $str .= "<tr><td>{$v['name']}</td><td>已接受</td></tr>";
 		}
 	}
 	$arr1 = $_pm['mysql'] -> getRecords("SELECT challenger_id,name,flags FROM guild_challenges,guild WHERE challenger_id = {$ginfo['id']} AND defenser_id = guild.id");//echo "SELECT challenger_id,name,flags FROM guild_challenges,guild WHERE challenger_id = {$ginfo['id']}";//print_r($arr1);
@@ -66,9 +70,9 @@ if(is_array($ginfo)){
 			$v1['name'] = htmlspecialchars((string)$v1['name'], ENT_QUOTES, 'UTF-8');
 			$v1['flags'] = isset($v1['flags']) ? intval($v1['flags']) : 0;
 			if($v1['flags'] == 1){
-				$str .= "<tr><td width='70%'>{$v1['name']}</td><td>已接受</td></tr>";
+				$str .= "<tr><td>{$v1['name']}</td><td>已接受</td></tr>";
 			}else{
-				$str .= "<tr><td width='70%'>{$v1['name']}</td><td>未接受</td></tr>";
+				$str .= "<tr><td>{$v1['name']}</td><td>未接受</td></tr>";
 			}
 		}
 	}

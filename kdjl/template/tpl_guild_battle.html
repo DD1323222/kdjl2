@@ -6,10 +6,35 @@
 <script type="text/javascript" src="/javascript/prototype.js"></script>
 <style type="text/css">
 body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td,em {padding:0; margin:0; outline:none; font-size:12px;} 
-.task{width:788px;height:319px;color:#B06A01; font-size:12px;}
+body{overflow:hidden;}
+.task{position:relative;width:788px;height:319px;overflow:hidden;color:#B06A01;font-size:12px;}
 .task_left{width:310px; height:319px; float:left; background-image:url(../new_images/ui/zc_03.jpg);}
 .task_center{width:164px; height:319px; float:left; }
 .task_right{width:314px; height:319px;float:left; background-image:url(../new_images/ui/zc_05.jpg);}
+.guild_rank_panel{
+	position:absolute;
+	top:50px;
+	width:268px;
+	height:218px;
+	box-sizing:border-box;
+	overflow-x:hidden;
+	background:transparent;
+	color:#600;
+}
+.guild_rank_left{left:21px;overflow-y:auto;}
+.guild_rank_right{left:497px;overflow:hidden;}
+.guild_rank_table{width:100%;line-height:20px;text-align:center;color:#600;table-layout:fixed;}
+.guild_rank_table td{height:20px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.guild_member_scroll{height:127px;overflow-x:hidden;overflow-y:auto;}
+.guild_challenge{width:100%;height:87px;margin:4px auto 0;text-align:center;color:#4A3B00;}
+.guild_challenge_title{display:block;width:100%;height:20px;line-height:20px;font-weight:bold;text-align:center;}
+.guild_challenge_scroll{width:100%;height:67px;margin:0 auto;overflow-x:hidden;overflow-y:auto;}
+.guild_challenge_scroll table{width:100%;margin:0 auto;}
+.guild_challenge_scroll td{width:50%;height:22px;padding:0;line-height:22px;text-align:center !important;vertical-align:middle;}
+.guild_scroll{scrollbar-face-color:#B78342;scrollbar-highlight-color:#EED7A1;scrollbar-3dlight-color:#B78342;scrollbar-shadow-color:#8C5B2A;scrollbar-darkshadow-color:#8C5B2A;scrollbar-track-color:transparent;scrollbar-arrow-color:#FFF4D0;scrollbar-color:#A87942 transparent;scrollbar-width:thin;}
+.guild_scroll::-webkit-scrollbar{width:8px;}
+.guild_scroll::-webkit-scrollbar-track{background:transparent;}
+.guild_scroll::-webkit-scrollbar-thumb{background:#A87942;border-radius:4px;}
 #apDiv1 {
 	position:absolute;
 	width:132px;
@@ -22,7 +47,7 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 	position:absolute;
 	width:130px;
 	height:30px;
-	z-index:2;
+	z-index:5;
 	left: 559px;
 	top: 273px;
 }
@@ -32,8 +57,8 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
 <body>
 <div class="task">
 	<div class="task_left">
-	<div style="top:50px; position:absolute; width:280px; height:230px; left:20px; background-color:#FFF; overflow-x:hidden; overflow-y:auto; scrollbar-face-color:#E1D395; scrollbar-highlight-color:#ffffff; scrollbar-3dlight-color:#E1D395; scrollbar-shadow-color:#ffffff; scrollbar-darkshadow-color:#F3EDC9; scrollbar-track-color:#F3EDC9; scrollbar-arrow-color:#ffffff;">
-	  <table width="256px" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
+	<div class="guild_rank_panel guild_rank_left guild_scroll">
+	  <table class="guild_rank_table" border="0" cellpadding="0" cellspacing="0">
 	    #zrlist#
       </table>
 	  </div>
@@ -44,29 +69,21 @@ body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,
     </map>
 </div>
     <div class="task_right">
-	<div style="top:50px; position:absolute; width:280px; height:230px; left:500px; background-color:#FFF; overflow-x:hidden; overflow-y:auto; scrollbar-face-color:#E1D395; scrollbar-highlight-color:#ffffff; scrollbar-3dlight-color:#E1D395; scrollbar-shadow-color:#ffffff; scrollbar-darkshadow-color:#F3EDC9; scrollbar-track-color:#F3EDC9; scrollbar-arrow-color:#ffffff;">
-      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="line-height:20px; text-align:center; color:#600;">
-        <tr>
-        <td height="230" align="center" valign="top">
-			<div id="aysum" style="padding:8px;width:75%; text-align:left; line-height:1.5; font-size:12px;color:#4A3B00">
-				<table border="0" width="100%" cellspacing="0" cellpadding="0"><!--
-					<tr><td>01.</td><td>好得很</td><td>1000</td></tr>-->
-					#aylist#					
+	<div class="guild_rank_panel guild_rank_right">
+		<div id="aysum" class="guild_member_scroll guild_scroll">
+			<table class="guild_rank_table" border="0" cellspacing="0" cellpadding="0">
+				#aylist#
+			</table>
+		</div>
+		<div class="guild_challenge">
+			<div class="guild_challenge_title">家族战书</div>
+			<div class="guild_challenge_scroll guild_scroll">
+				<table class="guild_rank_table" border="0" cellspacing="0" cellpadding="0">
+					<tr><td>挑战方</td><td>状态</td></tr>
+					#challenge#
 				</table>
-				
-			</div><table border="0" width="100%" cellspacing="0" cellpadding="0" style="margin-top:50px"><!--
-					<tr><td>01.</td><td>好得很</td><td>1000</td></tr>-->
-					<tr>
-					  <td height="25" align="center" colspan="2"><strong>家族战书</strong></td>
-					</tr>
-					<tr>
-					  <td height="25" width="70%">挑战方</td><td height="25">状态</td>
-					</tr>
-					#challenge#					
-				</table>
-		</td>
-      </tr>
-      </table>
+			</div>
+		</div>
 	  </div>
     </div>
     
@@ -107,6 +124,9 @@ function down_the_gauntlet(id){
 						window.parent.Alert('您的家族已经对此家族下了战书');
 					}else if(ret == 10){
 						window.parent.Alert('操作成功');
+					}else if(ret == 11){
+						window.parent.Alert('战书已送达，对方家族已自动接受');
+						window.location.reload();
 					}else window.parent.Alert(ret);
     		 	},
     		 	on404: function(t) {

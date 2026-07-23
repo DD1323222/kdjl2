@@ -846,7 +846,7 @@ if (!is_array($bjn))
 }
 if (!is_array($bjn)){
 	header("refresh:2;url=Fight_Mod.php?p={$bid}");
-	echo '585';
+	echo '战斗技能数据加载失败，正在重试。';
 	exit;
 }
 
@@ -1407,7 +1407,7 @@ if (
 
 	}
 	header("refresh:2;url=Fight_Mod.php?p={$bid}");
-	echo '1064';
+	echo '当前地图没有可用怪物，正在重新匹配。';
 	exit;
 }
 else

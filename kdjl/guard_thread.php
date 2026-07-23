@@ -9,9 +9,11 @@ ignore_user_abort(true);
 require_once(dirname(__FILE__).'/config/config.game.php');
 require_once(dirname(__FILE__).'/kernel/socketmsg.v1.php');
 require_once(dirname(__FILE__).'/sec/dblock_fun.php');
+require_once(dirname(__FILE__).'/sec/activity_robot_fnc.php');
+require_once(dirname(__FILE__).'/sec/battle_lifecycle_fnc.php');
 require_once(dirname(__FILE__).'/socketChat/config.chat.php');
 
-$guardLockHandle = (isset($_pm['mem']) && is_object($_pm['mem']) && method_exists($_pm['mem'], 'getHandle')) ? $_pm['mem']->getHandle() : false;
+$guardLockHandle = (isset($_pm['mem']) && is_object($_pm['mem'])) ? $_pm['mem']->getHandle() : false;
 $guardLockKey = 'kdjl_guard_thread_'.md5(isset($_mysql['db']) ? $_mysql['db'] : 'default');
 $guardLockToken = uniqid('guard_', true);
 $guardLockHeld = is_object($guardLockHandle) && @$guardLockHandle->add($guardLockKey, $guardLockToken, 0, 240);
@@ -41,9 +43,18 @@ doWork2(time());
 //doWork3(time());
 doWork4(time());
 doWork5(time());
+$sacredBattleLifecycle = kdjlSacredBattleTick($_pm['mysql'], $_pm['mem'], time());
+$guildBattleLifecycle = kdjlGuildBattleTick($_pm['mysql'], $_pm['mem'], time());
+kdjlRunActivityAutomation($_pm['mysql'], $_pm['mem']);
 $s=new socketmsg();
-checkGuildFightEnd();
-function calcGuildFight($day='')
+if(is_array($guildBattleLifecycle) && !empty($guildBattleLifecycle['messages']))
+{
+	foreach($guildBattleLifecycle['messages'] as $guildBattleMessage)
+		$s->sendMsg('SYS|'.$guildBattleMessage,'__ALL__');
+}
+if(is_array($guildBattleLifecycle) && !empty($guildBattleLifecycle['settled']))
+	kdjlGuardPruneDatedTables('ticket_',5);
+function kdjlLegacyCalcGuildFight($day='')
 {
 	global $_pm,$s;
 	if($day==='') $day=date('Ymd');
@@ -190,31 +201,16 @@ function kdjlGuardPruneDatedTables($prefix,$keep)
 	for($i=$keep;$i<count($tables);$i++) $_pm['mysql']->query('DROP TABLE `'.$tables[$i].'`');
 }
 
+function calcGuildFight($day='')
+{
+	global $_pm;
+	return kdjlGuildBattleTick($_pm['mysql'], $_pm['mem'], time());
+}
 
 function checkGuildFightEnd()
 {
 	global $_pm;
-	$week = date("N", time());
-	$hourM= date("Hi", time());
-
-	$battletimearr = kdjlSafeMemValue($_pm['mem']->get(MEM_TIME_KEY), array());
-	if(!is_array($battletimearr)) $battletimearr = array();
-	foreach($battletimearr as $bv)
-	{
-		if($bv['titles'] != "guild_battle")
-		{
-			continue;
-		}
-		if(isWeeklyDayTimeFinished($bv['days'], $bv['endtime'], $week, $hourM))//家族战结束了
-		{
-			calcGuildFight();
-		}
-		else
-		{
-			//echo $week .'=='. $bv['days'] .'&&'. $hourM .'>'. $bv['endtime'].'<br>';
-		}
-	}
-	return false;
+	return calcGuildFight();
 }
 
 $curminute = intval(date("i"));

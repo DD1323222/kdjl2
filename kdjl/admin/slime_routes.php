@@ -52,7 +52,7 @@ adminPageStart('波姆进化路线', 'slime');
 		<?php foreach ($steps as $route) { ?><tr>
 			<td class="code"><?php echo intval($route['_depth']); ?></td>
 			<td><?php adminPetCell($route['source_id'], isset($pets[$route['source_id']]) ? $pets[$route['source_id']]['name'] : null); ?></td>
-			<td><div class="form-row"><?php $first = true; foreach ($route['material_ids'] as $materialId) { if (!$first) echo '<span>/</span>'; adminPropCell($materialId, isset($props[$materialId]) ? $props[$materialId]['name'] : null); $first = false; } ?></div></td>
+			<td><div class="form-row"><?php $first = true; foreach ($route['material_ids'] as $materialId) { if (!$first) echo '<span>/</span>'; adminPropCell($materialId, isset($props[$materialId]) ? $props[$materialId]['name'] : null, isset($props[$materialId]) ? $props[$materialId]['propslock'] : null); $first = false; } ?></div></td>
 			<td><?php adminPetCell($route['target_id'], isset($pets[$route['target_id']]) ? $pets[$route['target_id']]['name'] : null); ?></td>
 			<td><?php echo intval($route['level']); ?> 级</td>
 		</tr><?php } ?>

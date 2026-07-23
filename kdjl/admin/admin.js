@@ -76,6 +76,7 @@
 	};
 	var taskPickerSources = window.adminTaskPickerSources || {};
 	var taskPickerMaps = {};
+	var taskPickerRowMaps = {};
 	var trimText = function (value) {
 		return (value || '').replace(/^\s+|\s+$/g, '');
 	};
@@ -87,6 +88,20 @@
 		taskPickerMaps[source] = map;
 		return map;
 	};
+	var sourceRowMap = function (source) {
+		if (taskPickerRowMaps[source]) return taskPickerRowMaps[source];
+		var rows = taskPickerSources[source] || [];
+		var map = {};
+		for (var i = 0; i < rows.length; i++) map[parseInt(rows[i].id, 10)] = rows[i];
+		taskPickerRowMaps[source] = map;
+		return map;
+	};
+	var entityTradeLabel = function (source, id) {
+		if (source !== 'props') return '';
+		var row = sourceRowMap(source)[parseInt(id, 10) || 0];
+		if (!row || typeof row.propslock === 'undefined') return '交易状态未知';
+		return parseInt(row.propslock, 10) === 1 ? '可交易' : '不可交易';
+	};
 	var entityName = function (source, id) {
 		id = parseInt(id, 10) || 0;
 		var map = sourceMap(source);
@@ -97,7 +112,7 @@
 		var labels = [];
 		for (var i = 0; i < parts.length; i++) {
 			var id = parseInt(parts[i], 10) || 0;
-			if (id > 0) labels.push('id=' + id + ' ' + entityName(source, id));
+			if (id > 0) labels.push('id=' + id + ' ' + entityName(source, id) + (source === 'props' ? '（' + entityTradeLabel(source, id) + '）' : ''));
 		}
 		return labels.length ? labels.join(' / ') : '未选择';
 	};
@@ -252,7 +267,7 @@
 				var strong = document.createElement('strong');
 				strong.appendChild(document.createTextNode(rowName));
 				var span = document.createElement('span');
-				span.appendChild(document.createTextNode('id=' + rowId));
+				span.appendChild(document.createTextNode('id=' + rowId + (source === 'props' ? ' · ' + entityTradeLabel(source, rowId) : '')));
 				btn.appendChild(strong);
 				btn.appendChild(span);
 				btn.onclick = function () { setTaskPickerSelection(rowId, 'id=' + rowId + ' ' + rowName, false); };

@@ -14,6 +14,8 @@
 *@Note:
 */
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('0');
 $_SESSION['id'] = $uid;
@@ -26,6 +28,9 @@ if (!defined('BATTLE_TIME_WEEK'))
 	define('BATTLE_TIME_WEEK', 5);*/
 
 secStart($_pm['mem']);
+if(!kdjlSacredBattleTick($_pm['mysql'], $_pm['mem'], time()))
+	die('战场初始化失败，请稍候重试！');
+kdjlRunActivityAutomation($_pm['mysql'], $_pm['mem']);
 $_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 $n = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
 if ($n!=1 && $n!=2) die('0');

@@ -83,7 +83,18 @@ ol,ul {list-style:none}
 	border-top-color: #D9BD7A;}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#BF7D1A;}
 .conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
-.create_guild_button{position:absolute;left:241px;top:33px;width:72px;height:19px;line-height:19px;text-align:center;cursor:pointer;color:#600;background:url(../images/qzlihun.jpg) no-repeat;}
+.family_wide_button{display:inline-block;height:19px;line-height:19px;padding:0;border:0;background:url(../images/qzlihun.jpg) no-repeat;background-size:100% 19px;box-sizing:border-box;cursor:pointer;color:#772200;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;letter-spacing:0;text-align:center;white-space:nowrap;vertical-align:middle;}
+.family_header_button{position:absolute;top:34px;width:72px;}
+.family_level_button{position:absolute;left:241px;top:35px;width:102px;height:17px;cursor:pointer;}
+.family_level_button img{display:block;width:102px;height:17px;}
+.family_auto_join_button{width:126px;}
+.family_auto_join_button input{width:13px;height:13px;margin:0 4px 0 0;padding:0;vertical-align:-2px;cursor:pointer;}
+.create_guild_button{position:absolute;left:241px;top:33px;width:72px;}
+.family_info_table{table-layout:fixed;}
+.family_info_table td{height:24px;line-height:24px;vertical-align:middle;}
+.family_info_label{box-sizing:border-box;padding-left:4px;white-space:nowrap;}
+.family_info_value{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.family_info_detail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .STYLE1 {color: #6C4200}
 .nav{
 	width:459px;
@@ -173,7 +184,7 @@ var familyBuyPending = false;
 							</table>
 							</div>
 						</div> 
-						<div class="create_guild_button" onclick="parent.$('create_guild').style.display='block'">创建家族</div>
+					<div class="family_wide_button create_guild_button" onclick="parent.$('create_guild').style.display='block'">创建家族</div>
 					</div>
 					
 					
@@ -395,6 +406,7 @@ function create_ajax(){
 
 //查询家族详细信息
 function show_guild_info(gid){
+	guild_id = parseInt(gid,10) || 0;
 	var opt = {
     		 	method: 'get',
 				 onSuccess: function(t) {
@@ -416,6 +428,35 @@ function show_guild_info(gid){
 			}
 		//window.status=		'../function/get.sjSkill.php?id='+sid+'&pid='+pid;
 		var ajax=new Ajax.Request('../function/guild.php?op=show_guild_info&gid='+gid, opt);
+}
+
+function setGuildAutoJoin(gid, checkbox){
+	var enabled = checkbox.checked ? 1 : 0;
+	checkbox.disabled = true;
+	var opt = {
+		method: 'get',
+		onSuccess: function(t) {
+			var result = t.responseText;
+			if(result == 10){
+				window.parent.Alert('家族加入设置已保存！');
+				show_guild_info(gid);
+			}else{
+				checkbox.checked = !checkbox.checked;
+				checkbox.disabled = false;
+				window.parent.Alert(result || '保存失败！');
+			}
+		},
+		on404: function() {
+			checkbox.checked = !checkbox.checked;
+			checkbox.disabled = false;
+		},
+		onFailure: function() {
+			checkbox.checked = !checkbox.checked;
+			checkbox.disabled = false;
+		},
+		asynchronous:true
+	};
+	new Ajax.Request('../function/guild.php?op=set_auto_join&gid='+parseInt(gid,10)+'&enabled='+enabled, opt);
 }
 
 function fh(){
@@ -518,6 +559,9 @@ function apply(){
 										window.parent.Alert('对方人数已满，不能再申请！');
 									}else if(strs == 3){
 										window.parent.Alert('申请成功，请稍候再来查看！');
+									}else if(strs == 11){
+										window.parent.Alert('家族已自动同意，您已成功加入！');
+										window.location.reload();
 									}else if(strs == 10){
 										window.parent.Alert('您退出没有24小时，不能申请，请稍候再试！');
 									}else window.parent.Alert('申请失败！');
@@ -533,6 +577,9 @@ function apply(){
 						window.parent.Alert('您已经加入其它或者此家族，不能再申请！');
 					}else if(str == 3){
 						window.parent.Alert('申请成功，请稍候再来查看！');
+					}else if(str == 11){
+						window.parent.Alert('家族已自动同意，您已成功加入！');
+						window.location.reload();
 					}else if(str == 10){
 						window.parent.Alert('您退出没有24小时，不能申请，请稍候再试！');
 					}else window.parent.Alert('申请失败！');

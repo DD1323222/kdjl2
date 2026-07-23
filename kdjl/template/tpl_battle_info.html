@@ -23,6 +23,42 @@ a {
 	background-position: center;
 	line-height:1.7;padding:5px;font-size:12px;
 }
+.battle_help {
+	height:157px;
+	box-sizing:border-box;
+	padding:3px 5px;
+	overflow:hidden;
+	font-size:11px;
+	line-height:1.28;
+	color:#15656A;
+}
+.battle_help_line {display:block;}
+.battle_help_key {color:red;font-weight:bold;}
+.battle_help_title {display:block;font-weight:bold;margin-top:1px;}
+.battle_choices {
+	display:grid;
+	grid-template-columns:repeat(4,1fr);
+	column-gap:2px;
+	row-gap:1px;
+	margin-top:1px;
+}
+.battle_choice {
+	dis:flex;
+	align-items:center;
+	min-width:0;
+	height:15px;
+	color:#D3710C;
+	font-weight:bold;
+	white-space:nowrap;
+	cursor:pointer;
+}
+.battle_choice input {
+	flex:0 0 auto;
+	width:12px;
+	height:12px;
+	margin:0 2px 0 0;
+	padding:0;
+}
 </style></head>
 
 <!--[if IE 6]>
@@ -90,11 +126,11 @@ a {
         </table></td>
       </tr>
       <tr>
-        <td height="157" align="left" valign="top" bgcolor="#CBF5F3" style="line-height:1.5;font-size:12px;color:#15656A;padding:5px;">
-		<font color=red><b>诅咒对方女神：</b></font>消耗1个诅咒宝石，减少对方女神100点生命，增加自身军功50点；冷却60秒，且对方女神HP低于1000时无法使用。
-		<font color=red><b><br />恢复我方女神生命：</b></font>消耗1个天地树果实，恢复我方女神生命1000点，增加自身军功500点；冷却600秒。<br/>
-		<font color=red><b>女神赐福：</b></font>消耗1个女神圣水，本场活动内斩杀敌将获的军功翻倍，活动结束后失效；每次活动只能使用一次。<br/>
-		<b>战场选择：(只能选择与自己符合的成长战场进入)</b><br/>
+        <td height="157" align="left" valign="top" bgcolor="#CBF5F3" class="battle_help">
+		<span class="battle_help_line"><span class="battle_help_key">诅咒对方女神：</span>消耗1个诅咒宝石，减少对方女神100点生命，增加自身军功50点；冷却60秒，且对方女神HP低于1000时无法使用。</span>
+		<span class="battle_help_line"><span class="battle_help_key">恢复我方女神生命：</span>消耗1个天地树果实，恢复我方女神生命1000点，增加自身军功500点；冷却600秒。</span>
+		<span class="battle_help_line"><span class="battle_help_key">女神赐福：</span>消耗1个女神圣水，本场活动内斩杀敌将获的军功翻倍，活动结束后失效；每次活动只能使用一次。</span>
+		<span class="battle_help_title">战场选择：(只能选择与自己符合的成长战场进入)</span>
 		#battlelist#
 		</td>
       </tr>

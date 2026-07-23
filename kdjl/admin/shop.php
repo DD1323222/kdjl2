@@ -251,7 +251,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 $categoryFilter = intval(adminGet('category', 0));
 if (!isset($categoryNames[$categoryFilter])) $categoryFilter = 0;
 $scope = adminGet('scope') === 'configured' ? 'configured' : 'current';
-$saleRows = $adminDb->getRecords("SELECT id,name,{$field} AS price,stime,timelimit,varyname FROM props WHERE stime>0 AND {$field}>0 AND {$field}<99999 ORDER BY stime,id");
+$saleRows = $adminDb->getRecords("SELECT id,name,{$field} AS price,stime,timelimit,varyname,propslock FROM props WHERE stime>0 AND {$field}>0 AND {$field}<99999 ORDER BY stime,id");
 if (!is_array($saleRows)) $saleRows = array();
 $visibleRows = array();
 foreach ($saleRows as $row)

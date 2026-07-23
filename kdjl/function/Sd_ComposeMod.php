@@ -26,6 +26,11 @@ function sdComposeImage($value)
 	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
 }
 
+function sdComposeNormalizeNirvanaText($value)
+{
+	return preg_replace('/涅[盘磐]/u', '涅槃', (string)$value);
+}
+
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
 $user		= $_pm['user']->getUserById($uid);
@@ -87,7 +92,8 @@ if (is_array($bag))
 			$money += intval($arr[count($arr)-1]);
 		}
 		$name = explode(":",$v['usages']);
-		if($v['sums'] > 0 && $name[0] != '涅盘')
+		$usageType = sdComposeNormalizeNirvanaText(isset($name[0]) ? $name[0] : '');
+		if($v['sums'] > 0 && $usageType != '涅槃')
 		{
 			$plist .= "<option value='{$v['id']}'>".sdComposeHtml($v['name'])."-{$money}-{$v['sums']}个</option>\n";
 		}

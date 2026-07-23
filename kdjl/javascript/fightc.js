@@ -4,8 +4,13 @@ try{
 		if(typeof window.parent.autoack==false){}
 	}catch(e){window.parent.location.reload();}
 
-var imgw = 55;
-var waittime=window.parent.waittime; // default;
+var imgw = 155;
+var waittime=parseInt(window.parent.waittime, 10); // default;
+if(isNaN(waittime)) waittime=5;
+window.parent.waittime=waittime;
+var selectedSkillId=parseInt(window.parent.usejn, 10);
+if(isNaN(selectedSkillId) || selectedSkillId < 1) selectedSkillId=1;
+window.parent.usejn=selectedSkillId;
 var wx_type = "";
 if (fuser!='') var gpcpath=''+IMAGE_SRC_URL+'/bb/';
 else var gpcpath=''+IMAGE_SRC_URL+'/gpc/';
@@ -27,7 +32,7 @@ function fightScheduleAction(callback)
 function createLeft(){
 	// Team player 0 start.
 	var sp = document.createElement('DIV'); //hp font
-	sp.style.cssText='position:absolute;left:60px;top:5px;color:#592e10;z-index:2;font-size:0.8em';
+	sp.style.cssText='position:absolute;left:92px;top:24px;width:124px;height:16px;line-height:16px;text-align:center;color:#000000;z-index:100000;font-size:0.8em;overflow:hidden;';
 	sp.id='bhpf';
 	sp.innerHTML=bb[5]+'/'+bb[12];
 	$('team0').appendChild(sp);
@@ -38,7 +43,7 @@ function createLeft(){
 	$('php').style.width=initw+'px';
 
 	var msp = document.createElement('DIV');// mp font
-	msp.style.cssText='position:absolute;left:60px;top:18px;color:#592e10;z-index:2;font-size:0.8em';
+	msp.style.cssText='position:absolute;left:92px;top:41px;width:124px;height:16px;line-height:16px;text-align:center;color:#000000;z-index:100000;font-size:0.8em;overflow:hidden;';
 	msp.id='bmpf';
 	msp.innerHTML=bb[6]+'/'+bb[13];
 	$('team0').appendChild(msp);
@@ -48,7 +53,7 @@ function createLeft(){
 	$('pmp').style.width=initw+'px';
 
 	var msp = document.createElement('DIV');// exp font
-	msp.style.cssText='position:absolute;left:60px;top:30px;color:#592e10;z-index:2;font-size:0.8em;padding-left:2px';
+	msp.style.cssText='position:absolute;left:92px;top:59px;width:124px;height:11px;line-height:11px;text-align:center;color:#000000;z-index:100000;font-size:0.8em;padding-left:0;overflow:hidden;';
 	msp.id='pfexp';
 	msp.innerHTML=bb[14]+'/'+bb[15];
 	$('team0').appendChild(msp);
@@ -63,42 +68,41 @@ function createLeft(){
 	petsdiv.src=''+IMAGE_SRC_URL+'/bb/'+bb[8];
 	$('fm').appendChild(petsdiv);
 	var cf = document.createElement('DIV');
-	cf.style.cssText='position:absolute;left:100px;top:290px;font-size:12px;text-align:center;color:#fffbdc;';
+	cf.style.cssText='position:absolute;left:4px;top:81px;width:99px;height:28px;line-height:14px;padding-top:0;font-size:11px;text-align:center;color:#0393D5;z-index:1000;overflow:hidden;white-space:nowrap;';
 	cf.id='cf1';
-	cf.innerHTML = fightcHtmlText(bb[0])+' '+parseInt(bb[1], 10)+'级';
-	$('fm').appendChild(cf);
+	cf.innerHTML = fightcHtmlText(bb[0])+'<br /><font color=#097603>'+parseInt(bb[1], 10)+'级</font>';
+	$('team0').appendChild(cf);
 	//-------------- create bb part end.
 
 
 	//---------------add bb jn list.
 
 	var jnbk = document.createElement('DIV');
-	jnbk.style.cssText='position:absolute;left:230px;top:170px;width:312px;height:100px;border:1px solid #144c04;background-color:#047c34;filter:alpha(opacity=60);padding:3px;color:#ffffff;display:none;';
+	jnbk.style.cssText='position:absolute;left:230px;top:110px;width:352px;height:136px;border:0px;color:#7a9303;font-size:12px;font-size-adjust:0.33;padding:3px;display:none;';
 	jnbk.id='jntool';
 	$('fm').appendChild(jnbk);
 
-	var sp = document.createElement('DIV'); //hp font
-	sp.style.cssText='position:absolute;left:660px;top:62px;color:#592e10;z-index:2;font-size:0.8em;';
-	sp.id='ghpf';
-	sp.innerHTML=gg[5]+'/'+gg[5];
-	$('fm').appendChild(sp);
-
-	var hp = document.createElement('IMG'); // hp gif
-	hp.style.cssText='width:100px;height:9px;position:absolute;left:640px;top:62px;';
-	hp.src=''+IMAGE_SRC_URL+'/ui/fight/zdean15.gif';
-	hp.id='ghp';
+	var hp = document.createElement('DIV');
+	hp.style.cssText='width:110px;height:11px;position:absolute;left:620px;top:47px;z-index:3;';
+	hp.innerHTML='<div id="ghpbkvalue" style="width:96px;height:11px;line-height:11px;padding-left:0;left:31px;top:0;position:absolute;z-index:2;color:#412804;font-size:10px;text-align:left;overflow:hidden;">'+gg[5]+'/'+gg[5]+'</div><div id="ghpbk" style="width:96px;height:11px;left:31px;top:0;position:absolute;z-index:1;background-repeat:no-repeat;background-position:right top;background-image:url(../images/ui/newmap/dr03.gif);overflow:hidden"><div id="ghp" style="background-image:url(../images/ui/newmap/dr04.gif);width:91px;background-repeat:repeat-x;height:11px;"></div></div>';
 	$('fm').appendChild(hp);
 
 	var lot = document.createElement('div');
-	var tempname='';
 	var imgpos='';
-	lot.style.cssText='position:absolute;left:640px;top:30px;color:#ffffff;z-index:2;font-size:1.0em';
+	lot.style.cssText='position:absolute;left:620px;top:31px;color:#338800;font-size:0.8em;z-index:3;';
 	if (fuser!='')
-	{tempname= fightcHtmlText(fuser)+'的';imgpos=" filter: FlipH; -moz-transform: matrix(-1, 0, 0, 1, 0, 0); -webkit-transform: matrix(-1, 0, 0, 1, 0, 0);";}
-	if(gg[0]=='要塞怪物')tempname='';
+	{
+		lot.title='对手：'+fuser;
+		imgpos=" filter: FlipH; -moz-transform: matrix(-1, 0, 0, 1, 0, 0); -webkit-transform: matrix(-1, 0, 0, 1, 0, 0);";
+	}
 	var enemyName=fightcHtmlText(gg[0]).replace("精英","<font color=blue>精英</font>");
-	lot.innerHTML=tempname+' '+enemyName+' '+fightcHtmlText(gg[2])+'.LV：'+parseInt(gg[1],10);
+	var enemyWx=fightcHtmlText(gg[2]);
+	lot.innerHTML='<div style="width:31px;height:37px;z-index:4;top:0;left:0;position:absolute;background:url(../images/ui/newmap/dr02.gif);"><div style="z-index:4;top:7px;left:15px;position:absolute"><font color="#2A9E49" size="2.5"><b>'+enemyWx+'</b></font></div></div><div style="width:108px;height:15px;line-height:15px;z-index:5;top:0;left:31px;position:absolute;padding-left:0;padding-top:0;overflow:hidden;white-space:nowrap;">'+enemyName+'&nbsp;LV：'+parseInt(gg[1],10)+'</div><div style="width:108px;height:11px;z-index:5;top:15px;left:31px;position:absolute"></div>';
 	$('fm').appendChild(lot);
+	var xbg = document.createElement('div');
+	xbg.style.cssText='position:absolute;left:620px;top:31px;color:#338800;font-size:0.8em;z-index:1;';
+	xbg.innerHTML='<div style="width:114px;height:28px;top:0;left:13px;position:absolute"><img src="../images/ui/newmap/dr01.gif" style="opacity:0.7;filter:progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=70,finishOpacity=100)" /></div>';
+	$('fm').appendChild(xbg);
 
 	var ph = document.createElement('IMG'); // gw gif.
 	ph.style.cssText='position:absolute;left:528px;top:120px;width:250px;height:190px;object-fit:contain;'+imgpos;
@@ -111,7 +115,7 @@ function createLeft(){
 
 	// add jn name.
 	var jnfont = document.createElement('DIV');
-	jnfont.style.cssText='position:absolute;left:547px;top:150px;font-weight:bold;width:250px;height:30px;font-family:华文新魏;font-size:16px;color:yellow';
+	jnfont.style.cssText='position:absolute;left:547px;top:150px;font-weight:bold;width:250px;height:30px;font-family:华文新魏;font-size:18px;color:yellow';
 	jnfont.id='pfont';
 	$('fm').appendChild(jnfont);
 
@@ -124,6 +128,9 @@ function createLeft(){
 
 function Usejn(n){
 	var tump=0;
+	n=parseInt(n,10);
+	if(isNaN(n) || n < 1) n=1;
+	window.parent.usejn=n;
 	if(n>1)
 	{
 		for(var i=0;i<bbjn.length;i++)
@@ -135,7 +142,6 @@ function Usejn(n){
 			}
 		}
 	}
-	n=parseInt(n);
 	if (n!=1 && tump>bbmcur)
 	{n=1;}//alert('您的魔法值不足，无法使用魔法技能！');return;}
 
@@ -154,7 +160,11 @@ function Usejn(n){
 }
 
 function font(str,fun){
-	$('pfont').innerHTML=str;
+	var fontBox = $('pfont');
+	if(!fontBox){ fightScheduleAction(fun); return; }
+	fontBox.style.width='270px';
+	fontBox.style.zIndex='1000000';
+	fontBox.innerHTML=str;
 	fightScheduleAction(fun);
 }
 
@@ -241,11 +251,11 @@ function displayResult(str){
 		var lstr = str.split('经验：');
 		var lnum = lstr[1].split('<br/>');
 		bb[14]=parseInt(bb[14])+parseInt(lnum[0]);
-		if (bb[14]>bb[15])
+		if (bb[14]>=bb[15])
 		{
-			bb[14] = bb[14]-parseInt(bb[14]);
+			bb[14] = Math.max(0, bb[14]-parseInt(bb[15], 10));
 		}
-	   var initw =55*bb[14]/bb[15];
+	   var initw =155*bb[14]/bb[15];
 	   $('pfexp').innerHTML=bb[14]+'/'+bb[15];
 	   $('pexp').style.width=initw+'px';
 	   //explode_start(2);
@@ -315,11 +325,12 @@ loadtime(waittime);
 // Server part.###########################
 // @Get bb ack.
 // @Now, for demo, simple test in localhost.
-function fightcRequestFailed(message)
+function fightcRequestFailed(message, retry)
 {
 	using=false;
 	if($('tooldiv')) $('tooldiv').style.display='';
 	if(message) window.parent.Alert(message);
+	if(retry !== false) loadtime(waittime);
 }
 
 function getAckOfBB(id){
@@ -350,7 +361,7 @@ function splits(str)
 	var crit = str.split('*');
 	if(crit.length < 3)
 	{
-		fightcRequestFailed(str);
+		fightcRequestFailed(str || '挑战战斗状态异常，请重新进入！', false);
 		return;
 	}
 	str = crit[0];
@@ -385,7 +396,7 @@ function splits(str)
 	var tt = str.split('#');
 	if(tt.length < 5)
 	{
-		fightcRequestFailed(str);
+		fightcRequestFailed(str || '挑战战斗数据读取失败，请重新进入！', false);
 		return;
 	}
 	if(str.indexOf("逃跑了！！！")!=-1){
@@ -470,7 +481,7 @@ function splits(str)
 			{
 				var fontValue='<font color=red><i>-'+bbr[2]+'</i> </font>!!';
 			}
-			$('pfont').style.left='620px';
+			$('pfont').style.left='500px';
 
 
 			//判断吸血和吸魔的值是否为空和是否显示
@@ -572,22 +583,24 @@ function hpimg(imgid)
 	  var imgw;
 		if(imgid == 'php') // gw ack, view bb.
 		{
-			imgw   = 55;
+			imgw   = 155;
 			$('bhpf').innerHTML=bbcur+'/'+bb[12];
 			hpmax=bb[12];
 			if (bbcur<=0) {fc=-2;bbcur=0;}
 			cur = bbcur;
 		}
 		else {
-			imgw = 100;
-			$('ghpf').innerHTML=gwcur+'/'+gg[5];
+			imgw = 91;
+			$('ghpbkvalue').innerHTML=gwcur+'/'+gg[5];
 			hpmax=gg[5];
 			if (gwcur<=0) {fc=-1;gwcur=0;}
 			cur = gwcur;
 		}
 
 		var iw = parseInt((imgw/hpmax)*cur);
-		if(isNaN(iw)) iw=0;
+		if(isNaN(iw) || iw < 0) iw=0;
+		if(iw > imgw) iw=imgw;
+		if(imgid != 'php' && $('ghpbk')) $('ghpbk').style.width=(iw > 0 ? iw+5 : 0)+'px';
 		$(imgid).style.width=iw+'px';
 		$(imgid).style.border='0px';
 }
@@ -615,12 +628,39 @@ function viewyw(n)
 	$('ywin').style.display = '';
 }
 
+function validateMedicineResponse(text)
+{
+	text = String(text == null ? '' : text).replace(/^\s+|\s+$/g, '');
+	if(text == '0') return false;
+	if(text == 'hasusemedbuff')
+	{
+		window.parent.Alert('你已经使用过类似的临时状态药了哦');
+		return false;
+	}
+	var values = text.split(',');
+	if(values.length < 4)
+	{
+		window.parent.Alert(text || '道具使用失败！');
+		return false;
+	}
+	for(var i = 0; i < 4; i++)
+	{
+		if(isNaN(parseInt(values[i], 10)))
+		{
+			window.parent.Alert(text || '道具使用失败！');
+			return false;
+		}
+	}
+	return true;
+}
+
 function UseYao(n)
 {
 	if(using == true) {window.parent.Alert('战斗状态您不能吃药！');return;}
 	var opt = {
 		 method: 'get',
 		 onSuccess: function(t){
+				if(!validateMedicineResponse(t.responseText)) return;
 				if(t.responseText != '0')
 				{
 					if(t.responseText != 'hasusemedbuff')
@@ -673,8 +713,10 @@ function UseYao(n)
 				}
 		 },
 		 on404: function(t) {
+				window.parent.Alert('道具使用请求失败，请稍后重试。');
 		 },
 		 onFailure: function(t) {
+				window.parent.Alert('道具使用请求失败，请稍后重试。');
 		 },
 		 asynchronous:true
 		}

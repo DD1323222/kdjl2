@@ -25,6 +25,19 @@ function zsModImage($value)
 	return preg_match('/^[A-Za-z0-9_.-]+$/', $value) ? $value : '';
 }
 
+function zsModNormalizeNirvanaText($value)
+{
+	return preg_replace('/涅[盘磐]/u', '涅槃', (string)$value);
+}
+
+function zsModIsNirvanaPet($pet)
+{
+	$baseId = isset($pet['old_bid']) ? intval($pet['old_bid']) : 0;
+	if(in_array($baseId, array(103, 104, 105), true)) return true;
+	$name = zsModNormalizeNirvanaText(isset($pet['name']) ? $pet['name'] : '');
+	return in_array($name, array('涅槃兽（亥）', '涅槃兽（午）', '涅槃兽（卯）'), true);
+}
+
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
 $user		= $_pm['user']->getUserById($uid);
@@ -61,11 +74,12 @@ if (is_array($petsAll))
 		$petLevel = intval($rs['level']);
 		$petNameHtml = zsModHtml($rs['name']);
 		$cardImg = zsModImage($rs['cardimg']);
-		if($rs['level'] >= 60 && ($rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") && $rs['muchang'] == 0 && intval($rs['tgflag']) == 0)
+		$isNirvanaPet = zsModIsNirvanaPet($rs);
+		if($rs['level'] >= 60 && $isNirvanaPet && $rs['muchang'] == 0 && intval($rs['tgflag']) == 0)
 		{
 			$zsoption .= "<option value='{$petId}'>{$petNameHtml}-{$petLevel}</option>\n";
 		}
-		if ($rs['muchang'] != 0 || intval($rs['tgflag']) != 0 || $rs['level']<60 || $rs['wx'] != 6 || $rs['name'] == "涅磐兽（亥）" || $rs['name'] == "涅磐兽（午）" || $rs['name'] == "涅磐兽（卯）") continue;
+		if ($rs['muchang'] != 0 || intval($rs['tgflag']) != 0 || $rs['level']<60 || $rs['wx'] != 6 || $isNirvanaPet) continue;
 		$zspets[$zskk++] = "<img src='".IMAGE_SRC_URL."/bb/{$cardImg}' onclick='Display({$petId});' style='cursor:pointer;display:none;' id='cp{$zskk}'>";
 		$zsapetslist .= "<option value='{$petId}'>{$petNameHtml}-{$petLevel}</option>\n";
 		$zsbblistid .= $zsbblistid?",'{$petId}-{$cardImg}'":"'{$petId}-{$cardImg}'";
@@ -87,7 +101,8 @@ if (is_array($bag))
 		if(!isset($v['sums'])) $v['sums'] = 0;
 		if(!isset($v['usages'])) $v['usages'] = '';
 		$effarr = explode(":",$v['usages']);
-		if($effarr[0] != '涅盘')
+		$usageType = zsModNormalizeNirvanaText(isset($effarr[0]) ? $effarr[0] : '');
+		if($usageType != '涅槃')
 		{
 			continue;
 		}

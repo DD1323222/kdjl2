@@ -498,6 +498,60 @@ function Used()
 	var ajax=new Ajax.Request('../function/usedProps.php?id='+bid, opt);	
 }
 
+var bindingBagItem = false;
+function bindSelectedBagItem()
+{
+	var itemId = parseInt(bid, 10);
+	if(!itemId || itemId < 1)
+	{
+		Alert('请先在背包中选择需要绑定的物品！');
+		return;
+	}
+	var selectedRow = $('t' + itemId);
+	var bagRoot = $('bags');
+	var selectedParent = selectedRow;
+	while(selectedParent && selectedParent !== bagRoot) selectedParent = selectedParent.parentNode;
+	if(!selectedRow || !bagRoot || selectedParent !== bagRoot)
+	{
+		Alert('请先在背包中选择需要绑定的物品！');
+		return;
+	}
+	if(bindingBagItem) return;
+	if(!confirm('绑定后将无法恢复为可交易物品，确定绑定当前选中的全部物品吗？')) return;
+
+	bindingBagItem = true;
+	var opt = {
+		method: 'post',
+		parameters: 'id=' + encodeURIComponent(itemId),
+		onSuccess: function(t) {
+			bindingBagItem = false;
+			var response = t.responseText || '';
+			if(response.indexOf('OK|') !== 0)
+			{
+				Alert(response.indexOf('ERR|') === 0 ? response.substring(4) : response);
+				return;
+			}
+			Alert(response.substring(3));
+			bid = 0;
+			selid = 0;
+			var refreshOpt = {
+				method: 'get',
+				onSuccess: function(r) {
+					if($('bags')) $('bags').innerHTML = r.responseText;
+				},
+				asynchronous: true
+			};
+			new Ajax.Request('../function/getBag.php?style=1&_=' + (new Date()).getTime(), refreshOpt);
+		},
+		onFailure: function() {
+			bindingBagItem = false;
+			Alert('绑定失败，请稍候再试！');
+		},
+		asynchronous: true
+	};
+	new Ajax.Request('../function/bindBagItem.php', opt);
+}
+
 function Reset()
 {
 	if(!confirm('整理包裹可以显示隐藏在包裹中的物品，请预留足够的空间，您确定整理吗？')) return;

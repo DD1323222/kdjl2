@@ -10,10 +10,12 @@
 *@Note: none
 */
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 //if ($_SESSION['nickname']!='GM') die('关闭调试！');
 secStart($_pm['mem']);
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
+kdjlFightBeginNavigationWait($uid);
 
 function userModHtml($value)
 {

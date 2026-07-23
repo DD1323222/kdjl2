@@ -118,13 +118,23 @@ if( isset($_SESSION['first_in']) && ($_SESSION['first_in'] == 2 || $_SESSION['fi
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 }
 $_SESSION['first_in'] = 2;
-$isGuildFight = isset($_GET['guildFight'])
+$guildFightRequested = isset($_GET['guildFight']) && !is_array($_GET['guildFight']) && intval($_GET['guildFight']) === 1;
+$isGuildFight = $guildFightRequested
 	&& isset($_SESSION['guild_fight_id'], $_SESSION['guild_fight_bid'], $_SESSION['guild_fight_time'])
 	&& intval($_SESSION['guild_fight_id']) > 0
 	&& intval($_SESSION['guild_fight_bid']) > 0
 	&& intval($_SESSION['guild_fight_time']) + 300 > time();
+if($guildFightRequested && !$isGuildFight)
+{
+	unset($_SESSION['guild_fight_id'], $_SESSION['guild_fight_bid'], $_SESSION['guild_fight_time']);
+	unset($_SESSION['fight'.$uid]);
+	$_pm['mysql']->query("UPDATE player_ext SET F_Medicine_Buff='' WHERE uid={$uid}");
+	$_SESSION['first_in'] = 3;
+	die('家族战斗已超时，请重新进入战场！');
+}
 if($isGuildFight)
 {
+	$_SESSION['guild_fight_time'] = time();
 	require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
 	$s=new socketmsg();
 	$guild=new guild($s);
@@ -232,7 +242,7 @@ if(!$fortress_flag && !$isGuildFight)
 	{
 		$_pm['mysql']->query("UPDATE player_ext SET F_Medicine_Buff='' WHERE uid={$uid}");
 		$_SESSION['first_in'] = 3;
-		exit('10');
+		exit('挑战目标已失效，请重新选择对手！');
 	}
 }
 
@@ -248,7 +258,7 @@ if(intval($_SESSION['id'])<1||intval($user['fightbb'])<1)
 {
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$_SESSION['id']."'");
 	$_SESSION['first_in'] = 3;
-	exit('10');
+	exit('挑战主战宠物状态异常，请重新进入！');
 }
 $_bb = $_pm['user']->getUserPetByIdS($_SESSION['id'],$user['fightbb']);
 if (!is_array($_bb))
@@ -264,16 +274,16 @@ if (!is_array($_bb))
 		{
 			$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$_SESSION['id']."'");
 			$_SESSION['first_in'] = 3;
-			exit('10');
+			exit('挑战主战宠物数据读取失败，请重新进入！');
 		}
 		sleep(1);
 	}
 }
 if(intval(isset($_bb['uid']) ? $_bb['uid'] : 0) != $uid ||
 	intval(isset($_bb['muchang']) ? $_bb['muchang'] : 0) != 0 ||
-	intval(isset($_bb['tgflag']) ? $_bb['tgflag'] : 0) != 0) exit('10');
+	intval(isset($_bb['tgflag']) ? $_bb['tgflag'] : 0) != 0) exit('挑战主战宠物已变更，请重新进入！');
 $_sk		 = $_pm['user']->getUserPetSkillByIdS($_SESSION['id'],$_bb['id'],$id);
-if(intval($_SESSION['id'])<1||intval($user['fightbb'])<1) exit('10');
+if(intval($_SESSION['id'])<1||intval($user['fightbb'])<1) exit('挑战主战宠物状态异常，请重新进入！');
 if (!is_array($_sk))
 {
 	$_sk = $_pm['user']->getUserPetSkillByIdS($_SESSION['id'],$_bb['id'],1);
@@ -468,7 +478,7 @@ if(is_array($rs) && is_array($gs))
 		$bb = $aobj->skillack . ',' . $rs['s_name'];
 	}
 
-	$bb = number_format($aobj->skillack,'','',''). ',' . $rs['s_name'];
+	$bb = number_format($aobj->skillack, 0, '.', '') . ',' . $rs['s_name'];
 	$aobj1 = new Ack($gs, $rs);
 	$aobj1 -> getSkillAck();
 
@@ -513,13 +523,13 @@ if(is_array($rs) && is_array($gs))
 	//$rs['mp'] += $att['mp1'];
 	$gwac1 = max(0, $gwac - $att['hpdx']);
 	$att['hpdx'] = max(0, $gwac - $gwac1);
-	$gw = number_format($gwac1,'','','') . ',' . $gs['s_name'];
-	$gw1 = number_format($gwac,'','','') . ',' . $gs['s_name'];
+	$gw = number_format($gwac1, 0, '.', '') . ',' . $gs['s_name'];
+	$gw1 = number_format($gwac, 0, '.', '') . ',' . $gs['s_name'];
 	if(!$aobj->fixedDamage && !empty($att['ack']))
 	{
 		$aobj->skillack += $att['ack'];
 	}
-	$bb = number_format($aobj->skillack,'','',''). ',' . $rs['s_name'];
+	$bb = number_format($aobj->skillack, 0, '.', '') . ',' . $rs['s_name'];
 	//$aobj -> skillack += $att['hp1'];
 
 	$sql = "SELECT * FROM userbb
@@ -638,13 +648,15 @@ if(is_array($rs) && is_array($gs))
 			$_SESSION['first_in'] = 3;
 		}
 
-		$hasAutoRecover=$_pm['mysql']->getOneRecord('select userbag.id from userbag,props where userbag.uid='.$_SESSION['id'].' and userbag.pid=props.id and props.varyname=21 limit 1');
-
-		if($hasAutoRecover)
+		if($newhp == 0 || $nhp == 0)
 		{
-			$_pm['mysql']->query("UPDATE userbb,player
-									 SET hp=srchp,mp = srcmp,addmp = 0,addhp = 0
-								   WHERE mbid=userbb.id and userbb.uid=player.id and player.id=".$_SESSION['id']);
+			$hasAutoRecover=$_pm['mysql']->getOneRecord('select userbag.id from userbag,props where userbag.uid='.$_SESSION['id'].' and userbag.pid=props.id and props.varyname=21 limit 1');
+			if($hasAutoRecover)
+			{
+				$_pm['mysql']->query("UPDATE userbb,player
+										 SET hp=srchp,mp = srcmp,addmp = 0,addhp = 0
+									   WHERE mbid=userbb.id and userbb.uid=player.id and player.id=".$_SESSION['id']);
+			}
 		}
 	}else if($fortress_flag){
 		if ($newhp == 0)

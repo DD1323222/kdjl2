@@ -360,7 +360,7 @@ if (!is_array($_bb))
 		if($ct>10)
 		{
 			$_SESSION['first_in'] = 3;
-			 exit('10');
+			exit('主战宠物数据读取失败，请重新进入地图！');
 		}
 
 	}
@@ -376,7 +376,7 @@ if($uid<1||intval($user['fightbb'])<1)
 {
 	$_SESSION['first_in'] = 3;
 	$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
-	exit('10');
+	exit('主战宠物状态异常，请重新进入地图！');
 }
 
 
@@ -1257,7 +1257,7 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 								{
 									$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
 									$_SESSION['first_in'] = 3;
-									exit('10');
+									exit('队伍成员宠物数据读取失败，请重新进入地图！');
 								}
 
 							}
@@ -1515,7 +1515,7 @@ $sql = "SELECT addmp,addhp FROM userbb WHERE uid = {$_SESSION['id']} and id = {$
 	}
 	else if(!empty($att['hp1']) && !empty($att['mp1']) && $att['mp1'] < 0)
 	{
-		$str .= $nhp_bb . ',' . $nmp. ',' . $bb.',<br />吸血 '.$att['hp1'].'&nbsp;==<br /失魔'.$att['mp1'].'&nbsp;#'. $newhp_gw . ',' . $gw1.'#' . $drops . '#' . $word;
+		$str .= $nhp_bb . ',' . $nmp. ',' . $bb.',<br />吸血 '.$att['hp1'].'&nbsp;==<br />失魔'.$att['mp1'].'&nbsp;#'. $newhp_gw . ',' . $gw1.'#' . $drops . '#' . $word;
 	}
 	else if(empty($att['hp1']) && !empty($att['mp1']) && $att['mp1'] < 0)
 	{

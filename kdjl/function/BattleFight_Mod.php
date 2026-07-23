@@ -14,6 +14,7 @@
 session_start();
 require_once('../config/config.game.php');
 require_once(dirname(__FILE__).'/fight_wait_common.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1)
 {
@@ -28,6 +29,7 @@ if (!defined('BATTLE_TIME_WEEK'))
 	define('BATTLE_TIME_WEEK', 5);*/
 //error_reporting(E_ALL&~E_NOTICE);
 secStart($_pm['mem']);
+kdjlSacredBattleTick($_pm['mysql'], $_pm['mem'], time());
 $mouse = '';
 
 function battleFightJsSingle($value)

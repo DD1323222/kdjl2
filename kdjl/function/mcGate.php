@@ -184,7 +184,7 @@ if ($op == 'change')
 		mcStop('在牧场的宝宝不能设为主战哦！');
 	}
 
-	$sql = 'UPDATE player SET mbid='.$id.',task="",tasklog="" WHERE id='.$uid;
+	$sql = 'UPDATE player SET mbid='.$id.',fightbb='.$id.',task="",tasklog="" WHERE id='.$uid;
 	if (!$db->query($sql) || mysql_affected_rows($db->getConn()) != 1)
 	{
 		mcStop('操作失败!');

@@ -1,5 +1,6 @@
 <?php
 require_once('config/config.game.php');
+require_once(dirname(__FILE__).'/function/fight_wait_common.php');
 error_reporting('0');
 $httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
 if(!preg_match('/^[A-Za-z0-9.-]{1,255}(:[0-9]{1,5})?$/', $httpHost)) $httpHost = '';
@@ -29,6 +30,7 @@ if(!isset($_SESSION['game_server_flag']) || GAME_SERVER_FLAG != $_SESSION['game_
 	die('<script type="text/javascript">window.location="passport/login.php"</script>');
 }
 secStart($_pm['mem']);
+kdjlFightBeginNavigationWait($sessionId);
 
 $initialFriendNames = array();
 $initialBlackNames = array();
@@ -1319,7 +1321,7 @@ break;
     <a href="javascript:void(0);" class="meiri-btn" style="margin-left:20px;" onclick="callUsedTimes(100)">批量使用100次</a>
     <input id="anyNum" type="text" style="margin-left:20px;" placeholder="请输入大于0的整数"/>
     <a href="javascript:void(0);" class="meiri-btn" style="margin-left:5px;" onclick="callUsedTimesAnyNums()">批量使用</a>
-    <a href="javascript:void(0);" class="meiri-btn" style="margin-left:20px;" onclick=""></a>
+    <a href="javascript:void(0);" class="meiri-btn" style="margin-left:20px;" onclick="bindSelectedBagItem()">绑定物品</a>
     <span class="meiri-btn" style="float:right;" onclick="Load(99)">强制刷新</span>
 </div>
   </div>

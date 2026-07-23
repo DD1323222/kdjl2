@@ -8,7 +8,10 @@
 
 //自动领取奖励
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 secStart($_pm['mem']);
+$uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+kdjlFightBeginNavigationWait($uid);
 $teamId = isset($_SESSION['team_id']) ? intval($_SESSION['team_id']) : 0;
 if($teamId > 0)
 {

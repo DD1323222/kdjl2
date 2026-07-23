@@ -12,6 +12,8 @@ Note:
 session_start();
 set_time_limit(3600);
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
+require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
 
 /*if (!defined('BATTLE_TIME_START'))
 	define('BATTLE_TIME_START', "20:00");
@@ -26,13 +28,6 @@ if($uid < 1) die('');
 if($_pm['mysql']->query('update player set inmap=0 where id='.$uid)) $_pm['mem']->del(MEM_USER_KEY);
 $today = date("Y-m-d",time());
 
-// 战场开放时间开关。
-$week = date("N", time());
-$hourM= date("H:i", time());
-
-$battletimearr = $_pm['mem']->get(MEM_TIME_KEY);
-if(!is_array($battletimearr)) $battletimearr = kdjlSafeMemValue($battletimearr, array());
-if(!is_array($battletimearr)) $battletimearr = array();
 $battletimearr1 = $_pm['mem']->get('db_welcome1');
 if(!is_array($battletimearr1)) $battletimearr1 = kdjlSafeMemValue($battletimearr1, array());
 $activeimg = (is_array($battletimearr1) && isset($battletimearr1['battle'])) ? $battletimearr1['battle'] : '';
@@ -40,76 +35,18 @@ $zrlist = '';
 $aylist = '';
 $cet = '';
 
-function battleStartRoundIfNeeded()
+function battleStartRoundIfNeeded($window)
 {
 	global $_pm;
-	if(!$_pm['mysql']->query('START TRANSACTION')) return false;
-	$state = $_pm['mysql']->getOneRecord('SELECT id,startf,ends FROM battlefield WHERE id=1 FOR UPDATE');
-	if(!is_array($state))
-	{
-		$_pm['mysql']->query('ROLLBACK');
-		return false;
-	}
-	if(intval($state['startf']) != 0)
-	{
-		if(!$_pm['mysql']->query('COMMIT'))
-		{
-			$_pm['mysql']->query('ROLLBACK');
-			return false;
-		}
-		return true;
-	}
-
-	$ends = intval($state['ends']);
-	if($ends == 1)
-	{
-		if(!$_pm['mysql']->query('UPDATE battlefield SET ends=2 WHERE ends=1'))
-		{
-			$_pm['mysql']->query('ROLLBACK');
-			return false;
-		}
-		$ends = 2;
-	}
-	if($ends == 2)
-	{
-		$now = time();
-		$sql = 'INSERT INTO battlelog(uid,jgvalue,curjgvalue,jgtime,sumjg) '.
-			'SELECT uid,COALESCE(jgvalue,0),COALESCE(curjgvalue,0),'.$now.
-			',COALESCE(jgvalue,0)+COALESCE(curjgvalue,0) FROM battlefield_user '.
-			'WHERE COALESCE(jgvalue,0)>0 OR COALESCE(curjgvalue,0)>0';
-		if(!$_pm['mysql']->query('DELETE FROM battlelog') ||
-		   !$_pm['mysql']->query($sql) ||
-		   !$_pm['mysql']->query('UPDATE battlefield SET startf=1,countf=0,success=0,ends=0,hp=srchp') ||
-		   !$_pm['mysql']->query('UPDATE battlefield_user SET tops=0,jgvalue=COALESCE(jgvalue,0)+COALESCE(curjgvalue,0),curjgvalue=0'))
-		{
-			$_pm['mysql']->query('ROLLBACK');
-			return false;
-		}
-	}
-	if(!$_pm['mysql']->query('COMMIT'))
-	{
-		$_pm['mysql']->query('ROLLBACK');
-		return false;
-	}
-	return true;
+	return kdjlSacredBattleStartWindow($_pm['mysql'], $_pm['mem'], $window);
 }
 
-foreach($battletimearr as $bv)
+$battleWindows = kdjlBattleLifecycleWindows($_pm['mem'], 'battle', time());
+$battleWindow = kdjlBattleLifecycleCurrentWindow($battleWindows, time());
+if(is_array($battleWindow))
 {
-	if(!is_array($bv)) continue;
-	if(!isset($bv['titles'])) $bv['titles'] = '';
-	if(!isset($bv['days'])) $bv['days'] = '';
-	if(!isset($bv['starttime'])) $bv['starttime'] = '';
-	if(!isset($bv['endtime'])) $bv['endtime'] = '';
-	if($bv['titles'] != "battle")
-	{
-		continue;
-	}
-	if(isWeeklyDayTimeActive($bv['days'], $bv['starttime'], $bv['endtime'], $week, $hourM, false))//战场已经开始
-	{
-		if(!battleStartRoundIfNeeded()) die('战场初始化失败，请稍候重试！');
-		break;
-	}
+	if(!battleStartRoundIfNeeded($battleWindow)) die('战场初始化失败，请稍候重试！');
+	kdjlRunActivityAutomation($_pm['mysql'], $_pm['mem']);
 }
 
 

@@ -55,7 +55,7 @@ a:hover {text-decoration:underline}
 .mypet .pic li.img h2 {position:static; +position:absolute; top:50%; vertical-align:middle}
 .mypet .pic li.img h2 img {position:static; +position:relative; top:-50%; left:-50%; vertical-align:middle}
 .mypet .left h3 {clear:both; padding-top:10px}
-.mypet .right {width:86px; padding:0 15px; line-height:22px; background:url(../images/pet_r.gif) left center no-repeat}
+.mypet .right {width:106px; padding:0 10px; line-height:20px; white-space:nowrap; background:url(../images/pet_r.gif) left center no-repeat}
 .pet_pro .pet_image {width:357px; height:170px; line-height:170px; overflow:hidden; position:relative; display:table-cell; text-align:center; vertical-align:middle}
 .pet_image h2 {position:static; +position:absolute; top:50%; vertical-align:middle}
 .pet_image h2 img {position:static; +position:relative; top:-50%; left:-50%; vertical-align:middle}
@@ -141,6 +141,8 @@ a:hover {text-decoration:underline}
 		
         <div class="right">
            等级：#level#<br />
+            当前经验：#nowexp#<br />
+            升级经验：#lexp#<br />
             五行：#wx#<br />
             生命: #hp#<br />
             魔法: #mp#<br />
@@ -156,23 +158,6 @@ a:hover {text-decoration:underline}
     <div id="con_tab_2" class="con pet_pro clearfix">
     	<div class="left">
 			<div class="pet_image"><h2><img src="../images/bb/#bigimg#" /></h2></div>
-            <div class="pet_lev">
-                <p>等级：#level#<br />
-                当前经验：#nowexp#<br />
-                升级经验：#lexp#<br />
-                五行：#wx#
-                </p>       
-               <p>生命: #hp#<br />
-                魔法: #mp#<br />
-                攻击：#ac#<br />
-                防御：#mc#
-                </p>
-                <p>命中：#hits#<br />
-                闪避：#miss#<br />
-                速度：#speed#<br />
-                成长：#czl#
-                </p>
-            </div>
         </div>
         <div class="right">
 			金抗：#jk#<br/>

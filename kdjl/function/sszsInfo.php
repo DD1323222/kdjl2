@@ -774,10 +774,16 @@ function makebb($oldbb,$newbb,$zsjd,$wp1,$wp2){
 			return false;
 		}
 	}
+	$oldPetId = isset($oldbb['id']) ? intval($oldbb['id']) : 0;
+	if($oldPetId < 1)
+	{
+		return false;
+	}
 	$sql = "UPDATE player
-			SET mbid = {$bbid}
+			SET mbid = {$bbid},
+				fightbb = IF(fightbb = {$oldPetId}, {$bbid}, fightbb)
 			WHERE id = {$uid}";
-	if(!$_pm['mysql'] -> query($sql))
+	if(!$_pm['mysql'] -> query($sql) || mysql_affected_rows($_pm['mysql']->getConn()) != 1)
 	{
 		return false;
 	}

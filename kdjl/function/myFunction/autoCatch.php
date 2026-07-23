@@ -129,7 +129,7 @@ if(!in_array('10',$openmapArr)){
     return;
 }
 
-//涅盘兽·精灵球id	1252，涅槃兽·精灵球(绑定)id-1994
+// 涅槃兽·精灵球 id 1252，涅槃兽·精灵球(绑定) id 1994
 $resBall1 = $_pm['mysql']->getOneRecord("select * from userbag where uid='".$uid."' and pid='1252' and sums > 0 and zbing = 0 and (cantrade IS NULL OR cantrade<>3) order by id limit 1");
 $resBallNum1 = is_array($resBall1) ? $resBall1['sums'] : 0;
 $resBall2 = $_pm['mysql']->getOneRecord("select * from userbag where uid='".$uid."' and pid='1994' and sums > 0 and zbing = 0 and (cantrade IS NULL OR cantrade<>3) order by id limit 1");

@@ -265,12 +265,12 @@ $saleRows = array();
 if (count($items) > 0)
 {
 	$ids = array_keys($items);
-	$records = $adminDb->getRecords('SELECT id,name,varyname,zhekouyb,stime,timelimit FROM props WHERE id IN (' . implode(',', $ids) . ')');
+	$records = $adminDb->getRecords('SELECT id,name,varyname,zhekouyb,stime,timelimit,propslock FROM props WHERE id IN (' . implode(',', $ids) . ')');
 	$byId = array();
 	if (is_array($records)) foreach ($records as $row) $byId[intval($row['id'])] = $row;
 	foreach ($items as $id => $stock)
 	{
-		$row = isset($byId[$id]) ? $byId[$id] : array('id' => $id, 'name' => '道具不存在', 'varyname' => 0, 'zhekouyb' => 0, 'stime' => 0, 'timelimit' => '');
+		$row = isset($byId[$id]) ? $byId[$id] : array('id' => $id, 'name' => '道具不存在', 'varyname' => 0, 'zhekouyb' => 0, 'stime' => 0, 'timelimit' => '', 'propslock' => null);
 		$sold = kdjlSafeMemValue($adminMem->get('zhekou_' . intval($id) . '_num'), 0);
 		$row['_stock'] = intval($stock);
 		$row['_sold'] = max(0, intval($sold));

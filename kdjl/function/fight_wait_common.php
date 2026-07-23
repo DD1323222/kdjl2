@@ -371,6 +371,8 @@ if (!function_exists('kdjlFightMarkAttackState')) {
 		if (!is_array($fight)) {
 			$fight = array();
 		}
+		$attackRounds = isset($fight['attack_rounds']) ? intval($fight['attack_rounds']) : 0;
+		$fight['attack_rounds'] = max(0, $attackRounds) + 1;
 		$fight['ftime'] = time();
 		$fight['attack_wait_started_at'] = microtime(true);
 		$fight['attack_early_seconds'] = max(0, floatval($earlySeconds));
@@ -478,6 +480,7 @@ if (!function_exists('kdjlFightStartState')) {
 		$fight['battle_started_at'] = $battleStartedAt;
 		$fight['attack_wait_started_at'] = $stateStartedAt;
 		$fight['attack_early_seconds'] = 0;
+		$fight['attack_rounds'] = 0;
 		unset($fight['battle_ended_at'], $fight['post_wait_base_seconds'], $fight['post_wait_seconds'], $fight['post_wait_started_at'], $fight['post_wait_early_seconds']);
 		return $fight;
 	}
@@ -497,7 +500,8 @@ if (!function_exists('kdjlFightFinishState')) {
 
 		$wait = kdjlFightPostWaitLimit($mode, $bid);
 		$earlySeconds = isset($fight['attack_early_seconds']) ? max(0, floatval($fight['attack_early_seconds'])) : 0;
-		$earlyWait = $earlySeconds > 0 ? intval(ceil($earlySeconds)) : 0;
+		$attackRounds = isset($fight['attack_rounds']) ? max(0, intval($fight['attack_rounds'])) : 1;
+		$earlyWait = $attackRounds <= 1 && $earlySeconds > 0 ? intval(ceil($earlySeconds)) : 0;
 		$fight['post_wait_base_seconds'] = max(0, intval($wait));
 		$fight['post_wait_seconds'] = max(0, intval($wait)) + $earlyWait;
 		$fight['post_wait_early_seconds'] = $earlyWait;
@@ -530,6 +534,25 @@ if (!function_exists('kdjlFightBeginPostWait')) {
 			$fight['post_wait_seconds'] = $baseWait + $earlyWait;
 		}
 		return $fight;
+	}
+}
+
+if (!function_exists('kdjlFightBeginNavigationWait')) {
+	function kdjlFightBeginNavigationWait($uid)
+	{
+		$uid = intval($uid);
+		$fightKey = 'fight'.$uid;
+		if (
+			$uid < 1
+			|| !isset($_SESSION[$fightKey])
+			|| !is_array($_SESSION[$fightKey])
+			|| !isset($_SESSION[$fightKey]['fatting'])
+			|| intval($_SESSION[$fightKey]['fatting']) != 0
+		) {
+			return false;
+		}
+		$_SESSION[$fightKey] = kdjlFightBeginPostWait($_SESSION[$fightKey]);
+		return true;
 	}
 }
 
@@ -572,7 +595,8 @@ if (!function_exists('kdjlFightPostWaitRemaining')) {
 		else {
 			$wait = kdjlFightCalculatedPostWait($fight, $mode, $bid, $endedAt);
 		}
-		if (!isset($fight['post_wait_seconds']) && isset($fight['attack_early_seconds'])) {
+		$attackRounds = isset($fight['attack_rounds']) ? max(0, intval($fight['attack_rounds'])) : 1;
+		if ($attackRounds <= 1 && !isset($fight['post_wait_seconds']) && isset($fight['attack_early_seconds'])) {
 			$earlySeconds = max(0, floatval($fight['attack_early_seconds']));
 			$wait += $earlySeconds > 0 ? intval(ceil($earlySeconds)) : 0;
 		}

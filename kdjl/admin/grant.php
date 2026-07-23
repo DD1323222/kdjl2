@@ -20,7 +20,7 @@ function adminGrantSearchProps($db, $search)
 	$escaped = $db->escape($search);
 	$where = "name LIKE '%{$escaped}%'";
 	if (preg_match('/^[0-9]+$/', $search)) $where = "id=" . intval($search) . " OR {$where}";
-	$rows = $db->getRecords("SELECT id,name,sell,vary,varyname FROM props WHERE {$where} ORDER BY id LIMIT 100");
+	$rows = $db->getRecords("SELECT id,name,sell,vary,varyname,propslock FROM props WHERE {$where} ORDER BY id LIMIT 100");
 	return is_array($rows) ? $rows : array();
 }
 
@@ -36,7 +36,7 @@ function adminGrantProp($db, $pid)
 {
 	$pid = intval($pid);
 	if ($pid < 1) return false;
-	$row = $db->getOneRecord("SELECT id,name,sell,vary,varyname FROM props WHERE id={$pid} LIMIT 1");
+	$row = $db->getOneRecord("SELECT id,name,sell,vary,varyname,propslock FROM props WHERE id={$pid} LIMIT 1");
 	return is_array($row) ? $row : false;
 }
 
@@ -161,7 +161,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST')
 		$lockedProp = false;
 		if ($ok && $itemNum > 0)
 		{
-			$lockedProp = $adminDb->getOneRecord("SELECT id,name,sell,vary,varyname FROM props WHERE id={$pid} FOR UPDATE");
+			$lockedProp = $adminDb->getOneRecord("SELECT id,name,sell,vary,varyname,propslock FROM props WHERE id={$pid} FOR UPDATE");
 			if (!is_array($lockedProp))
 			{
 				$ok = false;
@@ -324,7 +324,7 @@ adminPageStart('物品发放', 'grant');
 				<button class="btn primary" type="submit">搜索道具</button>
 			</form>
 			<?php if (is_array($selectedProp)) { ?>
-				<div class="grant-selected"><?php echo adminH($selectedProp['name']); ?><span>id=<?php echo intval($selectedProp['id']); ?> / <?php echo intval($selectedProp['vary']) == 1 ? '可叠加' : '不可叠加'; ?></span></div>
+				<div class="grant-selected"><?php echo adminH($selectedProp['name']); ?><span>id=<?php echo intval($selectedProp['id']); ?> / <?php echo intval($selectedProp['vary']) == 1 ? '可叠加' : '不可叠加'; ?> / <?php echo adminH(adminPropTradeText($selectedProp)); ?></span></div>
 			<?php } ?>
 			<?php if ($propQuery !== '') { ?>
 			<div class="results grant-results">

@@ -46,9 +46,12 @@ body {color:#693600; background:none}
 .pet_c1_l .pet_info h2 {margin-top:0; overflow:hidden; background-size:contain !important}
 .pet_c1_l h2 input,.pet_c3_l h3 input.btn,.pet_c3_r input {width:39px; height:17px; margin:0 10px; padding:0; border:none; background:url(../new_images/index/pet_c1_l_btn.gif); font-family:SimSun,"宋体"; font-size:12px; font-weight:bold; line-height:17px; letter-spacing:0; text-align:center; color:#772200; cursor:pointer}
 .pet_c1_r,.pet_c2_r,.pet_c3_r {width:124px; line-height:24px; padding:5px 0 5px 10px; background:url(../new_images/index/pet_c1_r.jpg) left center no-repeat}
+.pet_c1_r {line-height:20px; white-space:nowrap}
 .pet_c2_r {line-height:20px}
 .pet_c2_l,.pet_c3_l {width:363px; background:url(../new_images/index/pet_2_bg.jpg) center top no-repeat}
 .pet_c2_l h2,.pet_c3_l h2 {height:179px}
+.pet_c2_l {height:270px; background-position:center center}
+.pet_c2_l h2 {height:270px}
 .pet_c2_l ul {margin:0 0 0 30px}
 .pet_c2_l li {float:left; width:100px; padding-left:10px; line-height:22px}
 .pet_c3_r {width:174px; height:245px}

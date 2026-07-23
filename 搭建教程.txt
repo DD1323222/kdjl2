@@ -6,6 +6,7 @@ sdsASDwDAS@2322!
 
 外网ipv4面板地址: http://119.91.114.58:8888/tencentcloud
 内网面板地址:     http://10.1.0.12:8888/tencentcloud
+自动生成：
 username: 4c090ced
 password: 97f6c180cc92
 
@@ -42,10 +43,11 @@ chmod 777 -R /www/wwwroot/
 -----------------------------------------------------------------
 腾讯云防火墙放通TCP：80、1988
 -----------------------------------------------------------------
-启动或重启服务器后需要访问下网站，后续游玩不需要。
-http://119.91.114.58/vm1.php?db_task=db_task&skillsys=skillsys&db_bb=db_bb&db_gpc=db_gpc&db_merge=db_merge&db_zs=db_zs&db_map=db_map&db_wx=db_wx&db_welcome=db_welcome&db_timeconfig=db_timeconfig&db_exptolv=db_exptolv&db_aoyun=db_aoyun&db_blacklist=db_blacklist&db_gonggao=db_gonggao&db_props=db_props&db_t_ly_url_config=db_t_ly_url_config&Submit=%E6%8F%90%E4%BA%A4
+启动、修改、重启服务器后需要访问网站，后续游玩不需要。
+http://xx.xx.xx.xx/vm1.php
+点击自动更新所有
 -----------------------------------------------------------------
-简易后台
-http://119.91.114.58/custom/adminIndex.php
-希望隐藏地址可以将/www/wwwroot/kdjl下的custom文件夹重命名为复杂字符
+后台
+http://119.91.114.58/admin/
+希望隐藏地址可以将/www/wwwroot/kdjl下的admin文件夹重命名为复杂字符
 -----------------------------------------------------------------

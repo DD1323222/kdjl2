@@ -336,7 +336,7 @@ function adminSearchProps($db, $search)
 	$escaped = $db->escape($search);
 	$where = "name LIKE '%{$escaped}%'";
 	if (preg_match('/^[0-9]+$/', $search)) $where = '(id=' . intval($search) . " OR {$where})";
-	$rows = $db->getRecords("SELECT id,name,yb,sj,vip,zhekouyb,stime,timelimit,vary,varyname FROM props WHERE {$where} ORDER BY id LIMIT 100");
+	$rows = $db->getRecords("SELECT id,name,yb,sj,vip,zhekouyb,stime,timelimit,vary,varyname,propslock FROM props WHERE {$where} ORDER BY id LIMIT 100");
 	return is_array($rows) ? $rows : array();
 }
 
@@ -377,7 +377,7 @@ function adminIsGodPetId($pets, $id)
 
 function adminPropsMap($db)
 {
-	$rows = $db->getRecords('SELECT id,name FROM props ORDER BY id');
+	$rows = $db->getRecords('SELECT id,name,propslock FROM props ORDER BY id');
 	$map = array();
 	if (is_array($rows)) foreach ($rows as $row) $map[intval($row['id'])] = $row;
 	return $map;

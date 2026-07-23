@@ -15,6 +15,9 @@ if($uid <= 0)
 {
 	die('登录状态无效！');
 }
+// The remaining work only reads the captured uid. Release the PHP session so
+// the welcome iframe and other requests are not blocked by the socket sync.
+if(session_id() !== '') session_write_close();
 function msg($m)
 {
 	global $_pm;
@@ -23,14 +26,20 @@ function msg($m)
 	die($m);
 }
 
-$a = getLock($uid);
-if(!is_array($a)){
-	msg('请不要过快点击,谢谢！');
-}
-
 if(!$_pm['mysql']->query("INSERT INTO player_ext(uid,bbshow) VALUES({$uid},5) ON DUPLICATE KEY UPDATE uid=uid"))
 {
 	msg('初始化玩家在线奖励数据失败！');
+}
+
+// Synchronize the socket counter before entering the player transaction. Holding
+// player_ext while waiting here makes the socket worker block on the same row.
+require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
+$s=new socketmsg();
+$s->sendMsg('updateUserOnline',$uid);
+
+$a = getLock($uid);
+if(!is_array($a)){
+	msg('请不要过快点击,谢谢！');
 }
 
 $setting = $_pm['mem']->get('db_welcome');
@@ -54,10 +63,6 @@ if(!$setting['onlineforexp'])
 {
 	msg('活动没有开启！');
 }
-
-require_once(dirname(__FILE__).'/../socketChat/config.chat.php');
-$s=new socketmsg();
-$s->sendMsg('updateUserOnline',$uid);
 
 $arr = $_pm['mysql']->getOneRecord('select exp_got_step,last_logintime,onlinetime_today,last_online_day,last_onlinetime,onlinetime from player_ext where uid='.$uid);
 

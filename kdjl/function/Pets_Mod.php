@@ -11,8 +11,11 @@
 */
 session_start();
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 
 secStart($_pm['mem']);
+$sessionUid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
+kdjlFightBeginNavigationWait($sessionUid);
 
 function petsModHtml($value)
 {
@@ -250,7 +253,8 @@ else
 
 
 		$skillName = isset($rs['name']) ? $rs['name'] : '';
-		$jnlist .= '<li><span onclick="copyWord(\''.petsModHtml(petsModJsSingle($skillName)).'\');" onmouseover="showSkillTip('.$rs['bid'].','.$rs['sid'].')"  onmouseout="window.parent.UnTip()"> '.$uplevel.petsModHtml($skillName).'&nbsp;&nbsp;'.intval($rs['level']).' 级 </span> </li>';
+		$skillNameHtml = petsModHtml($skillName);
+		$jnlist .= '<li><span class="skill-row" onclick="copyWord(\''.petsModHtml(petsModJsSingle($skillName)).'\');" onmouseover="showSkillTip('.$rs['bid'].','.$rs['sid'].')" onmouseout="window.parent.UnTip()"><span class="skill-name">'.$skillNameHtml.'</span><span class="skill-level">'.intval($rs['level']).' 级</span><span class="skill-action">'.$uplevel.'</span></span></li>';
 	}
 }
 

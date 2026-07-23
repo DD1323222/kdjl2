@@ -69,6 +69,7 @@ ol,ul {list-style:none}
 #apDiv1 {position:absolute;	width:305px;height:20px;z-index:2;left: 361px;top: 4px;}
 .plus{clear:both;height:24px;line-height:24px;text-align:right;color:#DE4E67; padding-top:2px;}
 .conbtn{background:url(../images/bnt.gif) no-repeat;width:39px;height:17px;padding:0;cursor:pointer;border:0 none;margin:0px 5px 0 5px;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:17px;letter-spacing:0;text-align:center;color:#772200;}
+.inherit_action{background:url(../images/bnt.gif) no-repeat;background-size:100% 100%;width:65px;height:19px;padding:0;cursor:pointer;border:0 none;font-family:SimSun,"宋体";font-size:12px;font-weight:bold;line-height:19px;letter-spacing:0;text-align:center;color:#772200;}
 .image_button{display:block;cursor:pointer;}
 .intro_button{position:absolute;left:673px;top:33px;width:72px;height:19px;line-height:19px;text-align:center;cursor:pointer;color:#600;background:url(../images/qzlihun.jpg) no-repeat;}
 .jiehun_an{margin-right:20px;}
@@ -207,11 +208,11 @@ ol,ul {list-style:none}
                                 </select>
                  </td>
                  <td height="30" align="center" width="95" valign="middle">
-                                <img src="../images/an03.jpg" width="65" height="19" border="0" style="cursor:pointer" onclick="yeschuanc()" />
+                                <input type="button" class="inherit_action" value="确认传承" onclick="yeschuanc()" />
                  </td>
 
                  <td width="95" align="center" valign="middle">
-                 				<img src="../images/an02.jpg" width="65" height="19" border="0" style="cursor:pointer"  onclick="wanchengchc()"/>
+                                <input type="button" class="inherit_action" value="完成传承" onclick="wanchengchc()" />
                  </td>
             </tr>
           </table>

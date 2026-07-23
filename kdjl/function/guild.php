@@ -1,6 +1,7 @@
 <?php
 header('Content-Type:text/html;charset=UTF-8');
 require_once('../config/config.game.php');
+require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
 secStart($_pm['mem']);
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
@@ -322,6 +323,7 @@ if($op == 'show'){
 
 	$next_need_str = '';
 	$check = $_pm['mysql'] -> getOneRecord("SELECT guild_id,priv FROM guild_members WHERE guild_id = $gid AND member_id = $uid");
+	$guildAutomation = kdjlGuildAutomationInfo($_pm['mysql'], $gid);
 	if (is_array($check)) {
 		/*$str = '<tr>
               <td height="25" colspan="3" style="border-bottom-style:solid; border-bottom-width:1px; border-bottom-color:#000000">家族信息                </td>
@@ -330,15 +332,15 @@ if($op == 'show'){
 
 		  if($check['priv'] == '3'){
 				$str = '<div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="dissolut()"> 解散家族</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
+						<div class="family_wide_button family_header_button" style="left:550px;" onclick="giveProps()">家族捐献</div>
+						<div class="family_wide_button family_header_button" style="left:626px;" onclick="dissolut()">解散家族</div>
+						<div class="family_wide_button family_header_button" style="left:706px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'">返回</div>
 			  </div><div class="box03">';
 		  }else{
 			$str = '<div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:550px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="giveProps()"> 家族捐献</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="exit()">退出家族</div>
-						<div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> 返回</div>
+						<div class="family_wide_button family_header_button" style="left:550px;" onclick="giveProps()">家族捐献</div>
+						<div class="family_wide_button family_header_button" style="left:626px;" onclick="exit()">退出家族</div>
+						<div class="family_wide_button family_header_button" style="left:706px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'">返回</div>
 			  </div><div class="box03">';
 		  }
 
@@ -380,8 +382,8 @@ if($op == 'show'){
 		$str = '
 		<div class="box01">
 			<div class="box02"><div class="bb01"><img src="../new_images/ui/icon15.jpg" width="76" height="25" /></div>
-                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:626px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="apply();"> <font color=red><b>申请加入</b></font></div>
-                    <div id="jhjs" align="center" style="position:absolute; width:72px; left:706px; cursor:pointer; padding-top:5px; background-image:url(../new_images/ui/qzlihun.jpg); color:#600; height: 14px; top: 33px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'"> <font color=red><b>返回</b></font></div>
+						<div class="family_wide_button family_header_button" style="left:626px;" onclick="apply();">申请加入</div>
+						<div class="family_wide_button family_header_button" style="left:706px;" onclick="$(\'con_tab_2\').style.display=\'none\';$(\'con_tab_1\').style.display=\'block\'">返回</div>
 		  </div><div class="box03">';
 	}
 
@@ -390,35 +392,56 @@ if($op == 'show'){
 	$guildInfoHtml = guildHtml($arr['info']);
 	$guildBagHtml = guildHtml($itemstr);
 	$nextNeedTitle = guildHtml($next_need_str);
-	$str .= '<table border="0" cellspacing="0" class="tit01">
+	$autoJoinEnabled = !empty($guildAutomation['auto_accept_join']);
+	$autoJoinStatus = $autoJoinEnabled ? '自动同意' : '人工审核';
+	if(is_array($check) && intval($check['priv']) === 3)
+	{
+		$autoJoinChecked = $autoJoinEnabled ? ' checked="checked"' : '';
+		$autoJoinControl = '<label class="family_wide_button family_auto_join_button"><input type="checkbox"'.$autoJoinChecked.
+			' onclick="setGuildAutoJoin('.$gid.',this)" /><span>自动同意玩家加入</span></label>';
+	}
+	else
+	{
+		$autoJoinControl = $autoJoinStatus;
+	}
+	$autoJoinSettingRow = '<tr><td class="family_info_label" align="left">加入设置：</td>'.
+		'<td class="family_info_detail" colspan="5" align="left">'.$autoJoinControl.'</td></tr>';
+	$str .= '<table border="0" cellspacing="0" class="tit01 family_info_table">
+					<colgroup>
+					  <col style="width:82px;" />
+					  <col style="width:108px;" />
+					  <col style="width:90px;" />
+					  <col style="width:54px;" />
+					  <col style="width:78px;" />
+					  <col style="width:188px;" />
+					</colgroup>
                     <tr>
-                      <td width="12%" height="24" align="left" style="padding-left:10px;">家族名称：</td>
-                      <td width="18%" align="left" >'.$guildNameHtml.'</td>
-                      <td width="12%" align="left" >家族荣誉度：</td>
-                      <td width="23%" align="left" >'.$arr['honor'].'</td>
-                      <td width="11%" align="left" >族长：</td>
-                      <td width="24%" align="left" >'.$guildLeaderHtml.'</td>
+                      <td class="family_info_label" align="left">家族名称：</td>
+                      <td class="family_info_value" align="left">'.$guildNameHtml.'</td>
+                      <td class="family_info_label" align="left">家族荣誉度：</td>
+                      <td class="family_info_value" align="left">'.$arr['honor'].'</td>
+                      <td class="family_info_label" align="left">族长：</td>
+                      <td class="family_info_value" align="left">'.$guildLeaderHtml.'</td>
                     </tr>
 					<tr>
-                      <td height="24" align="left" style="padding-left:10px;">家族宝藏：</td>
-                      <td align="left" >'.$guildBagHtml.'</td>
-                      <td align="left" title="'.$nextNeedTitle.'">家族等级：</td>
-                      <td align="left" >'.$arr['level'].'</td>
-                      <td align="left" >创建时间：</td>
-                      <td align="left" >'.date('Y-m-d H:i',$arr['create_time']).'</td>
+                      <td class="family_info_label" align="left">家族宝藏：</td>
+                      <td class="family_info_value" align="left">'.$guildBagHtml.'</td>
+                      <td class="family_info_label" align="left" title="'.$nextNeedTitle.'">家族等级：</td>
+                      <td class="family_info_value" align="left">'.$arr['level'].'</td>
+                      <td class="family_info_label" align="left">创建时间：</td>
+                      <td class="family_info_value" align="left">'.date('Y-m-d H:i',$arr['create_time']).'</td>
                     </tr>
 					<tr>
-                      <td height="24" align="left" style="padding-left:10px;">家族成员：</td>
-                      <td align="left" >'.$arr['number_of_member'].'/'.$current['max_member_number'].'</td>
-                      <td align="left" >家族福利</td>
-					  <td align="left" style="cursor:pointer" onclick="guild_welfare()"><input type="image" name="Submit" value="领取" src="../new_images/ui/1.gif" /></td>
-					  <td align="left"style="cursor:pointer" onclick="next_level()"><input type="image" name="Submit" value="领取" src="../new_images/ui/2.gif" /></td>
-                      <td align="left" ></td>
+                      <td class="family_info_label" align="left">家族成员：</td>
+                      <td class="family_info_value" align="left">'.$arr['number_of_member'].'/'.$current['max_member_number'].'</td>
+                      <td class="family_info_label" align="left">家族福利</td>
+					  <td class="family_info_value" align="left" style="cursor:pointer" onclick="guild_welfare()"><input type="image" name="Submit" value="领取" src="../new_images/ui/1.gif" /></td>
+					  <td class="family_info_value" colspan="2" align="left" style="cursor:pointer" onclick="next_level()"><input type="image" name="Submit" value="领取" src="../new_images/ui/2.gif" /></td>
                     </tr>
-                    <tr>
-                      <td height="24" align="left" style="padding-left:10px;">家族介绍：</td>
-                      <td colspan="5" align="left" >'.$guildInfoHtml.'</td>
-                    </tr>
+					<tr>
+                      <td class="family_info_label" align="left">家族介绍：</td>
+                      <td class="family_info_detail" colspan="5" align="left">'.$guildInfoHtml.'</td>
+                    </tr>'.$autoJoinSettingRow.'
                   </table>
 				  <table border="0" cellspacing="0" class="tit01">
 				  <tr>
@@ -527,7 +550,7 @@ $applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname
                 </tr>';*/
 	}
 
-	$str .= '</table></div></div><div id="jzlevel" align="center" style="position:absolute;  left:241px; cursor:pointer; padding-top:5px; height: 14px; top: 33px;" onclick="guild_level_info()"> <img src=\'../new_images/ui/guild_next.gif\' />
+	$str .= '</table></div></div><div id="jzlevel" class="family_level_button" align="center" onclick="guild_level_info()"><img src=\'../new_images/ui/guild_next.gif\' />
 						</div>';
 	/*if (is_array($check)) {
 		$str .= '<tr>
@@ -541,6 +564,20 @@ $applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname
             </tr>';
 	}*/
 	echo $str;
+}else if($op == 'set_auto_join'){
+	$gid = (isset($_GET['gid']) && !is_array($_GET['gid'])) ? intval($_GET['gid']) : 0;
+	$enabled = (isset($_GET['enabled']) && !is_array($_GET['enabled']) && intval($_GET['enabled']) === 1) ? 1 : 0;
+	$selfUid = intval($uid);
+	if($gid < 1 || $selfUid < 1) die('参数错误！');
+	if(!kdjlMysqlTableHasColumn($_pm['mysql'], 'guild_automation', 'guild_id')) die('家族自动化数据尚未安装！');
+	if(!$_pm['mysql']->query('START TRANSACTION')) die('保存失败！');
+	$member = $_pm['mysql']->getOneRecord('SELECT priv FROM guild_members WHERE guild_id='.$gid.
+		' AND member_id='.$selfUid.' FOR UPDATE');
+	if(!is_array($member) || intval($member['priv']) !== 3) guildTransactionDie('只有族长可以修改此设置！');
+	$sql = 'INSERT INTO guild_automation(guild_id,auto_accept_join) VALUES('.$gid.','.$enabled.') '.
+		'ON DUPLICATE KEY UPDATE auto_accept_join=VALUES(auto_accept_join)';
+	if(!$_pm['mysql']->query($sql) || !$_pm['mysql']->query('COMMIT')) guildTransactionDie('保存失败！');
+	die('10');
 }else if($op == 'fire'){
 	$member_id = (isset($_GET['member_id']) && !is_array($_GET['member_id'])) ? intval($_GET['member_id']) : 0;
 	$guild_id = (isset($_GET['guild_id']) && !is_array($_GET['guild_id'])) ? intval($_GET['guild_id']) : 0;
@@ -670,6 +707,30 @@ $applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname
 		$_pm['mysql'] -> query('ROLLBACK');
 		die('4');//对方人数已满，不能再申请
 	}
+	$autoAcceptJoin = 0;
+	if(kdjlMysqlTableHasColumn($_pm['mysql'], 'guild_automation', 'guild_id'))
+	{
+		$automation = $_pm['mysql']->getOneRecord('SELECT auto_accept_join FROM guild_automation WHERE guild_id='.$gid.' FOR UPDATE');
+		if(is_array($automation) && !empty($automation['auto_accept_join'])) $autoAcceptJoin = 1;
+	}
+	if($autoAcceptJoin === 1)
+	{
+		$joinTime = time();
+		$memberCount = intval($settings['number_of_member']);
+		if(!$_pm['mysql']->query('INSERT INTO guild_members(member_id,guild_id,join_time,priv) VALUES('.
+			$uid.','.$gid.','.$joinTime.',1)') || mysql_affected_rows($_pm['mysql']->getConn()) !== 1 ||
+			!$_pm['mysql']->query('UPDATE guild SET number_of_member=number_of_member+1 WHERE id='.$gid.
+				' AND number_of_member='.$memberCount) || mysql_affected_rows($_pm['mysql']->getConn()) !== 1 ||
+			!$_pm['mysql']->query('UPDATE player_ext SET guild_request=0 WHERE uid='.$uid) ||
+			!$_pm['mysql']->query('COMMIT'))
+		{
+			$_pm['mysql']->query('ROLLBACK');
+			die('自动加入家族失败！');
+		}
+		guildClearUserCache($uid, false);
+		guild_update_mem();
+		die('11');//家族已自动同意申请
+	}
 
 
 	if (!$_pm['mysql'] -> query("UPDATE player_ext SET guild_request = $gid WHERE uid = $uid")) {
@@ -793,6 +854,11 @@ $applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname
 		die('解散家族失败！');
 	}
 	if (!$_pm['mysql'] -> query("DELETE FROM guild_bag WHERE guild_id = $gid")) {
+		$_pm['mysql'] -> query('ROLLBACK');
+		die('解散家族失败！');
+	}
+	if (kdjlMysqlTableHasColumn($_pm['mysql'], 'guild_automation', 'guild_id') &&
+		!$_pm['mysql']->query("DELETE FROM guild_automation WHERE guild_id = $gid")) {
 		$_pm['mysql'] -> query('ROLLBACK');
 		die('解散家族失败！');
 	}
@@ -1281,11 +1347,15 @@ $applyarr = $_pm['mysql'] -> getRecords("SELECT player.id as pid,player.nickname
 	$levelDiff = $guildLevels[$selfGuildId] - $guildLevels[$gid];
 	if(abs($levelDiff) > $guildBattleMaxLevelGap) guildTransactionDie('5');//家族等级最多相差9级
 
+	$targetAutomation = kdjlGuildAutomationInfo($_pm['mysql'], $gid);
+	$challengeFlag = !empty($targetAutomation['auto_accept_challenge']) ? 1 : 0;
+	if($challengeFlag === 1 && !$_pm['mysql']->query('DELETE FROM guild_challenges WHERE flags=0 AND (challenger_id IN ('.
+		$selfGuildId.','.$gid.') OR defenser_id IN ('.$selfGuildId.','.$gid.'))')) guildTransactionDie('保存家族战书失败！');
 	$time = time();
-	if(!$_pm['mysql'] -> query("INSERT INTO guild_challenges (challenger_id,defenser_id,create_time,flags) VALUES($selfGuildId,$gid,$time,0)") ||
+	if(!$_pm['mysql'] -> query("INSERT INTO guild_challenges (challenger_id,defenser_id,create_time,flags) VALUES($selfGuildId,$gid,$time,$challengeFlag)") ||
 		mysql_affected_rows($_pm['mysql']->getConn()) != 1 ||
 		!$_pm['mysql']->query('COMMIT')) guildTransactionDie('保存家族战书失败！');
-	die('10');
+	die($challengeFlag === 1 ? '11' : '10');
 }else if($op == 'accept'){
 	$gid = (isset($_GET['id']) && !is_array($_GET['id'])) ? intval($_GET['id']) : 0;
 	if($gid == 0){

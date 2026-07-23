@@ -2176,16 +2176,29 @@ else if ($rs['varyname'] == 15) {    // pet card item
 		usedPropsFailWithDbLock($id, '服务器繁忙，请稍候再试！');
 	}
 
-	$carriedPets = $_pm['mysql']->getRecords("SELECT id
-															 FROM userbb
-															WHERE uid={$_SESSION['id']} AND muchang=0
-															  FOR UPDATE");
-	if ($carriedPets === false && mysql_errno($_pm['mysql']->getConn()) != 0) {
+	$petCapacity = $_pm['mysql']->getOneRecord("SELECT maxmc FROM player WHERE id={$uid} FOR UPDATE");
+	if (!is_array($petCapacity)) {
 		usedPropsFailWithDbLock($id, '服务器繁忙，请稍候再试！');
 	}
-	$carriedCount = is_array($carriedPets) ? count($carriedPets) : 0;
+	$ownedPets = $_pm['mysql']->getRecords("SELECT id,muchang FROM userbb WHERE uid={$uid} FOR UPDATE");
+	if ($ownedPets === false && mysql_errno($_pm['mysql']->getConn()) != 0) {
+		usedPropsFailWithDbLock($id, '服务器繁忙，请稍候再试！');
+	}
+	$carriedCount = 0;
+	$pastureCount = 0;
+	if (is_array($ownedPets)) {
+		foreach ($ownedPets as $ownedPet) {
+			$petLocation = isset($ownedPet['muchang']) ? intval($ownedPet['muchang']) : 0;
+			if ($petLocation == 0) $carriedCount++;
+			else if ($petLocation == 1) $pastureCount++;
+		}
+	}
+	$newPetLocation = 0;
 	if ($carriedCount >= 3) {
-		usedPropsFailWithDbLock($id, '您最多只能携带3只宠物！');
+		if ($pastureCount >= intval($petCapacity['maxmc'])) {
+			usedPropsFailWithDbLock($id, '您的携带栏和牧场都已满，无法使用宠物卵！');
+		}
+		$newPetLocation = 1;
 	}
 
 	$eggRow = $_pm['mysql']->getOneRecord("SELECT id
@@ -2286,7 +2299,7 @@ else if ($rs['varyname'] == 15) {    // pet card item
 					   '{$remakeLevel}',
 					   '{$remakeId}',
 					   '{$remakePid}',
-					   '0',
+					   '{$newPetLocation}',
 					   '" . floatval($czl) . "',
 					   't{$bb['id']}.gif',
 						   'k{$bb['id']}.gif',
@@ -2331,8 +2344,11 @@ else if ($rs['varyname'] == 15) {    // pet card item
 	if (!$_pm['mysql']->query('COMMIT')) {
 		usedPropsFailWithDbLock($id, '服务器繁忙，请稍候再试！');
 	}
+	$_pm['mem']->del(MEM_USERBAG_KEY);
+	$_pm['mem']->del(MEM_USERBB_KEY);
+	$_pm['mem']->del(MEM_USERSK_KEY);
 	realseLock();
-	echo '物品使用成功！';
+	echo $newPetLocation == 1 ? '物品使用成功，携带栏已满，宠物已放入牧场！' : '物品使用成功！';
 }
 else if ($rs['varyname'] == 14) // 军功令，换取军功
 {

@@ -4,10 +4,17 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>口袋精灵</title>
 <link href="../css/global.css" rel="stylesheet" type="text/css" />
-<link href="../css/style.css?v=20260721g" rel="stylesheet" type="text/css" />
+<link href="../css/style.css?v=20260722b" rel="stylesheet" type="text/css" />
 <script src="../js/global.js" type="text/javascript"></script>
 <script language="javascript" src="../javascript/prototype.js"></script>
 <script language="javascript" src="../javascript/bb.js"></script>
+<style type="text/css">
+.pet_c3_r .skill-row{display:block;width:145px;white-space:nowrap;}
+.pet_c3_r .skill-name{display:inline-block;width:62px;overflow:hidden;vertical-align:middle;}
+.pet_c3_r .skill-level{display:inline-block;width:32px;text-align:center;vertical-align:middle;}
+.pet_c3_r .skill-action{display:inline-block;width:39px;margin-left:12px;line-height:17px;vertical-align:middle;}
+.pet_c3_r .skill-action input{float:none;margin:0;vertical-align:top;}
+</style>
 <script type="text/javascript">
 	function setTab(name,cursel,n){
 	for(i=1;i<=n;i++){
@@ -68,6 +75,8 @@ vip：#vip#<br />
       </div>
       <div class="pet_c1_r r">
 等级：#level#<br />
+当前经验：#nowexp#<br />
+升级经验：#lexp#<br />
 五行：#wx#<br />
 生命:#hp#<br />
 魔法:#mp#<br />
@@ -81,25 +90,8 @@ vip：#vip#<br />
 	  
     </div>
     <div class="pet_cont clearfix" id="con_pet_2">
-    	<div class="pet_c2_l l">
+	<div class="pet_c2_l l">
       	<h2 style="background:url(../images/bb/#bigimg#) center center no-repeat"></h2>
-        <ul>
-        	<li>等级：#level#<br />
-                当前经验：#nowexp#<br />
-                升级经验：#lexp#<br />
-                五行：#wx#
-                </li>       
-               <li>生命: #hp#<br />
-                魔法: #mp#<br />
-                攻击：#ac#<br />
-                防御：#mc#
-                </li>
-                <li>命中：#hits#<br />
-                闪避：#miss#<br />
-                速度：#speed#<br />
-                成长：#czl#
-                </li>
-        </ul>
       </div>
       <div class="pet_c2_r r">
 金抗：#jk#<br/>
@@ -123,7 +115,7 @@ vip：#vip#<br />
         <h3><select id="jlist" name='jlist'>
 						#jnbook#
 					</select><input type="button" style="width:39px; height:17px; margin-top:2px; background:url(../images/i_bnt.gif) left -34px; border:none; cursor:pointer" value="" onclick="getJn(#pid#);" />
-    	<div class="pet_c3_r r" style="position:absolute; left:300px; top:50px">
+        <div class="pet_c3_r r" style="position:absolute; left:300px; top:82px">
         <ul>
           #jnlist#
         </ul>
@@ -327,7 +319,8 @@ function showSkillTip(bid,sid){
     var opt = {
     		 	method: 'get',
 				 onSuccess: function(t){
-                    window.parent.showTips(t.responseText,800,65);
+                    var tipText = '<span style="display:block;width:160px;white-space:normal;">'+t.responseText+'</span>';
+                    window.parent.showTips(tipText,800,65);
     		 	},
     		 	on404: function(t) {
     		 	},

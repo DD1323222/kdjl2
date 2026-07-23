@@ -1,6 +1,7 @@
 <?php
 require_once('../config/config.game.php');
 require_once(dirname(__FILE__).'/saolei_common.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 //$_SESSION['fight'.$_SESSION['id']] = NULL;
 $from = (isset($_REQUEST['from']) && !is_array($_REQUEST['from'])) ? intval($_REQUEST['from']) : 0;
 if($from != 1)
@@ -13,6 +14,7 @@ if($from != 1)
 del_bag_expire();
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
+kdjlFightBeginNavigationWait($uid);
 $user	 = $_pm['user']->getUserById($_SESSION['id']);//用户信息
 if(!is_array($user)) die('');
 

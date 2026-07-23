@@ -128,12 +128,12 @@ foreach ($par as $k => $v)
 	$inparr = explode(':', $v, 2);
 	if(isset($inparr[0]) && preg_match('/^[0-9]+-[0-9]+$/', $inparr[0])) $battlearr[$i++] = $inparr[0];
 }
-$battlelist  ='';
+$battlelist = '<div class="battle_choices">';
 foreach ($battlearr as $k => $v)
 {
-	if ($k == 3) $battlelist .= '<br/>';
-	$battlelist .= "<input type='radio' value='{$v}' onclick='BattleStart(this);' name='bh'><span style='font-weight:bold;color:#D3710C'>{$v}成长</span> ";
+	$battlelist .= "<label class='battle_choice'><input type='radio' value='{$v}' onclick='BattleStart(this);' name='bh' /><span>{$v}成长</span></label>";
 }
+$battlelist .= '</div>';
 
 //###########################
 // @Load template.
