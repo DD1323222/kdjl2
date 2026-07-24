@@ -1287,12 +1287,14 @@ function taskdiv($taskid,$npc,$op,$ifshow)
 							foreach($v as $kss => $kill)
 							{
 								$str1 = "";
+								$targetNames = array();
 								foreach($kill as $vss)
 								{
 									$_gpcid[$vss] = getBaseGpcInfoById($vss);
 									$g = $_gpcid[$vss];
-									if(strpos($str1,$g['name']) === false)
+									if(!in_array($g['name'], $targetNames, true))
 									{
+										$targetNames[] = $g['name'];
 										if(!empty($str1))
 										{
 											$str1 .= "、".$g['name'];
@@ -1318,6 +1320,27 @@ function taskdiv($taskid,$npc,$op,$ifshow)
             if($op == 2 && is_array($des))
             {
                 $str_jin = "";
+				$taskStateCounts = array();
+				$acceptedTask = $_pm['mysql']->getOneRecord("SELECT state FROM task_accept WHERE uid={$_SESSION['id']} AND taskid=".intval($taskid)." ORDER BY id DESC LIMIT 1");
+				$taskState = is_array($acceptedTask) && isset($acceptedTask['state']) ? strval($acceptedTask['state']) : '';
+				if($taskState !== '')
+				{
+					foreach(explode(',', $taskState) as $statePart)
+					{
+						$stateInfo = explode(':', $statePart);
+						if(count($stateInfo) >= 3 && $stateInfo[0] === 'killmon')
+						{
+							$stateIds = array();
+							foreach(explode('|', $stateInfo[1]) as $stateGid)
+							{
+								$stateGid = intval($stateGid);
+								if($stateGid > 0) $stateIds[] = $stateGid;
+							}
+							sort($stateIds, SORT_NUMERIC);
+							if(!empty($stateIds)) $taskStateCounts[implode('|', $stateIds)] = max(0, intval($stateInfo[2]));
+						}
+					}
+				}
                 foreach($des as $k => $v)
                 {
                     if($k == "item")
@@ -1392,13 +1415,19 @@ function taskdiv($taskid,$npc,$op,$ifshow)
                         foreach($v as $needCount => $kill)
                         {
                             $names = array();
+							$killIds = array();
                             foreach($kill as $gid)
                             {
+								$gid = intval($gid);
+								if($gid > 0) $killIds[] = $gid;
                                 if(!isset($_gpcid[$gid])) $_gpcid[$gid] = getBaseGpcInfoById($gid);
-                                if(is_array($_gpcid[$gid])) $names[] = $_gpcid[$gid]['name'];
+                                if(is_array($_gpcid[$gid]) && !in_array($_gpcid[$gid]['name'], $names, true)) $names[] = $_gpcid[$gid]['name'];
                             }
 							$needParts = explode(',', $needCount);
-							$str_jin .= "杀死怪物：".implode("、", $names)."，需要".intval($needParts[0])."个<br />";
+							sort($killIds, SORT_NUMERIC);
+							$killStateKey = implode('|', $killIds);
+							$doneCount = isset($taskStateCounts[$killStateKey]) ? intval($taskStateCounts[$killStateKey]) : 0;
+							$str_jin .= "杀死怪物：".implode("、", $names)."，需要".intval($needParts[0])."个(".$doneCount."/".intval($needParts[0]).")<br />";
                         }
                     }
                 }
@@ -1552,7 +1581,7 @@ function taskdiv($taskid,$npc,$op,$ifshow)
 			}
 	echo '
 	<h2 style="text-align:center;">'.$divv['title'].'</h2>
-	  <div class="task_info" style="overflow-x:hidden; overflow-y:auto; scrollbar-arrow-color:#ffffff;scrollbar-face-color:#e1d395; scrollbar-darkshadow-color:#e1d395; scrollbar-base-color:#f3edc9; scrollbar-highlight-color:#f3edc9; scrollbar-shadow-color:#f3edc9; scrollbar-track-color:#f3edc9; scrollbar-3dlight-color:#e1d395;height:280px;padding-left:10px;">
+	  <div class="task_info" style="overflow-x:hidden; overflow-y:auto; scrollbar-arrow-color:#ffffff;scrollbar-face-color:#e1d395; scrollbar-darkshadow-color:#e1d395; scrollbar-base-color:#f3edc9; scrollbar-highlight-color:#f3edc9; scrollbar-shadow-color:#f3edc9; scrollbar-track-color:#f3edc9; scrollbar-3dlight-color:#e1d395;height:280px;padding-left:10px;padding-right:18px;">
 
 			  '.$div.'
 			</div>'.$div1.'<div class="tip02" id="do_task" style="text-align:center;color:red;"></div>';
