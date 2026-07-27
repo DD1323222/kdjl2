@@ -209,7 +209,7 @@ if (is_array($bag))
 	}
 	$petAllPid = "'".$petAllPid."'";
 	$petAllUserPid = "'".$petAllUserPid."'";
-	$alltakeoff = '<h2><input style="position:absolute;left:90px;top:255px;" type="button" value="秒脱" onclick="alltakeoff('.$petAllPid.','.$pd['id'].','.$petAllUserPid.')" /></h2>';
+	$alltakeoff = '<h2><input style="position:absolute;left:90px;top:255px;" type="button" value="秒脱" onclick="alltakeoff('.$petAllPid.','.$pd['id'].','.$petAllUserPid.')" /><input style="position:absolute;left:250px;top:255px;" type="button" value="秒穿" onclick="alltakeon('.$pd['id'].')" /></h2>';
 }
 
 if(empty($petszb[0])){

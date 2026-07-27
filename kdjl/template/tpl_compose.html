@@ -214,6 +214,42 @@ function Display(id)
 	//window.status=id;
 }
 
+var composeSelectionKey='kdjl_compose_failed_selection';
+
+function restoreComposeSelection()
+{
+	var raw='';
+	try
+	{
+		raw=window.sessionStorage.getItem(composeSelectionKey);
+		window.sessionStorage.removeItem(composeSelectionKey);
+	}
+	catch(e){}
+	if (!raw) return;
+	try
+	{
+		var values=JSON.parse(raw);
+		var ids=['comapets','combpets'];
+		for (var x=0;x<ids.length;x++)
+		{
+			var obj=document.getElementById(ids[x]);
+			if (!obj) continue;
+			for (var i=0;i<obj.options.length;i++)
+			{
+				if (String(obj.options[i].value)==String(values[x]))
+				{
+					obj.selectedIndex=i;
+					break;
+				}
+			}
+		}
+		moneysum();
+	}
+	catch(e){}
+}
+
+window.setTimeout(restoreComposeSelection,0);
+
 // Jinhua function.
 function Pcompose(n,id)
 {
@@ -304,22 +340,17 @@ function moneysum()
 
 function playF(tf)
 {
-	var oPopup = window.createPopup();
-	var fname = '';
-	if (tf==1) fname='hcdh'; //ok
-	else fname='hcdh0';
-	with (oPopup.document.body) 
+	if (tf != 1)
 	{
-		style.backgroundColor="#dfd495";
-		//style.border="solid black 1px";
-		innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" '
-				   +'codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,19,0" width="305" height="185"> '
-				   +'<param name="movie" value="../images/ui/compose/'+fname+'.swf" />'
-				   +'<param name="quality" value="high" />'
-				   +'<param name="wmode" value="transparent" />'
-				   +'<embed src=""+IMAGE_SRC_URL+"/ui/compose/'+fname+'.swf" quality="high" ' +'pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="305" height="185"></embed></object>';
+		try
+		{
+			window.sessionStorage.setItem(composeSelectionKey,JSON.stringify([
+				$('comapets').options[$('comapets').selectedIndex].value,
+				$('combpets').options[$('combpets').selectedIndex].value
+			]));
+		}
+		catch(e){}
 	}
-	oPopup.show(370, 270, 305, 185);
-	window.setTimeout(function(){oPopup.hide();window.location.reload();},5000);
+	window.location.reload();
 }
 </script>

@@ -111,6 +111,10 @@ class task
 
 
 		$requestNpc = (isset($_REQUEST['n']) && !is_array($_REQUEST['n'])) ? intval($_REQUEST['n']) : 0;
+		if(preg_match('/see\:(\d+)/', $taskinfo['okneed'], $seeMatch))
+		{
+			$requestNpc = intval($seeMatch[1]);
+		}
 		$user['tasklog'] .= ',see:'.$requestNpc;		//记录任务完成度
 		$need = explode(',', $taskinfo['okneed']);// Check task whether complete.
 		$needs = array();

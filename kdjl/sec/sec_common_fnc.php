@@ -92,6 +92,8 @@ function secStart($m)
 				'FamilyGate.php'=>0,
 				'Muchang_Mod.php'=>0,
 				'offprops.php'=>0,
+				'offpropsAll.php'=>0,
+				'onpropsAll.php'=>0,
 				'openMap.php'=>0,
 				'Pai_Mod.php'=>0,
 				'paibuyGate.php'=>0,

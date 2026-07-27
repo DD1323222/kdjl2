@@ -77,6 +77,22 @@ else
 		$_pm['mysql']->query('ROLLBACK');
 		die("4");
 	}
+	if(isset($_REQUEST['batch']) && intval($_REQUEST['batch']) == 1)
+	{
+		$lastKey = 'last_takeoff_equips_'.$uid.'_'.$bid;
+		$tokenKey = $lastKey.'_token';
+		$batchKey = (isset($_REQUEST['batchkey']) && !is_array($_REQUEST['batchkey'])) ? $_REQUEST['batchkey'] : '';
+		if($batchKey !== '')
+		{
+			if(!isset($_SESSION[$tokenKey]) || $_SESSION[$tokenKey] !== $batchKey)
+			{
+				$_SESSION[$tokenKey] = $batchKey;
+				$_SESSION[$lastKey] = array();
+			}
+		}
+		if(!isset($_SESSION[$lastKey]) || !is_array($_SESSION[$lastKey])) $_SESSION[$lastKey] = array();
+		$_SESSION[$lastKey][] = intval($row['id']);
+	}
 	$sql = "SELECT zb
 			FROM userbb
 			WHERE id = {$bid} and uid = {$uid} FOR UPDATE";

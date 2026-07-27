@@ -196,52 +196,101 @@ function showTip(id,bid,sign,type,pos)
 
 //一键秒脱
 function alltakeoff(allid,bid,allpid){
-    var allID = allid.replace(/a/g,',');
-    var allPID = allpid.replace(/b/g,',');
-    var allidArray = allID.split(',');
-    var allpidArray = allPID.split(',');
-    length = allidArray.length - 1;
 	if(confirm('你确定取下身上的装备吗?'))
 	{
-        for(var i=0;i<length;i++){
-            //console.log(allidArray[i]+'------'+allpidArray[i]);
-            takeoff1(allidArray[i],bid,allpidArray[i]);
-        }
+		var opt = {
+					method: 'get',
+					 onSuccess: function(t){
+						var n=t.responseText;
+						if(n == 2)
+						{
+							window.parent.Alert("装备取下成功!");
+							window.location.reload();
+						}
+						else if(n == 5)
+						{
+							window.parent.Alert("包裹已满，请先清理包裹！");
+						}
+						else if(n == 6)
+						{
+							window.parent.Alert("身上没有可取下的装备！");
+						}
+						else
+						{
+							window.parent.Alert('操作有误！');
+						}
+					},
+					on404: function(t) {
+						window.parent.Alert('操作有误！');
+					},
+					onFailure: function(t) {
+						window.parent.Alert('操作有误！');
+					},
+					asynchronous:true
+				}
+		var bagIds = allpid.replace(/b/g,',');
+		var ajax=new Ajax.Request('../function/offpropsAll.php?bid='+bid+'&bagids='+encodeURIComponent(bagIds), opt);
 	}
 }
 
 //取消装备和takeoff代码基本一样，略微修改供一键秒脱装备使用。
-function takeoff1(id,bid,pid)
+function takeoff1(id,bid,pid,batchKey,callback)
 {
 	window.parent.UnTip();
 	var opt = {
 				method: 'get',
 				 onSuccess: function(t){
 					var n=t.responseText;
-					 if(n == 2)
-					 {
+					if(n == 2)
+					{
 						var key = pid+"_"+bid+"_1_2";
 						equipInfos = window.parent.equipInfos;
 						equipInfos[key] = "no";
-						window.parent.Alert("装备取下成功!");
-						window.location.reload();
-					 }
-					 else if(n == 5)
-					 {
-					 	window.parent.Alert("包裹已满，请先清理包裹！");
-					 }
-					 else
-					 {
-						window.parent.Alert('操作有误！');
-					 }
+					}
+					if(typeof(callback) == 'function') callback(n);
 				},
 				on404: function(t) {
+					if(typeof(callback) == 'function') callback(0);
 				},
 				onFailure: function(t) {
+					if(typeof(callback) == 'function') callback(0);
 				},
 				asynchronous:true        
 			}
-	var ajax=new Ajax.Request('../function/offprops.php?id='+id+'&bid='+bid, opt);
+	var ajax=new Ajax.Request('../function/offprops.php?id='+id+'&bid='+bid+'&batch=1&batchkey='+encodeURIComponent(batchKey), opt);
+}
+
+//一键秒穿，只恢复上一次秒脱从该宠物身上取下的装备。
+function alltakeon(bid)
+{
+	window.parent.UnTip();
+	var opt = {
+				method: 'get',
+				 onSuccess: function(t){
+					var n=t.responseText;
+					if(n == 2)
+					{
+						window.parent.Alert("装备穿戴成功!");
+						window.location.reload();
+					}
+					else if(n == 6)
+					{
+						window.parent.Alert("没有可秒穿的装备！");
+					}
+					else
+					{
+						window.parent.Alert('操作有误！');
+					}
+				},
+				on404: function(t) {
+					window.parent.Alert('操作有误！');
+				},
+				onFailure: function(t) {
+					window.parent.Alert('操作有误！');
+				},
+				asynchronous:true        
+			}
+	var ajax=new Ajax.Request('../function/onpropsAll.php?bid='+bid, opt);
 }
 
 //取消装备
