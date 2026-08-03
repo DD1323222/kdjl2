@@ -2593,6 +2593,11 @@ function validInt(sDouble)
 		return match ? parseInt(match[1], 10) : 0;
 	}
 
+	function normalizeTaskResponse(text)
+	{
+		return String(text).replace(/^\s+|\s+$/g, '');
+	}
+
 	function showTaskOperationResult(responseText, success, queryString, action)
 	{
 		taskcache={};
@@ -2635,7 +2640,7 @@ function gettask(str)
 					var opt = {
 					method: 'get',
 					onSuccess: function(b) {
-								if(b.responseText!='') showTaskOperationResult(b.responseText, b.responseText == '恭喜您，成功接受此任务！', str, 'accept');
+								if(b.responseText!='') showTaskOperationResult(b.responseText, normalizeTaskResponse(b.responseText) == '恭喜您，成功接受此任务！', str, 'accept');
 							},
 					asynchronous:true        
 					}
@@ -2644,7 +2649,7 @@ function gettask(str)
 					var ajax=new Ajax.Request('../function/getTask.php?'+str+'&type=getDo', opt);	
 				}
 			}else{
-					if(t.responseText!='') showTaskOperationResult(t.responseText, t.responseText == '恭喜您，成功接受此任务！', str, 'accept');
+					if(t.responseText!='') showTaskOperationResult(t.responseText, normalizeTaskResponse(t.responseText) == '恭喜您，成功接受此任务！', str, 'accept');
 				}
     		 },
      	asynchronous:true        
@@ -2666,15 +2671,60 @@ function offtask(str)
 	var ajax=new Ajax.Request('../function/getTask.php?'+str+'&type=off', opt);	
 }
 
+function acceptNextRepeatTask(str, completionText)
+{
+	var taskId = getTaskIdFromQuery(str);
+	if(taskId < 1)
+	{
+		showTaskOperationResult(completionText, true, str, 'complete');
+		return;
+	}
+
+	var acceptStr = 'taskid='+taskId;
+	var opt = {
+		method: 'get',
+		onSuccess: function(t) {
+			var repeatResponse = normalizeTaskResponse(t.responseText);
+			var accepted = repeatResponse == '恭喜您，成功接受此任务！';
+			var resultText = completionText;
+			if(accepted)
+			{
+				resultText += '<br />已自动接取下一次任务！';
+			}
+			else
+			{
+				resultText += '<br />下一次任务未自动接取：'+repeatResponse;
+			}
+			showTaskOperationResult(resultText, true, acceptStr, 'auto-repeat');
+		},
+		on404: function() {
+			showTaskOperationResult(completionText+'<br />下一次任务暂未自动接取！', true, acceptStr, 'auto-repeat');
+		},
+		onFailure: function() {
+			showTaskOperationResult(completionText+'<br />下一次任务暂未自动接取！', true, acceptStr, 'auto-repeat');
+		},
+		asynchronous:true
+	}
+	var ajax=new Ajax.Request('../function/getTask.php?'+acceptStr+'&type=get&rd='+Math.random(), opt);
+}
+
 //完成任务
-function complatetask(str)
+function complatetask(str, autoRepeat)
 {
 	var opt = {
 		method: 'get',
 		onSuccess: function(t) {
 			 		if(t.responseText!='') {
 						//window.parent.Alert(t.responseText);
-						showTaskOperationResult(t.responseText, t.responseText.indexOf('任务完成！') != -1, str, 'complete');
+						var completed = t.responseText.indexOf('任务完成！') != -1;
+						if(completed && parseInt(autoRepeat, 10) == 1)
+						{
+							acceptNextRepeatTask(str, t.responseText);
+						}
+						else
+						{
+							showTaskOperationResult(t.responseText, completed, str, 'complete');
+						}
 					}
     		 	},
      	asynchronous:true        

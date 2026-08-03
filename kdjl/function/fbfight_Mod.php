@@ -537,10 +537,18 @@ if(is_array($fbexist))
 		if($time >= $fbexist['srctime'])
 		{
 			$numgw = 0;
+			$firstGid = intval($gwlist[0]);
+			$oldGid = isset($fbexist['gwid']) ? intval($fbexist['gwid']) : 0;
+			$oldLttime = isset($fbexist['lttime']) ? intval($fbexist['lttime']) : 0;
 			$sql = "UPDATE fuben
-					SET lttime = '',gwid = ''
-					WHERE uid = ".$uid." and inmap = {$user['inmap']}";
-			$_pm['mysql'] -> query($sql);
+					SET lttime = 0,gwid = {$firstGid}
+					WHERE uid = {$uid} and inmap = {$user['inmap']}
+					  and COALESCE(gwid,0) = {$oldGid}
+					  and COALESCE(lttime,0) = {$oldLttime}";
+			if(!$_pm['mysql']->query($sql))
+			{
+				die("副本进度刷新失败！");
+			}
 		}
 		else
 		{
@@ -552,6 +560,18 @@ if(is_array($fbexist))
 		if($time >= $fbexist['srctime'])
 		{
 			$numgw = 0;
+			$firstGid = intval($gwlist[0]);
+			$oldGid = isset($fbexist['gwid']) ? intval($fbexist['gwid']) : 0;
+			$oldLttime = isset($fbexist['lttime']) ? intval($fbexist['lttime']) : 0;
+			$sql = "UPDATE fuben
+					SET lttime = 0,gwid = {$firstGid}
+					WHERE uid = {$uid} and inmap = {$user['inmap']}
+					  and COALESCE(gwid,0) = {$oldGid}
+					  and COALESCE(lttime,0) = {$oldLttime}";
+			if(!$_pm['mysql']->query($sql))
+			{
+				die("副本进度刷新失败！");
+			}
 		}
 	}
 }
@@ -722,6 +742,7 @@ loadtime('.$will.');
 //$_SESSION["fight".$_SESSION['id']]=$fight;
 $bbfzp = "";
 $catcharr = "";
+$currentCatchGpcId = isset($_SESSION['fight'.$uid]['gid']) ? intval($_SESSION['fight'.$uid]['gid']) : 0;
 // Get bag props.
 if (is_array($bag))
 {
@@ -742,7 +763,8 @@ if (is_array($bag))
 
 ['sums'].','.$v['id']."]";
 		}
-		else if ($v['varyname'] == 3 && $v['sums']>0)
+		else if ($v['varyname'] == 3 && $v['sums']>0 &&
+			kdjlCatchPropTargetsGpc(isset($v['effect']) ? $v['effect'] : '', $currentCatchGpcId))
 		{
 			if (empty($catcharr)) $catcharr = "['".$v
 

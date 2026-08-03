@@ -456,9 +456,13 @@ var sszsbbid=0;
 // Display id.
 var styles = "#style#";
 if(styles == 'compose'){
-	setTab('tab',2,3);
+	setTab('tab',2,5);
 }else if(styles == 'zs'){
-	setTab('tab',3,3);
+	setTab('tab',3,5);
+}else if(styles == 'ssjh'){
+	setTab('tab',4,5);
+}else if(styles == 'sszs'){
+	setTab('tab',5,5);
 }
 var setBBId=0;
 var operationSelectionKey = 'kdjl_sd_operation_selection';
@@ -491,6 +495,8 @@ function rememberFailedOperation(style)
 	{
 		values.ap=selectedValue('comapets');
 		values.bp=selectedValue('combpets');
+		values.p1=selectedValue('wp1');
+		values.p2=selectedValue('wp2');
 	}
 	else if (style == 'zs')
 	{
@@ -522,6 +528,8 @@ function restoreFailedOperation()
 		{
 			selectValueIfPresent('comapets',values.ap);
 			selectValueIfPresent('combpets',values.bp);
+			selectValueIfPresent('wp1',values.p1);
+			selectValueIfPresent('wp2',values.p2);
 			moneysum();
 		}
 		else if (values.style == 'zs')
@@ -738,7 +746,6 @@ function Pcompose(n,id)
 											case 10:window.parent.Alert('数据读取失败!');break;
 											case 11:window.parent.Alert('冷却时间未到！');break;
 											case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
-											case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
 											default:window.parent.Alert('合成失败！！!\n'+m.responseText);					
 										}}
 										$('snb').disabled=true;
@@ -823,7 +830,7 @@ function moneysum()
 function playF(tf,style)
 {
 	if (tf != 1) rememberFailedOperation(style);
-	window.location.reload();
+	window.location.replace('/function/Sd_Mod.php?style='+encodeURIComponent(style));
 }
 
 function zsPcompose(n,id)
@@ -932,8 +939,8 @@ function zsPcompose(n,id)
 											case 2: window.parent.Alert('这两个宠物好像不能转生噢!');break;
 											case 3: window.parent.Alert('您的金币不足，不能转生!');break;
 											case 20: window.parent.Alert('对不起，您的背包中没有此物品!');break;
-											case 6: playF(0,'compose');break;
-											case 5: playF(1,'compose');break;
+											case 6: playF(0,'zs');break;
+											case 5: playF(1,'zs');break;
 											case 10:window.parent.Alert('数据读取失败!');break;
 											case 11:window.parent.Alert('冷却时间未到！');break;
 											case 15:window.parent.Alert('宠物成长未达到转生条件哦！');break;

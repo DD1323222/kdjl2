@@ -48,7 +48,7 @@ if(!is_array($bb))
 	die("3");
 }
 
-$rows = $_pm['mysql']->getRecords("SELECT id,pid,sums,zbing,zbpets
+$rows = $_pm['mysql']->getRecords("SELECT id,pid,sums,zbing,zbpets,cantrade
 									 FROM userbag
 									WHERE uid={$uid} and id in ({$idList})
 									  FOR UPDATE");
@@ -74,9 +74,11 @@ if(isset($bb['zb']) && strlen($bb['zb']) > 0)
 		if($oldOne == '') continue;
 		$parts = explode(':', $oldOne);
 		if(count($parts) < 2) continue;
+		$slotText = trim($parts[0]);
+		if(!preg_match('/^\d+$/', $slotText)) continue;
 		$slot = intval($parts[0]);
 		$oldBagId = intval($parts[1]);
-		if($slot > 0 && $oldBagId > 0) $slotMap[$slot] = $oldBagId;
+		if($slot >= 0 && $slot <= 11 && $oldBagId > 0) $slotMap[$slot] = $oldBagId;
 	}
 }
 
@@ -105,10 +107,14 @@ foreach($ids as $bagId)
 	$row = $byId[$bagId];
 	$pid = intval($row['pid']);
 	$prop = (isset($mempropsid[$pid]) && is_array($mempropsid[$pid])) ? $mempropsid[$pid] : array();
-	if(intval($row['zbing']) != 0 || !isset($prop['varyname']) || intval($prop['varyname']) != 9) continue;
+	if(intval($row['sums']) < 1 || intval($row['zbing']) != 0 ||
+		(isset($row['cantrade']) && intval($row['cantrade']) == 3) ||
+		!isset($prop['varyname']) || intval($prop['varyname']) != 9) continue;
 
-	$postion = isset($prop['postion']) ? intval($prop['postion']) : 0;
-	if($postion < 1 || isset($slotMap[$postion])) continue;
+	$postionText = isset($prop['postion']) ? trim($prop['postion']) : '';
+	if(!preg_match('/^\d+$/', $postionText)) continue;
+	$postion = intval($postionText);
+	if($postion < 0 || $postion > 11 || isset($slotMap[$postion])) continue;
 
 	$requires = isset($prop['requires']) ? $prop['requires'] : '';
 	$needLv = 0;
@@ -127,7 +133,8 @@ foreach($ids as $bagId)
 		}
 	}
 	if($needLv > 0 && intval($bb['level']) < $needLv) continue;
-	if($needWx !== '' && $needWx != $bb['wx']) continue;
+	// wx:0 means that the equipment is available to pets of every element.
+	if($needWx !== '' && intval($needWx) != 0 && intval($needWx) != intval($bb['wx'])) continue;
 
 	$slotMap[$postion] = $bagId;
 	$equipIds[] = $bagId;

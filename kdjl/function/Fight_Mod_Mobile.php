@@ -1541,6 +1541,7 @@ loadtime('.$will.');
 //$_SESSION["fight".$_SESSION['id']]=$fight;
 $bbfzp = "";
 $catcharr = "";
+$currentCatchGpcId = isset($_SESSION['fight'.$uid]['gid']) ? intval($_SESSION['fight'.$uid]['gid']) : 0;
 
 // Get bag props.
 if (is_array($bag))
@@ -1552,7 +1553,8 @@ if (is_array($bag))
 			if (empty($bbfzp)) $bbfzp = "['".$v['name']."',".$v['sums'].','.$v['id']."]";
 			else $bbfzp .= ",['".$v['name']."',".$v['sums'].','.$v['id']."]";
 		}
-		else if ($v['varyname'] == 3 && $v['sums']>0)
+		else if ($v['varyname'] == 3 && $v['sums']>0 &&
+			kdjlCatchPropTargetsGpc(isset($v['effect']) ? $v['effect'] : '', $currentCatchGpcId))
 		{
 			if (empty($catcharr)) $catcharr = "['".$v['name']."',".$v['sums'].','.$v['id']."]";
 			else $catcharr .= ",['".$v['name']."',".$v['sums'].','.$v['id']."]";

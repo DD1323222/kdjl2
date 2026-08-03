@@ -16,6 +16,7 @@ if(isNaN(selectedSkillId) || selectedSkillId < 1){
 }
 window.parent.usejn = selectedSkillId;
 var fubenend = 0;
+var fubenDefeated = false;
 var wx_type = "";
 
 function fbFightHtmlText(value)
@@ -395,6 +396,14 @@ function displayResult(str){
 	$('result').style.display='';
 	$('timev').innerHTML='KO';
 	using=true;
+	if(fubenDefeated)
+	{
+		window.parent.autoack=false;
+		window.setTimeout(function(){
+			window.parent.$('gw').src='/function/City_Mod.php?mapid='+inmap;
+		}, 1200);
+		return;
+	}
 	if(window.parent.autoack==true&&canAutoFlag){
 		lastusetime = 0;
 		auto();
@@ -529,6 +538,7 @@ function splits(str)
 	if(str == 'autoend') {fbFightResetAttackPreview();autoFitStart(2);return;}
 	var tt = str.split('#');
 	fubenend = 0;
+	fubenDefeated = false;
 	if(tt.length > 3 && tt[3] == 'end')
 	{
 		fubenend = 1;
@@ -543,6 +553,11 @@ function splits(str)
 		var errorMessage = tt.length > 2 && tt[2] ? tt[2] : (str || '副本战斗状态异常，请重新进入副本！');
 		fbFightRequestFailed(errorMessage, false);
 		return;
+	}
+	if(tt.length > 5 && tt[5] == 'DIE')
+	{
+		fubenDefeated = true;
+		window.parent.autoack = false;
 	}
 	var bbr = tt[0].split(',');
 	if(bbr[2] == '0')

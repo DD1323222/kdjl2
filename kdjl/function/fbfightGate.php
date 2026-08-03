@@ -693,6 +693,15 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 		$mmonsterContinueFlag ="DIE";
 		$drops='宝宝 ' . $rs['name'].' 受到了严重伤害，已经不能战斗！！！'; // bb die.
 		$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
+		$_pm['mysql'] -> query(" UPDATE player SET autofitflag=0 WHERE id = '".$uid."'");
+		if(defined('MEM_USER_KEY')) $_pm['mem']->del(MEM_USER_KEY);
+		$_SESSION['exptype'.$uid] = 0;
+		$_SESSION['way'.$uid] = '';
+		$_SESSION['fttime'.$uid] = 5;
+		if(isset($_SESSION['fight'.$uid]) && is_array($_SESSION['fight'.$uid]))
+		{
+			$_SESSION['fight'.$uid]['fight_mode'] = 'manual';
+		}
 		$_SESSION['first_in'] = 3;
 		unset($_SESSION['catch_gw_info']);//捕捉的怪物id
 	}

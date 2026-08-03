@@ -229,7 +229,7 @@ window.setTimeout(restoreNirvanaSelection,0);
 // Jinhua function.
 function zsPcompose(n,id)
 {
-	if (!confirm("注意：宠物消失包括宠物身上的装备，您真的确定要进行合成吗？！\n"))
+	if (!confirm("您确定要进行涅槃吗？\n"))
 	{
 		return false;
 	}
@@ -261,7 +261,8 @@ function zsPcompose(n,id)
 						case 5: playF(1);break;
 						case 10:window.parent.Alert('数据读取失败!');break;
 						case 11:window.parent.Alert('冷却时间未到！');break;
-						default:window.parent.Alert('转生失败！！!');					
+						case 1000:window.parent.Alert('参与涅槃的宠物仍穿有装备，请先脱掉装备！');break;
+						default:window.parent.Alert('转生失败！！!');
 					}
 					$('snb').disabled=false;
 					//window.location.reload();
@@ -326,6 +327,6 @@ function playF(tf)
 		}
 		catch(e){}
 	}
-	window.location.reload();
+	window.location.replace('/function/zs_Mod.php');
 }
 </script>

@@ -1530,12 +1530,13 @@ function taskdiv($taskid,$npc,$op,$ifshow)
 			//$div.='$op='.$op.',$ifshow='.$ifshow.'<br/>';
 			if($op == 2)//完成
 			{
+				$autoRepeat = isset($divv['cid']) && strtolower(trim($divv['cid'])) === 'self' ? 1 : 0;
 				if($ifshow==1)//接受 完成 放弃gettask  complatetask  offtask
 				{
 					//屏蔽接受按钮
 					$div1 = "<div class='btn' align='center'>
 			   <input type='button' class='b' disabled='disabled'  id='taskbtn1' style='cursor:pointer;color:green;' onclick=\"javascript:gettask('taskid={$divv['id']}');window.parent.oPopup.hide();\" value='接受'>
-			  <input type='button' class='c' id='taskbtn2' onclick=\"javascript:complatetask('n={$npc}&taskid={$divv['id']}');window.parent.oPopup.hide();\" value='完成'>
+			  <input type='button' class='c' id='taskbtn2' onclick=\"javascript:complatetask('n={$npc}&taskid={$divv['id']}',{$autoRepeat});window.parent.oPopup.hide();\" value='完成'>
 			  ";
 				}
 				else
@@ -2139,6 +2140,30 @@ function sayWord($rs,$nowhp)
 		  giveitem:885:1,killmon:3|4|5:3,killmon:20|21|22:3,killmon:37|38|39:3,killmon:54|55|56:3,killmon:71|72:3
 * Note: current only one vary gpc.
 */
+function kdjlCatchPropTargetsGpc($effect, $gpcId)
+{
+	$gpcId = intval($gpcId);
+	if($gpcId < 1) return false;
+
+	$parts = explode(':', trim((string)$effect), 3);
+	if(count($parts) < 2) return false;
+	$type = strtolower(trim($parts[0]));
+	if($type != 'catch' && $type != 'get' && $type != 'getitems') return false;
+
+	$targets = trim($parts[1]);
+	if($type == 'getitems')
+	{
+		$getItemsParts = explode(',', $targets, 2);
+		$targets = trim($getItemsParts[0]);
+	}
+	foreach(explode('|', $targets) as $target)
+	{
+		$target = trim($target);
+		if($target !== '' && ctype_digit($target) && intval($target) == $gpcId) return true;
+	}
+	return false;
+}
+
 function catchTask(&$user, $gid)
 {
 	global $_pm;

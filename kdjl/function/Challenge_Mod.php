@@ -670,12 +670,6 @@ if (is_array($bag))
 			if (empty($bbfzp)) $bbfzp = "['".$itemNameJs."',".$v['sums'].','.$v['id']."]";
 			else $bbfzp .= ",['".$itemNameJs."',".$v['sums'].','.$v['id']."]";
 		}
-		else if ($v['varyname'] == 3 && $v['sums']>0)
-		{
-			$itemNameJs = challengeModJsSingle($v['name']);
-			if (empty($catcharr)) $catcharr = "['".$itemNameJs."',".$v['sums'].','.$v['id']."]";
-			else $catcharr .= ",['".$itemNameJs."',".$v['sums'].','.$v['id']."]";
-		}
 	}
 
 }else $bbfzp='0';

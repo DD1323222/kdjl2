@@ -264,8 +264,8 @@ $bagInfo = $bagUsedCellCT.'/'.$maxbag;
 if ($style == 1)
 {
 	$bag = '<div class="close_btn" onclick="ShowBox(\'Tools\',\'1\',\'3\')"></div>
-	<div class="i_pack"><span>当前背包空间：'.$bagInfo.'</span><input type="button" id="incangkuAll" class="bag_quick_depot" value="秒放仓库" onclick="putBagPropsAllSameIn();"/></div>
-	<div class="pack_filter"><label for="bag_type_select">分类查看：</label><select id="bag_type_select" onchange="changeBagType(this.value)">'.$bagoption.'</select></div>
+	<div class="i_pack"><span>当前背包空间：'.$bagInfo.'</span></div>
+	<div class="pack_filter"><label for="bag_type_select">分类查看：</label><select id="bag_type_select" onchange="changeBagType(this.value)">'.$bagoption.'</select><input type="button" id="incangkuAll" class="bag_quick_depot" value="秒放仓库" onclick="putBagPropsAllSameIn();"/></div>
 	<div class="pack_title">
 	<ul class="list l1"><li><p class="p1">图标</p><p class="p2">物品名称</p><p class="p3">类型</p><p class="p4">数量</p></li></ul>
         </div>'.$bag.' </ul>

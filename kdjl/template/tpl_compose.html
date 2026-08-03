@@ -229,7 +229,7 @@ function restoreComposeSelection()
 	try
 	{
 		var values=JSON.parse(raw);
-		var ids=['comapets','combpets'];
+		var ids=['comapets','combpets','wp1','wp2'];
 		for (var x=0;x<ids.length;x++)
 		{
 			var obj=document.getElementById(ids[x]);
@@ -253,7 +253,7 @@ window.setTimeout(restoreComposeSelection,0);
 // Jinhua function.
 function Pcompose(n,id)
 {
-	if (!confirm("注意：宠物消失包括宠物身上的装备，您真的确定要进行合成吗？！\n"))
+	if (!confirm("您确定要进行合成吗？\n"))
 	{
 		return false;
 	}
@@ -285,7 +285,8 @@ function Pcompose(n,id)
 						case 10:window.parent.Alert('数据读取失败!');break;
 						case 11:window.parent.Alert('冷却时间未到！');break;
 						case 15:window.parent.Alert('宠物成长未达到合成条件哦！');break;
-						default:window.parent.Alert('合成失败！！!');					
+						case 1000:window.parent.Alert('参与合成的宠物仍穿有装备，请先脱掉装备！');break;
+						default:window.parent.Alert('合成失败！！!');
 					}
 					$('snb').disabled=false;
 					//window.location.reload();
@@ -346,11 +347,13 @@ function playF(tf)
 		{
 			window.sessionStorage.setItem(composeSelectionKey,JSON.stringify([
 				$('comapets').options[$('comapets').selectedIndex].value,
-				$('combpets').options[$('combpets').selectedIndex].value
+				$('combpets').options[$('combpets').selectedIndex].value,
+				$('wp1').options[$('wp1').selectedIndex].value,
+				$('wp2').options[$('wp2').selectedIndex].value
 			]));
 		}
 		catch(e){}
 	}
-	window.location.reload();
+	window.location.replace('/function/Sd_ComposeMod.php');
 }
 </script>

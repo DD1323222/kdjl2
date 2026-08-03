@@ -136,12 +136,10 @@ if($title_vary == 1)//显示大类以及默认接受任务内容
 	{
 		foreach($activeRows as $activeRow)
 		{
-			$timeParts = explode('|', trim((string)$activeRow['time']), 2);
-			if(count($timeParts) === 2 && clockTimeToMinutes($timeParts[0]) !== false && clockTimeToMinutes($timeParts[1]) !== false)
-			{
-				if(!isWeeklyDayTimeActive($activeRow['week'], $timeParts[0], $timeParts[1], $week)) continue;
-			}
-			else if(!weeklyDaysContain($activeRow['week'], $week)) continue;
+			// The task bar previews every activity scheduled for today. The time
+			// column is shown in the tooltip; actual entry remains time-gated by
+			// each activity's runtime logic.
+			if(!weeklyDaysContain($activeRow['week'], $week)) continue;
 			$active[] = $activeRow;
 		}
 	}
