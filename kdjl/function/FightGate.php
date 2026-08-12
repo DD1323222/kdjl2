@@ -1226,12 +1226,6 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 				for($i=0;$i<count($teamInfo['members']);$i++)
 				{
 					if($teamInfo['members'][$i]['state']>0){
-						if($hasAuto)
-						{
-							$_pm['mysql']->query("UPDATE userbb,player
-												 SET hp=srchp,mp = srcmp,addmp = 0,addhp = 0
-											   WHERE fightbb=userbb.id and userbb.uid=player.id and player.id=".$teamInfo['members'][$i]['uid']);
-						}
 						$rsStr.='<strong>'.$teamInfo['members'][$i]['nickname'].'</strong>获得物品：<br/>';
 						$_rs=$_pm['mysql']->getOneRecord('select userbb.level,userbb.nowexp,userbb.lexp,userbb.wx,userbb.kx,userbb.czl,userbb.hits,userbb.speed,userbb.name,userbb.username,userbb.uid,userbb.id from userbb,player where userbb.uid=player.id and userbb.id=player.mbid and player.id='.$teamInfo['members'][$i]['uid']);
 						if(!empty($teamInfo['members'][$i]['props_get'])){
@@ -1272,6 +1266,10 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 						}
 						$db_bb = $rs;
 						$sj = saveGetOther($rs, $expAvg*($auto['uid']==$teamInfo['members'][$i]['uid']?1.2:1),$teamInfo['members'][$i]['uid']);
+						if($hasAuto && kdjlFightRestorePlayerPet($teamInfo['members'][$i]['uid'], 0) === false)
+						{
+							die('队伍战斗宠物恢复失败！');
+						}
 						$sql= 'update player set money=if(money+'.$moneyAvg.'>1000000000,1000000000,money+'.$moneyAvg.') where id='.$teamInfo['members'][$i]['uid'];
 						$_pm['mysql']->query($sql);
 								$rsStr .= '<br/>获得经验：' . intval($expAvg*($auto['uid']==$teamInfo['members'][$i]['uid']?1.2:1)) . '；' . ($sj === true ? '<strong>等级提升!</strong>' : '') . '<br/>获得金币：' . $moneyAvg . '。<hr>';
@@ -1340,6 +1338,28 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 					$teamState['monsters']=array();
 				}
 				$teamMoreMonster=true;
+				$currentTeamPet = kdjlFightRestorePlayerPet($uid, $rs['id']);
+				if(!is_array($currentTeamPet))
+				{
+					die('主战宠物恢复失败！');
+				}
+				$nhp_bb = $currentTeamPet['base_hp'];
+				$nmp = $currentTeamPet['base_mp'];
+				$addhp = $currentTeamPet['equip_hp'];
+				$addmp = $currentTeamPet['equip_mp'];
+				$srchp1 = $nhp_bb + $addhp;
+				$srcmp1 = $nmp + $addmp;
+				foreach($teamInfo['members'] as $nextMember)
+				{
+					if(!is_array($nextMember) || intval(isset($nextMember['state']) ? $nextMember['state'] : 0) != 1) continue;
+					if(isset($nextMember['living']) && intval($nextMember['living']) != 1) continue;
+					$nextMemberUid = intval(isset($nextMember['uid']) ? $nextMember['uid'] : 0);
+					if($nextMemberUid < 1 || $nextMemberUid == $uid) continue;
+					if(kdjlFightRestorePlayerPet($nextMemberUid, 0) === false)
+					{
+						die('队伍战斗宠物恢复失败！');
+					}
+				}
 				$_SESSION['fight'.$_SESSION['id']]	= array(
 							'uid'=>$_SESSION['id'],
 							'bid'=>$_SESSION['mbid'],
@@ -1464,7 +1484,8 @@ $sql = "SELECT addmp,addhp FROM userbb WHERE uid = {$_SESSION['id']} and id = {$
 
 	$_pm['mysql']->query($sqlUpdate);
 
-	if ($newhp_gw == 0&&!isset($teamMoreMonster)) {
+	$petBattleEnded = ($nhp_bb + $addhp <= 0) && (!$flagteam || $drops !== 'TeamStillAlive');
+	if (($newhp_gw == 0&&!isset($teamMoreMonster)) || $petBattleEnded) {
 		$r =$_SESSION['fight' . $_SESSION['id']];
 		$r['hp']		= $newhp_gw;
 		$r['mp']		= $newmp;

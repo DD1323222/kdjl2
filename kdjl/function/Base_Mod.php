@@ -30,10 +30,54 @@ function baseModJsSingle($value)
 	return $value;
 }
 
+function baseModNameSortKey($name)
+{
+	$name = html_entity_decode(trim((string)$name), ENT_QUOTES, 'UTF-8');
+	$cleanName = preg_replace('/^[^A-Za-z0-9\x{4e00}-\x{9fff}]+/u', '', $name);
+	if(is_string($cleanName) && $cleanName !== '') $name = $cleanName;
+	$name = strtolower($name);
+	if(function_exists('iconv'))
+	{
+		$gbkName = @iconv('UTF-8', 'GBK//IGNORE', $name);
+		if($gbkName !== false && $gbkName !== '') return $gbkName;
+	}
+	return $name;
+}
+
+function compareBaseModRowsByName($left, $right)
+{
+	$leftType = isset($left['varyname']) ? intval($left['varyname']) : 0;
+	$rightType = isset($right['varyname']) ? intval($right['varyname']) : 0;
+	if($leftType != $rightType) return $leftType < $rightType ? -1 : 1;
+	$leftKey = isset($left['_nameSortKey']) ? $left['_nameSortKey'] : '';
+	$rightKey = isset($right['_nameSortKey']) ? $right['_nameSortKey'] : '';
+	$result = strcmp($leftKey, $rightKey);
+	if($result != 0) return $result;
+	$leftPid = isset($left['pid']) ? intval($left['pid']) : 0;
+	$rightPid = isset($right['pid']) ? intval($right['pid']) : 0;
+	if($leftPid != $rightPid) return $leftPid < $rightPid ? -1 : 1;
+	$leftId = isset($left['id']) ? intval($left['id']) : 0;
+	$rightId = isset($right['id']) ? intval($right['id']) : 0;
+	if($leftId == $rightId) return 0;
+	return $leftId < $rightId ? -1 : 1;
+}
+
 $uobj	 = $_pm['user'];
 $user	 = $uobj->getUserById($uid);
 $userBag = $uobj->getUserBagById($uid);
 if(!is_array($user)) die('');
+$sortedUserBag = array();
+if(is_array($userBag))
+{
+	foreach($userBag as $bagRow)
+	{
+		if(!is_array($bagRow)) continue;
+		$bagRow['_nameSortKey'] = baseModNameSortKey(isset($bagRow['name']) ? $bagRow['name'] : '');
+		$sortedUserBag[] = $bagRow;
+	}
+	usort($sortedUserBag, 'compareBaseModRowsByName');
+	$userBag = $sortedUserBag;
+}
 $userDefaults = array('money' => 0, 'yb' => 0, 'maxbag' => 0, 'maxbase' => 0, 'task' => 0, 'ckpwd' => '');
 foreach($userDefaults as $defaultKey => $defaultValue)
 {

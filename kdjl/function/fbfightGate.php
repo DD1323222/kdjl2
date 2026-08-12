@@ -689,7 +689,7 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 					   addhp={$addhp}
 				 WHERE id={$rs['id']} and uid={$_SESSION['id']}
 			  ")) die('保存战斗宠物状态失败！');
-	if ($nhp <= 0){
+	if ($nhp + $addhp <= 0){
 		$mmonsterContinueFlag ="DIE";
 		$drops='宝宝 ' . $rs['name'].' 受到了严重伤害，已经不能战斗！！！'; // bb die.
 		$_pm['mysql'] -> query(" UPDATE player_ext SET F_Medicine_Buff = '' WHERE uid = '".$uid."'");
@@ -934,7 +934,7 @@ if($rs['s_uhp']<0||$rs['s_ump']<0){
 	}
 	else $drops='';
 
-	if ($newhp == 0) {
+	if ($newhp <= 0 || $nhp + $addhp <= 0) {
 		$r =$_SESSION['fight' . $_SESSION['id']];
 		$r['hp']		= $newhp;
 		$r['mp']		= $newmp;

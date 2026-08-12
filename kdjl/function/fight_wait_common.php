@@ -523,6 +523,108 @@ if (!function_exists('kdjlFightStartState')) {
 	}
 }
 
+if (!function_exists('kdjlFightNeedsPetRestore')) {
+	function kdjlFightNeedsPetRestore($fight)
+	{
+		if (!is_array($fight) || empty($fight)) {
+			return true;
+		}
+		return !isset($fight['fatting'], $fight['gid'], $fight['hp'])
+			|| intval($fight['fatting']) != 1
+			|| intval($fight['gid']) < 1
+			|| floatval($fight['hp']) <= 0;
+	}
+}
+
+if (!function_exists('kdjlFightRestorePet')) {
+	function kdjlFightRestorePet($uid, $bid, $equipHp, $equipMp)
+	{
+		global $_pm;
+		$uid = intval($uid);
+		$bid = intval($bid);
+		$equipHp = max(0, intval(round($equipHp)));
+		$equipMp = max(0, intval(round($equipMp)));
+		if ($uid < 1 || $bid < 1 || !isset($_pm['mysql'])) {
+			return false;
+		}
+		$restored = $_pm['mysql']->query(
+			'UPDATE userbb SET hp=srchp,mp=srcmp,addhp='.$equipHp.',addmp='.$equipMp.
+			' WHERE id='.$bid.' AND uid='.$uid.' AND muchang=0 AND tgflag=0'
+		);
+		if (!$restored) {
+			return false;
+		}
+		if (isset($_pm['mem'])) {
+			$_pm['mem']->del($uid.'bb');
+		}
+		return true;
+	}
+}
+
+if (!function_exists('kdjlFightRestorePlayerPet')) {
+	function kdjlFightRestorePlayerPet($uid, $bid)
+	{
+		global $_pm;
+		$uid = intval($uid);
+		$bid = intval($bid);
+		if ($uid < 1 || !isset($_pm['mysql'])) {
+			return false;
+		}
+		if ($bid > 0) {
+			$pet = $_pm['mysql']->getOneRecord(
+				'SELECT id,srchp,srcmp FROM userbb WHERE uid='.$uid.' AND id='.$bid.
+				' AND muchang=0 AND tgflag=0 LIMIT 1'
+			);
+		}
+		else {
+			$pet = $_pm['mysql']->getOneRecord(
+				'SELECT b.id,b.srchp,b.srcmp FROM player p INNER JOIN userbb b'.
+				' ON b.uid=p.id AND b.id=IF(p.fightbb>0,p.fightbb,p.mbid)'.
+				' WHERE p.id='.$uid.' AND b.muchang=0 AND b.tgflag=0 LIMIT 1'
+			);
+		}
+		if (!is_array($pet) || !isset($pet['id'])) {
+			return false;
+		}
+		$bid = intval($pet['id']);
+		$equip = getzbAttrib($bid, false, '', $uid);
+		$equipHp = max(0, intval(round(isset($equip['hp']) ? $equip['hp'] : 0)));
+		$equipMp = max(0, intval(round(isset($equip['mp']) ? $equip['mp'] : 0)));
+		if (!kdjlFightRestorePet($uid, $bid, $equipHp, $equipMp)) {
+			return false;
+		}
+		return array(
+			'uid'=>$uid,
+			'bid'=>$bid,
+			'base_hp'=>max(0, intval(isset($pet['srchp']) ? $pet['srchp'] : 0)),
+			'base_mp'=>max(0, intval(isset($pet['srcmp']) ? $pet['srcmp'] : 0)),
+			'equip_hp'=>$equipHp,
+			'equip_mp'=>$equipMp
+		);
+	}
+}
+
+if (!function_exists('kdjlFightRestoreActiveTeamPets')) {
+	function kdjlFightRestoreActiveTeamPets($teamInfo)
+	{
+		if (!is_array($teamInfo) || !isset($teamInfo['members']) || !is_array($teamInfo['members'])) {
+			return false;
+		}
+		$restored = 0;
+		foreach ($teamInfo['members'] as $member) {
+			if (!is_array($member) || intval(isset($member['state']) ? $member['state'] : 0) != 1) {
+				continue;
+			}
+			$memberUid = intval(isset($member['uid']) ? $member['uid'] : 0);
+			if ($memberUid < 1 || kdjlFightRestorePlayerPet($memberUid, 0) === false) {
+				return false;
+			}
+			$restored++;
+		}
+		return $restored > 0;
+	}
+}
+
 if (!function_exists('kdjlFightFinishState')) {
 	function kdjlFightFinishState($fight, $user, $normalMapOnly, $bid, $forcedMode)
 	{

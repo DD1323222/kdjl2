@@ -284,25 +284,26 @@ if(intval(isset($bb['uid']) ? $bb['uid'] : 0) != $uid ||
 	$arr = getzbAttrib($bid);
 	$arrHp = max(0, intval(round(isset($arr['hp']) ? $arr['hp'] : 0)));
 	$arrMp = max(0, intval(round(isset($arr['mp']) ? $arr['mp'] : 0)));
+	$currentAddHp = max(0, min($arrHp, intval(isset($bb['addhp']) ? $bb['addhp'] : 0)));
+	$currentAddMp = max(0, min($arrMp, intval(isset($bb['addmp']) ? $bb['addmp'] : 0)));
 	$bb['srchp'] += $arrHp;
 	$bb['srcmp'] += $arrMp;
-	$bb['hp'] += $arrHp;
-	$bb['mp'] += $arrMp;
+	$bb['hp'] += $currentAddHp;
+	$bb['mp'] += $currentAddMp;
    // ================================ 装备效果结束 ========================================
-	if(!$_pm['mysql']->query("UPDATE userbb
-					 SET hp=srchp,mp=srcmp,addhp={$arrHp},addmp={$arrMp}
-				   WHERE id={$bid} and uid={$uid}"))
+	$restoreBattlePet = kdjlFightNeedsPetRestore($fight);
+	if($restoreBattlePet && !kdjlFightRestorePet($uid, $bid, $arrHp, $arrMp))
 	{
 		die('保存战斗宠物状态失败！');
 	}
-	$_pm['mem']->del(MEM_USERBB_KEY);
+	if($restoreBattlePet)
+	{
+		$bb['hp'] = $bb['srchp'];
+		$bb['mp'] = $bb['srcmp'];
+	}
 
 	// By field order.
 	$bb['wx'] = getWx($bb['wx']);
-	if($bb['hp'] == 0)
-	{
-		$bb['hp'] = $bb['srchp'];
-	}
 	$bbNameJs = battleFightJsSingle($bb['name']);
 	$bbSkillJs = battleFightJsSingle($bb['skillist']);
 	$bbImgStand = battleFightImage($bb['imgstand']);

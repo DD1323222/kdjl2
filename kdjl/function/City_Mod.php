@@ -18,16 +18,9 @@ kdjlFightBeginNavigationWait($uid);
 $user	 = $_pm['user']->getUserById($_SESSION['id']);//用户信息
 if(!is_array($user)) die('');
 
-/**战斗宝宝自动回满血*/
-
-$healResult = $_pm['mysql']->query("UPDATE userbb,player
-						 SET hp=srchp,mp = srcmp,addmp = 0,addhp = 0
-					   WHERE fightbb=userbb.id and userbb.uid=player.id and player.id={$uid}
-					");
-if($healResult)
-{
-	$_pm['mem']->del(MEM_USERBB_KEY);
-}
+/**战斗宝宝自动回满血和魔法（包含当前装备加成）*/
+$healResult = kdjlFightRestorePlayerPet($uid, 0);
+if($healResult === false) die('主战宠物恢复失败！');
 
 //###########################
 // @Load template.

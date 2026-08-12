@@ -319,14 +319,15 @@ if((isset($bb['muchang']) && intval($bb['muchang']) != 0) || (isset($bb['tgflag'
 {
 	die('宠物当前状态不能战斗！');
 }
-$arr = getzbAttrib($bid);
+	$arr = getzbAttrib($bid);
 	$arrHp = max(0, intval(round(isset($arr['hp']) ? $arr['hp'] : 0)));
 	$arrMp = max(0, intval(round(isset($arr['mp']) ? $arr['mp'] : 0)));
-	$baseSrcMp = intval($bb['srcmp']);
+	$currentAddHp = max(0, min($arrHp, intval(isset($bb['addhp']) ? $bb['addhp'] : 0)));
+	$currentAddMp = max(0, min($arrMp, intval(isset($bb['addmp']) ? $bb['addmp'] : 0)));
 	$bb['srchp'] += $arrHp;
 	$bb['srcmp'] += $arrMp;
-	$bb['hp'] += $arrHp;
-	$bb['mp'] += $arrMp;
+	$bb['hp'] += $currentAddHp;
+	$bb['mp'] += $currentAddMp;
 	//宠物的血量和魔法的最大值的计算（加上装备的效果）；
 	/*$sql = "SELECT addmp,addhp FROM userbb WHERE uid = {$_SESSION['id']} and id = {$bid}";
 	$add = $_pm['mysql'] -> getOneRecord($sql);
@@ -343,36 +344,17 @@ $arr = getzbAttrib($bid);
 	$autoType = isset($_SESSION[$autoTypeKey]) ? intval($_SESSION[$autoTypeKey]) : 0;
 	$autoWay = isset($_SESSION[$autoWayKey]) ? $_SESSION[$autoWayKey] : '';
 	$attackWaitLimit = kdjlFightAttackWaitLimit($user, false, $fight, '');
-		if($autoType == 1)
+	if($autoType == 1 &&
+		((($autoWay == '' || $autoWay == 'money') && $user['autofitflag']==1 && $user['sysautosum']>0) ||
+		 ($autoWay == 'yb' && $user['autofitflag']==1 && $user['maxautofitsum']>0)))
 	{
-		if(($autoWay == '' || $autoWay == "money") && $user['autofitflag']==1 && $user['sysautosum']>0)
-		{
-			$_SESSION['fttime'.$uid] = $attackWaitLimit;
-			$moneyTotalMp = intval($bb['srcmp'] / 2);
-			$moneyBaseMp = min($baseSrcMp, $moneyTotalMp);
-			$moneyAddMp = max(0, $moneyTotalMp - $moneyBaseMp);
-			$_pm['mysql']->query("UPDATE userbb
-						 SET hp=srchp,mp={$moneyBaseMp},addhp={$arrHp},addmp={$moneyAddMp}
-					   WHERE id={$bid} and uid={$_SESSION['id']}");
-			$bb['hp'] = $bb['srchp'];
-			$bb['mp'] = $moneyTotalMp;
-		}
-		//元宝版
-		else if($autoWay == "yb" && $user['autofitflag']==1 && $user['maxautofitsum']>0)
-		{
-			$_SESSION['fttime'.$uid] = $attackWaitLimit;
-			$_pm['mysql']->query("UPDATE userbb
-						 SET hp=srchp,mp=srcmp,addhp={$arrHp},addmp={$arrMp}
-					   WHERE id={$bid} and uid={$_SESSION['id']}");
-			$bb['hp'] = $bb['srchp'];
-			$bb['mp'] = $bb['srcmp'];
-		}
+		$_SESSION['fttime'.$uid] = $attackWaitLimit;
 	}
-	else
+	if(kdjlFightNeedsPetRestore($fight))
 	{
-		$_pm['mysql']->query("UPDATE userbb
-					 SET addhp={$arrHp},addmp={$arrMp}
-				   WHERE id={$bid} and uid={$_SESSION['id']}");
+		if(!kdjlFightRestorePet($uid, $bid, $arrHp, $arrMp)) die('保存战斗宠物状态失败！');
+		$bb['hp'] = $bb['srchp'];
+		$bb['mp'] = $bb['srcmp'];
 	}
 
 	// By field order.

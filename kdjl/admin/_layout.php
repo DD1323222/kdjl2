@@ -4,7 +4,7 @@ function adminPageStart($title, $active)
 	$flash = adminGetFlash();
 	$shopOpen = in_array($active, array('yb', 'sj', 'vip', 'limited'));
 	$queryOpen = in_array($active, array('evolution', 'slime', 'nirvana', 'merge'));
-	$dropOpen = in_array($active, array('monster_drops', 'item_drops', 'activity_drops'));
+	$dropOpen = in_array($active, array('monster_drops', 'item_drops', 'activity_drops', 'gift_items'));
 	$contentOpen = in_array($active, array('pets', 'items'));
 ?>
 <!DOCTYPE html>
@@ -30,6 +30,7 @@ function adminPageStart($title, $active)
 					<a<?php echo $active === 'monster_drops' ? ' class="active"' : ''; ?> href="drops.php">怪物掉落管理</a>
 					<a<?php echo $active === 'item_drops' ? ' class="active"' : ''; ?> href="item_drops.php">道具掉落管理</a>
 					<a<?php echo $active === 'activity_drops' ? ' class="active"' : ''; ?> href="activity_drops.php">活动掉落管理</a>
+					<a<?php echo $active === 'gift_items' ? ' class="active"' : ''; ?> href="gift_items.php">礼包物品管理</a>
 				</details>
 				<a class="nav-direct<?php echo $active === 'activities' ? ' active' : ''; ?>" href="activities.php">活动管理</a>
 				<a class="nav-direct<?php echo $active === 'tasks' ? ' active' : ''; ?>" href="tasks.php">任务管理</a>

@@ -15,6 +15,7 @@ cp: 被挑战玩家的主战pets id
 require_once('../config/config.game.php');
 require_once(dirname(__FILE__).'/../sec/activity_robot_fnc.php');
 require_once(dirname(__FILE__).'/../sec/battle_lifecycle_fnc.php');
+require_once(dirname(__FILE__).'/fight_wait_common.php');
 $uid = isset($_SESSION['id']) ? intval($_SESSION['id']) : 0;
 if($uid < 1) die('');
 $_SESSION['id'] = $uid;
@@ -458,6 +459,12 @@ else
 	$bb['mp'] += min($challengeEquipMp, $bb['addmp']);
 	$bb['srchp'] += $challengeEquipHp;
 	$bb['srcmp'] += $challengeEquipMp;
+	if(kdjlFightNeedsPetRestore($fight))
+	{
+		if(!kdjlFightRestorePet($uid, $bid, $challengeEquipHp, $challengeEquipMp)) die('保存战斗宠物状态失败！');
+		$bb['hp'] = $bb['srchp'];
+		$bb['mp'] = $bb['srcmp'];
+	}
 	// By field order.
 	$bb['wx'] = getWx($bb['wx']);
 	$bbNameJs = challengeModJsSingle($bb['name']);
@@ -681,7 +688,7 @@ if(!$_pm['mysql']->query("UPDATE player
 		  ")) die('保存挑战状态失败！');
 //update fight status to memory.
 $_pm['mem']->set(array('k' =>MEM_USER_KEY, 'v' => $user));
-$_pm['mem']->set(array('k' =>MEM_USERBB_KEY, 'v' => $userbb));
+$_pm['user']->updateMemUserbb($uid);
 $_pm['mem']->set(array('k' =>MEM_USERBAG_KEY, 'v' => $bag));
 $_pm['mem']->memClose();
 

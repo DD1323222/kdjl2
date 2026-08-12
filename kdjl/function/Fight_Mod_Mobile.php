@@ -774,11 +774,12 @@ else
 	$arr = getzbAttrib($bid);
 	$arrHp = max(0, intval(round(isset($arr['hp']) ? $arr['hp'] : 0)));
 	$arrMp = max(0, intval(round(isset($arr['mp']) ? $arr['mp'] : 0)));
-	$baseSrcMp = intval($bb['srcmp']);
+	$currentAddHp = max(0, min($arrHp, intval(isset($bb['addhp']) ? $bb['addhp'] : 0)));
+	$currentAddMp = max(0, min($arrMp, intval(isset($bb['addmp']) ? $bb['addmp'] : 0)));
 	$bb['srchp'] += $arrHp;
 	$bb['srcmp'] += $arrMp;
-	$bb['hp'] += $arrHp;
-	$bb['mp'] += $arrMp;
+	$bb['hp'] += $currentAddHp;
+	$bb['mp'] += $currentAddMp;
 	/*$sql = "SELECT addmp,addhp FROM userbb WHERE uid = {$_SESSION['id']} and id = {$bid}";
 	$add = $_pm['mysql'] -> getOneRecord($sql);
 	$bb['srchp'] += $add['addhp'];
@@ -796,44 +797,17 @@ else
 	$autoWay = isset($_SESSION[$autoWayKey]) ? $_SESSION[$autoWayKey] : '';
 	$autoMultiMode = isset($_SESSION[$autoMultiKey]) ? intval($_SESSION[$autoMultiKey]) : 2;
 	$attackWaitLimit = kdjlFightAttackWaitLimit($user, true, $fight, '');
-	if($autoType == 1 && $autoMultiMode == 2) { // money auto
-
-		if(($autoWay == '' || $autoWay == "money") && $user['autofitflag']==1 && $user['sysautosum']>0)
-		{
-			$recoverHPFlag=true;
-			if($flagteam)
-			{
-				if(empty($teamState['autofighting']))
-				{
-					$recoverHPFlag=false;
-				}
-			}
-			if($recoverHPFlag){
-				$_SESSION['fttime'.$uid] = $attackWaitLimit;
-				$moneyTotalMp = intval($bb['srcmp'] / 2);
-				$moneyBaseMp = min($baseSrcMp, $moneyTotalMp);
-				$moneyAddMp = max(0, $moneyTotalMp - $moneyBaseMp);
-				$_pm['mysql']->query("UPDATE userbb
-							 SET hp=srchp,mp={$moneyBaseMp},addhp={$arrHp},addmp={$moneyAddMp}
-						   WHERE id={$bid} and uid={$_SESSION['id']}");
-				$bb['hp'] = $bb['srchp']; //保证显示是正确的，因为$bb['hp']这个为0，但是已经被修改为最大值了
-				$bb['mp'] = $moneyTotalMp;
-			}
-		}
-		else if($autoWay == 'yb' && $user['autofitflag']==1 && $user['maxautofitsum']>0 && $autoMultiMode == 2) { // yb auto
-			$_SESSION['fttime'.$uid] = $attackWaitLimit;
-			$_pm['mysql']->query("UPDATE userbb
-						 SET hp=srchp,mp=srcmp,addhp={$arrHp},addmp={$arrMp}
-					   WHERE id={$bid} and uid={$_SESSION['id']}");
-			$bb['hp'] = $bb['srchp']; //保证显示是正确的，因为$bb['hp']这个为0，但是已经被修改为最大值了
-			$bb['mp'] = $bb['srcmp'];
-		}
-	}
-	else
+	if($autoType == 1 && $autoMultiMode == 2 &&
+		((($autoWay == '' || $autoWay == 'money') && $user['autofitflag']==1 && $user['sysautosum']>0) ||
+		 ($autoWay == 'yb' && $user['autofitflag']==1 && $user['maxautofitsum']>0)))
 	{
-		$_pm['mysql']->query("UPDATE userbb
-					 SET addhp={$arrHp},addmp={$arrMp}
-				   WHERE id={$bid} and uid={$_SESSION['id']}");
+		$_SESSION['fttime'.$uid] = $attackWaitLimit;
+	}
+	if(kdjlFightNeedsPetRestore($fight))
+	{
+		if(!kdjlFightRestorePet($uid, $bid, $arrHp, $arrMp)) die('保存战斗宠物状态失败！');
+		$bb['hp'] = $bb['srchp'];
+		$bb['mp'] = $bb['srcmp'];
 	}
 
 	// By field order.
@@ -1198,6 +1172,10 @@ if($_SESSION['multi_monsters'.$_SESSION['id']] == 1){//挑战
 					exit() ;
 				}
 
+				if(!kdjlFightRestoreActiveTeamPets($teamInfo))
+				{
+					die('队伍战斗宠物恢复失败！');
+				}
 				if(!$team->fightStart($gws))
 				{
 					header('location:/function/Team_Mod.php?n='.intval($_SESSION['team_inmap']));

@@ -71,6 +71,38 @@ function normalizeBagRow($rs)
 	return $rs;
 }
 
+function getBagNameSortKey($name)
+{
+	$name = html_entity_decode(trim((string)$name), ENT_QUOTES, 'UTF-8');
+	$cleanName = preg_replace('/^[^A-Za-z0-9\x{4e00}-\x{9fff}]+/u', '', $name);
+	if(is_string($cleanName) && $cleanName !== '') $name = $cleanName;
+	$name = strtolower($name);
+	if(function_exists('iconv'))
+	{
+		$gbkName = @iconv('UTF-8', 'GBK//IGNORE', $name);
+		if($gbkName !== false && $gbkName !== '') return $gbkName;
+	}
+	return $name;
+}
+
+function compareBagRowsByName($left, $right)
+{
+	$leftType = isset($left['varyname']) ? intval($left['varyname']) : 0;
+	$rightType = isset($right['varyname']) ? intval($right['varyname']) : 0;
+	if($leftType != $rightType) return $leftType < $rightType ? -1 : 1;
+	$leftKey = isset($left['_nameSortKey']) ? $left['_nameSortKey'] : '';
+	$rightKey = isset($right['_nameSortKey']) ? $right['_nameSortKey'] : '';
+	$result = strcmp($leftKey, $rightKey);
+	if($result != 0) return $result;
+	$leftPid = isset($left['pid']) ? intval($left['pid']) : 0;
+	$rightPid = isset($right['pid']) ? intval($right['pid']) : 0;
+	if($leftPid != $rightPid) return $leftPid < $rightPid ? -1 : 1;
+	$leftId = isset($left['id']) ? intval($left['id']) : 0;
+	$rightId = isset($right['id']) ? intval($right['id']) : 0;
+	if($leftId == $rightId) return 0;
+	return $leftId < $rightId ? -1 : 1;
+}
+
 if($clean == 1)
 {
 	if(is_array($userBag))
@@ -79,8 +111,12 @@ if($clean == 1)
 		{
 			$value = normalizeBagRow($value);
 			if($value === false) continue;
-			$array[$value['varyname']][] = $value;
+			$value['_nameSortKey'] = getBagNameSortKey($value['name']);
+			$array[] = $value;
 		}
+		usort($array, 'compareBagRowsByName');
+		$userBag = $array;
+		$array = array($array);
 	}
 }
 
